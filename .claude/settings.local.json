@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem C:\\\\Users\\\\isroi\\\\IdeaProjects\\\\mebel\\\\src -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object FullName)"
+    ]
+  }
+}
