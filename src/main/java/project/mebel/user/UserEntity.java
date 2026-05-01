@@ -80,6 +80,9 @@ public class UserEntity extends SoftDeleteEntity implements UserDetails {
     @Builder.Default
     private BigDecimal dailyHoursTarget = new BigDecimal("8.0");
 
+    @Column(name = "daily_salary", precision = 12, scale = 2)
+    private BigDecimal dailySalary;
+
     @Column(name = "commission_pct", precision = 5, scale = 2)
     private BigDecimal commissionPct;
 

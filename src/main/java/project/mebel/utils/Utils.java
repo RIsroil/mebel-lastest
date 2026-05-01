@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import project.mebel.config.MessageService;
 import project.mebel.exception.ApiException;
 import project.mebel.user.UserEntity;
+import project.mebel.workshop.WorkshopEntity;
+import project.mebel.workshop.WorkshopRepository;
 
 import java.security.Principal;
 import java.time.Instant;
@@ -21,6 +23,7 @@ public class Utils {
     private final PasswordEncoder passwordEncoder;
     private final UserDetailsService userDetailsService;
     private final MessageService messageService;
+    private final WorkshopRepository workshopRepository;
 
     public UserEntity getUserFromPrincipal(Principal principal) {
         if (principal == null) {

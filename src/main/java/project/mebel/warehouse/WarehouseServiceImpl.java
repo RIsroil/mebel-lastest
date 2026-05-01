@@ -97,7 +97,6 @@ public class WarehouseServiceImpl implements WarehouseService {
         BigDecimal priceAfter;
 
         if (req.getTransactionType() == TransactionType.IN) {
-            // Weighted average narx hisoblash
             BigDecimal newTotal = qtyBefore.multiply(priceBefore).add(qty.multiply(price));
             qtyAfter = qtyBefore.add(qty);
             priceAfter = qtyAfter.compareTo(BigDecimal.ZERO) > 0

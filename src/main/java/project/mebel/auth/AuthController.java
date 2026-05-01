@@ -3,15 +3,20 @@ package project.mebel.auth;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import liquibase.license.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import project.mebel.auth.dto.CreateWorkerRequest;
 import project.mebel.auth.dto.LoginRequest;
 import project.mebel.auth.dto.LoginResponse;
+import project.mebel.auth.dto.UserRegisterRequest;
 import project.mebel.auth.dto.UserResponse;
+import project.mebel.auth.dto.UserTokenResponse;
+import project.mebel.exception.ApiResponseStructure;
 
 import java.security.Principal;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -21,26 +26,28 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping("/login")
-    @Operation(summary = "Tizimga kirish")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request,
-                                               HttpServletRequest httpRequest) {
-        String ip = httpRequest.getRemoteAddr();
-        String ua = httpRequest.getHeader("User-Agent");
-        return ResponseEntity.ok(authService.login(request, ip, ua));
+    @PostMapping("/register")
+    @Operation(summary = "Yangi foydalanuvchi ro'yxatdan o'tkazish")
+    public ResponseEntity<ApiResponseStructure<UserTokenResponse>> register(@RequestBody UserRegisterRequest request) {
+        return authService.register(request);
     }
 
-    @PostMapping("/logout")
-    @Operation(summary = "Tizimdan chiqish")
-    public ResponseEntity<Void> logout(Principal principal) {
-        authService.logout(principal);
-        return ResponseEntity.noContent().build();
+    @PostMapping("/login")
+    @Operation(summary = "Tizimga kirish")
+    public ResponseEntity<ApiResponseStructure<UserTokenResponse>> login(@RequestBody LoginRequest request) {
+        return authService.login(request);
     }
 
     @PostMapping("/workers")
     @Operation(summary = "Yangi worker yaratish (faqat OWNER)")
-    public ResponseEntity<UserResponse> createWorker(@RequestBody CreateWorkerRequest request,
+    public ResponseEntity<ApiResponseStructure<UserResponse>> createWorker(@RequestBody CreateWorkerRequest request,
                                                      Principal principal) {
-        return ResponseEntity.ok(authService.createWorker(request, principal));
+        return authService.createWorker(request, principal);
+    }
+
+    @DeleteMapping("/id")
+    @Operation(summary = "Foydalanuvchini o'chirish (faqat OWNER)")
+    public ResponseEntity<ApiResponseStructure<Void>> deleteWorker(@RequestParam UUID id, Principal principal) {
+        return authService.deleteWorker(id, principal);
     }
 }
