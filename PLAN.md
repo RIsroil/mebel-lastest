@@ -1,14 +1,15 @@
 # MEBEL LOYIHASI — IMPLEMENTATION PLAN
-Sana: 2026-05-01  |  Holat: 1-5 BOSQICH BAJARILDI
+Sana: 2026-05-01  |  Holat: 1-6 BOSQICH BAJARILDI ✅ | Keyingi: 7-BOSQICH (i18n + test)
 
 ---
 
 ## QAYERDA TO'XTADIK
 
-**KEYINGI QADAM → 6-BOSQICH (davom): Warehouse, Furniture, Attendance, Earning modullari**
+**BARCHA MODULLAR BAJARILDI ✅**
 
-Auth (login/logout/createWorker) va Workshop CRUD tayyor.
-Keyingi: WarehouseService → FurnitureService → AttendanceService → EarningService
+Auth, Workshop, Warehouse, FurnitureTemplate, FurnitureOrder, Attendance, Earning — barchasi tayyor.
+@EnableScheduling qo'shildi (attendance auto-lock cron).
+Keyingi: test va integratsiya tekshiruvi.
 
 ---
 
@@ -137,7 +138,7 @@ Package: `project.mebel.common.enums`
 
 ---
 
-## 6-BOSQICH: REPOSITORY VA SERVICE QATLAMI (KEYINGI)
+## 6-BOSQICH: REPOSITORY VA SERVICE QATLAMI ✅
 
 Har bir modul uchun:
 
@@ -145,14 +146,15 @@ Har bir modul uchun:
 |---|---|---|---|---|
 | user/auth | UserRepository ✅ | AuthService ✅ | AuthServiceImpl ✅ | AuthController ✅ |
 | workshop | WorkshopRepository ✅ | WorkshopService ✅ | WorkshopServiceImpl ✅ | WorkshopController ✅ |
-| warehouse | WarehouseItemRepository, WarehouseTransactionRepository | WarehouseService | - | WarehouseController |
-| furniture | FurnitureOrderRepository, FurnitureImageRepository... | FurnitureService | - | FurnitureController |
-| attendance | DailyAttendanceRepository | AttendanceService | - | AttendanceController |
-| earning | EarningRepository, BonusRepository | EarningService | - | EarningController |
+| warehouse | WarehouseItemRepository ✅, WarehouseTransactionRepository ✅ | WarehouseService ✅ | WarehouseServiceImpl ✅ | WarehouseController ✅ |
+| furniture/templates | FurnitureTemplateRepository ✅, TemplateMaterialRepository ✅ | FurnitureTemplateService ✅ | FurnitureTemplateServiceImpl ✅ | FurnitureTemplateController ✅ |
+| furniture/orders | FurnitureOrderRepository ✅, FurnitureAssignmentRepository ✅, MaterialUsageRepository ✅ | FurnitureOrderService ✅ | FurnitureOrderServiceImpl ✅ | FurnitureOrderController ✅ |
+| attendance | DailyAttendanceRepository ✅ | AttendanceService ✅ | AttendanceServiceImpl ✅ | AttendanceController ✅ |
+| earning | EarningRepository ✅, BonusRepository ✅ | EarningService ✅ | EarningServiceImpl ✅ | EarningController ✅ |
 
 ---
 
-## TEXNIK QARORLAR
+## TEXNIK QARORLAR ✅
 
 | Masala | Qaror | Sababi |
 |---|---|---|
@@ -161,4 +163,76 @@ Har bir modul uchun:
 | Vaqt turi | `LocalDateTime` (UTC) | PostgreSQL timestamp UTC saqlanadi |
 | Soft delete filter | `@SQLRestriction("deleted_at IS NULL")` | Hibernate 6.x compatible |
 | JWT subject | `username` (eski: `phone`) | DD da login identifier = username |
-| Builder | `@SuperBuilder` | Inheritance chain uchun Lombok SuperBuilder kerak |
+| Builder | `@SuperBuilder` + `@NoArgsConstructor` | `@SuperBuilder` faqat builder constructor hosil qiladi — JPA va subclass uchun no-args kerak |
+| `username` field Lombok konflikti | `@Getter(AccessLevel.NONE)` + manual `getUsername()` | Lombok va `UserDetails.getUsername()` bir xil signature — ikkilamchi metod hosil bo'ladi |
+| Weighted average narx | `(oldQty × oldPrice + newQty × newPrice) / (oldQty + newQty)` | Ombor kirim (IN) tranzaksiyasida o'rtacha narx hisoblanadi |
+| Komissiya formulasi | `salePrice × (commissionPct/100) / activeWorkerCount` | SOLD statusida har aktiv ishchiga teng taqsimlanadi |
+| Davomat auto-lock | `@Scheduled(cron="0 0 3 * * *")` — har kecha 03:00 | 3 kun muddat o'tgan, soat yuborilmagan yozuvlar avtomatik lock bo'ladi |
+| Scheduling | `@EnableScheduling` MebelApplication da | Cron job ishlashi uchun kerak |
+| Boolean field nomlash | `active`, `blocked`, `hybridPay` (is prefix YO'Q) | Lombok `isActive()`, `isBlocked()` Java bean getter to'g'ri hosil qiladi |
+
+---
+
+## 7-BOSQICH: I18N XABARLAR VA TESTING ← KEYINGI
+
+### 7.1 i18n messages.properties ❌
+
+`src/main/resources/messages.properties` (va `messages_uz.properties`) fayllarini yarating.
+
+**Barcha ishlatilayotgan message keylar:**
+
+```properties
+# Auth / User
+user.not.found=Foydalanuvchi topilmadi
+user.is.not.authenticated=Foydalanuvchi tizimga kirmagan
+user.blocked=Foydalanuvchi bloklangan
+user.already.exists=Bu username allaqachon band
+wrong.password=Parol noto'g'ri
+invalid.or.expired.token=Noto'g'ri yoki muddati o'tgan token
+token.expired=Token muddati tugagan
+invalid.user.details=Noto'g'ri foydalanuvchi ma'lumotlari
+owner.has.no.workshop=Eganing sehi yo'q
+worker.has.no.workshop=Ishchi sehga biriktirilmagan
+worker.not.found=Ishchi topilmadi
+
+# Workshop
+workshop.not.found=Seh topilmadi
+
+# Warehouse
+warehouse.item.not.found=Ombor mahsuloti topilmadi
+insufficient.stock=Omborda yetarli mahsulot yo'q
+template.material.not.found=Shablon materiali topilmadi
+
+# Furniture
+furniture.template.not.found=Mebel shabloni topilmadi
+furniture.order.not.found=Mebel buyurtmasi topilmadi
+order.already.closed=Buyurtma yopilgan, o'zgartirib bo'lmaydi
+order.in.progress.cannot.delete=Ishda bo'lgan buyurtmani o'chirish mumkin emas
+invalid.status.transition=Status o'zgartirish tartibsiz
+worker.already.assigned=Ishchi allaqachon biriktirilgan
+assignment.not.found=Biriktirish topilmadi
+
+# Attendance
+already.checked.in.today=Bugun allaqachon ishga kirilgan
+attendance.not.found=Davomat yozuvi topilmadi
+attendance.hours.locked=Soatlar qulflangan, o'zgartirib bo'lmaydi
+hours.already.submitted=Soatlar allaqachon yuborilgan
+
+# Earning
+earning.not.found=Daromad yozuvi topilmadi
+earning.already.paid=Bu daromad allaqachon to'langan
+
+# General
+access.denied=Ruxsat yo'q
+system.error.occurred.in=Tizim xatosi yuz berdi: {0}
+```
+
+### 7.2 Testing ❌
+
+| Test | Tur | Holat |
+|---|---|---|
+| AuthController login/logout | Integration | ❌ |
+| WarehouseService weighted avg | Unit | ❌ |
+| FurnitureOrder status transition | Unit | ❌ |
+| Commission calculation | Unit | ❌ |
+| Attendance auto-lock cron | Unit | ❌ |
