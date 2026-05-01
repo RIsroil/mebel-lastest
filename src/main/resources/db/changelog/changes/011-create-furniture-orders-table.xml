@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="011-create-furniture-orders-table" author="Isroil">
+        <createTable tableName="furniture_orders">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="workshop_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="order_number" type="VARCHAR(30)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="title" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="status" type="VARCHAR(20)" defaultValue="DRAFT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sale_price" type="DECIMAL(14,2)"/>
+            <column name="estimated_cost" type="DECIMAL(14,2)"/>
+            <column name="actual_material_cost" type="DECIMAL(14,2)"/>
+            <column name="template_id" type="UUID"/>
+            <column name="started_at" type="TIMESTAMP"/>
+            <column name="completed_at" type="TIMESTAMP"/>
+            <column name="sold_at" type="TIMESTAMP"/>
+            <column name="client_name" type="VARCHAR(150)"/>
+            <column name="client_phone" type="VARCHAR(20)"/>
+            <column name="notes" type="TEXT"/>
+            <column name="created_by" type="UUID"/>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_by" type="UUID"/>
+            <column name="updated_at" type="TIMESTAMP"/>
+            <column name="deleted_by" type="UUID"/>
+            <column name="deleted_at" type="TIMESTAMP"/>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="furniture_orders" baseColumnNames="workshop_id"
+                constraintName="fk_furniture_orders_workshop"
+                referencedTableName="workshops" referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="furniture_orders" baseColumnNames="template_id"
+                constraintName="fk_furniture_orders_template"
+                referencedTableName="furniture_templates" referencedColumnNames="id"
+                onDelete="SET NULL"/>
+    </changeSet>
+
+</databaseChangeLog>

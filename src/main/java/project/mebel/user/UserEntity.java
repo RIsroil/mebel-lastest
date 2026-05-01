@@ -1,76 +1,91 @@
 package project.mebel.user;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.annotations.UuidGenerator;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import project.mebel.user.enums.Role;
-import project.mebel.user.enums.Status;
-import project.mebel.minio.objects.ImageEntity;
+import project.mebel.common.entity.SoftDeleteEntity;
+import project.mebel.common.enums.PayType;
+import project.mebel.common.enums.UserRole;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
 @Entity
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 @Table(name = "users")
 @Getter
 @Setter
-public class UserEntity implements UserDetails {
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
+public class UserEntity extends SoftDeleteEntity implements UserDetails {
 
-    @Id
-    @UuidGenerator
-    private UUID id;
+    @Getter(AccessLevel.NONE)
+    @Column(name = "username", nullable = false, unique = true, length = 50)
+    private String username;
 
+    @Column(name = "password_hash", nullable = false, length = 255)
+    private String passwordHash;
+
+    @Column(name = "full_name", length = 100)
     private String fullName;
 
-    private String email;
-
-    @Column(nullable = false)
+    @Column(name = "phone", length = 20)
     private String phone;
 
-    @Column(nullable = false)
-    private String password;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private UserRole role;
+
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private boolean active = true;
+
+    @Column(name = "is_blocked", nullable = false)
+    @Builder.Default
+    private boolean blocked = false;
+
+    @Column(name = "blocked_until")
+    private LocalDateTime blockedUntil;
+
+    @Column(name = "block_reason", columnDefinition = "TEXT")
+    private String blockReason;
+
+    @Column(name = "failed_login_count", nullable = false)
+    @Builder.Default
+    private short failedLoginCount = 0;
+
+    @Column(name = "last_failed_login_at")
+    private LocalDateTime lastFailedLoginAt;
+
+    @Column(name = "workshop_id")
+    private UUID workshopId;
 
     @Enumerated(EnumType.STRING)
-    private Role role;
+    @Column(name = "pay_type")
+    private PayType payType;
 
-    @CreationTimestamp
-    private LocalDateTime createdAt;
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    @Column(name = "hourly_rate", precision = 12, scale = 2)
+    private BigDecimal hourlyRate;
 
-    private UUID updatedBy;
+    @Column(name = "daily_rate", precision = 12, scale = 2)
+    private BigDecimal dailyRate;
 
-    @Enumerated(EnumType.STRING)
-    private Status status;
+    @Column(name = "daily_hours_target", precision = 4, scale = 2, nullable = false)
+    @Builder.Default
+    private BigDecimal dailyHoursTarget = new BigDecimal("8.0");
 
-    @Column(nullable = false)
-    private int roleLevel;
+    @Column(name = "commission_pct", precision = 5, scale = 2)
+    private BigDecimal commissionPct;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "user_image_id")
-    private ImageEntity userImage;
+    @Column(name = "is_hybrid_pay", nullable = false)
+    @Builder.Default
+    private boolean hybridPay = false;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -78,28 +93,22 @@ public class UserEntity implements UserDetails {
     }
 
     @Override
-    public boolean isAccountNonExpired() {
-        return UserDetails.super.isAccountNonExpired();
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return UserDetails.super.isAccountNonLocked();
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return UserDetails.super.isCredentialsNonExpired();
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return UserDetails.super.isEnabled();
+    public String getPassword() {
+        return passwordHash;
     }
 
     @Override
     public String getUsername() {
-        return this.phone;
+        return username;
     }
 
+    @Override
+    public boolean isAccountNonLocked() {
+        return !blocked;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return active && getDeletedAt() == null;
+    }
 }

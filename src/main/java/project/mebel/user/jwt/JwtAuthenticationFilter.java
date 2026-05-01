@@ -13,7 +13,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import project.mebel.user.enums.Status;
 import project.mebel.user.UserEntity;
 import project.mebel.user.UserRepository;
 
@@ -39,13 +38,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        jwt = authHeader.substring(7); // "Bearer " ni olib tashlaymiz
+        jwt = authHeader.substring(7);
 
         try {
-            String phone = jwtService.extractPhone(jwt);
+            String username = jwtService.extractUsername(jwt);
 
-            if (phone != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserEntity userDetails = userRepository.findByPhoneAndStatusIsNot(phone, Status.DELETED).orElse(null);
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserEntity userDetails = userRepository.findByUsernameAndDeletedAtIsNull(username).orElse(null);
 
                 if (userDetails != null && jwtService.isTokenValid(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken =

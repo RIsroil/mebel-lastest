@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="010-create-template-materials-table" author="Isroil">
+        <createTable tableName="template_materials">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="template_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="warehouse_item_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity_needed" type="DECIMAL(12,3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="notes" type="TEXT"/>
+            <column name="created_by" type="UUID"/>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_by" type="UUID"/>
+            <column name="updated_at" type="TIMESTAMP"/>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="template_materials" baseColumnNames="template_id"
+                constraintName="fk_template_materials_template"
+                referencedTableName="furniture_templates" referencedColumnNames="id"
+                onDelete="CASCADE"/>
+        <addForeignKeyConstraint
+                baseTableName="template_materials" baseColumnNames="warehouse_item_id"
+                constraintName="fk_template_materials_item"
+                referencedTableName="warehouse_items" referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>

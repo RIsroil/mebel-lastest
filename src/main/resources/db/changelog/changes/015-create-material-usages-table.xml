@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="015-create-material-usages-table" author="Isroil">
+        <createTable tableName="material_usages">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="furniture_order_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="warehouse_item_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity_used" type="DECIMAL(12,3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unit_price_at_time" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_cost" type="DECIMAL(14,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="given_by" type="UUID"/>
+            <column name="given_at" type="TIMESTAMP"/>
+            <column name="notes" type="TEXT"/>
+            <column name="created_by" type="UUID"/>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_by" type="UUID"/>
+            <column name="updated_at" type="TIMESTAMP"/>
+            <column name="deleted_by" type="UUID"/>
+            <column name="deleted_at" type="TIMESTAMP"/>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="material_usages" baseColumnNames="furniture_order_id"
+                constraintName="fk_material_usages_order"
+                referencedTableName="furniture_orders" referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="material_usages" baseColumnNames="warehouse_item_id"
+                constraintName="fk_material_usages_item"
+                referencedTableName="warehouse_items" referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="005-users-fk-created-by" author="Isroil">
+        <addForeignKeyConstraint
+                baseTableName="users" baseColumnNames="created_by"
+                constraintName="fk_users_created_by"
+                referencedTableName="users" referencedColumnNames="id"
+                onDelete="SET NULL"/>
+    </changeSet>
+
+    <changeSet id="005-users-fk-updated-by" author="Isroil">
+        <addForeignKeyConstraint
+                baseTableName="users" baseColumnNames="updated_by"
+                constraintName="fk_users_updated_by"
+                referencedTableName="users" referencedColumnNames="id"
+                onDelete="SET NULL"/>
+    </changeSet>
+
+    <changeSet id="005-users-fk-deleted-by" author="Isroil">
+        <addForeignKeyConstraint
+                baseTableName="users" baseColumnNames="deleted_by"
+                constraintName="fk_users_deleted_by"
+                referencedTableName="users" referencedColumnNames="id"
+                onDelete="SET NULL"/>
+    </changeSet>
+
+</databaseChangeLog>

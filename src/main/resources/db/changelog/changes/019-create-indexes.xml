@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- users indexes -->
+    <changeSet id="019-idx-users-workshop-deleted" author="Isroil">
+        <createIndex tableName="users" indexName="idx_users_workshop_deleted">
+            <column name="workshop_id"/>
+            <column name="deleted_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-idx-users-role-deleted" author="Isroil">
+        <createIndex tableName="users" indexName="idx_users_role_deleted">
+            <column name="role"/>
+            <column name="deleted_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- login_attempts indexes -->
+    <changeSet id="019-idx-login-attempts-user-at" author="Isroil">
+        <createIndex tableName="login_attempts" indexName="idx_login_attempts_user_at">
+            <column name="user_id"/>
+            <column name="attempted_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-idx-login-attempts-ip-at" author="Isroil">
+        <createIndex tableName="login_attempts" indexName="idx_login_attempts_ip_at">
+            <column name="ip_address"/>
+            <column name="attempted_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- user_sessions indexes -->
+    <changeSet id="019-idx-user-sessions-user-active" author="Isroil">
+        <createIndex tableName="user_sessions" indexName="idx_user_sessions_user_active">
+            <column name="user_id"/>
+            <column name="is_active"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- daily_attendance indexes -->
+    <changeSet id="019-idx-attendance-locked-deadline" author="Isroil">
+        <createIndex tableName="daily_attendance" indexName="idx_attendance_locked_deadline">
+            <column name="hours_locked"/>
+            <column name="hours_deadline"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-idx-attendance-workshop-date" author="Isroil">
+        <createIndex tableName="daily_attendance" indexName="idx_attendance_workshop_date">
+            <column name="workshop_id"/>
+            <column name="work_date"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- warehouse_items indexes -->
+    <changeSet id="019-idx-warehouse-items-workshop-deleted" author="Isroil">
+        <createIndex tableName="warehouse_items" indexName="idx_warehouse_items_workshop_deleted">
+            <column name="workshop_id"/>
+            <column name="deleted_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- warehouse_transactions indexes -->
+    <changeSet id="019-idx-warehouse-tx-item-created" author="Isroil">
+        <createIndex tableName="warehouse_transactions" indexName="idx_warehouse_tx_item_created">
+            <column name="item_id"/>
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-idx-warehouse-tx-order" author="Isroil">
+        <createIndex tableName="warehouse_transactions" indexName="idx_warehouse_tx_order">
+            <column name="furniture_order_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- furniture_orders indexes -->
+    <changeSet id="019-idx-furniture-orders-workshop-status" author="Isroil">
+        <createIndex tableName="furniture_orders" indexName="idx_furniture_orders_workshop_status">
+            <column name="workshop_id"/>
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-idx-furniture-orders-sold-at" author="Isroil">
+        <createIndex tableName="furniture_orders" indexName="idx_furniture_orders_sold_at">
+            <column name="sold_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- furniture_assignments indexes -->
+    <changeSet id="019-idx-furniture-assignments-order-worker" author="Isroil">
+        <createIndex tableName="furniture_assignments" indexName="idx_furniture_assignments_order_worker">
+            <column name="furniture_order_id"/>
+            <column name="worker_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-idx-furniture-assignments-worker-active" author="Isroil">
+        <createIndex tableName="furniture_assignments" indexName="idx_furniture_assignments_worker_active">
+            <column name="worker_id"/>
+            <column name="is_active"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- material_usages indexes -->
+    <changeSet id="019-idx-material-usages-order" author="Isroil">
+        <createIndex tableName="material_usages" indexName="idx_material_usages_order">
+            <column name="furniture_order_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-idx-material-usages-item" author="Isroil">
+        <createIndex tableName="material_usages" indexName="idx_material_usages_item">
+            <column name="warehouse_item_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- earnings indexes -->
+    <changeSet id="019-idx-earnings-worker-date" author="Isroil">
+        <createIndex tableName="earnings" indexName="idx_earnings_worker_date">
+            <column name="worker_id"/>
+            <column name="earn_date"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-idx-earnings-worker-paid" author="Isroil">
+        <createIndex tableName="earnings" indexName="idx_earnings_worker_paid">
+            <column name="worker_id"/>
+            <column name="is_paid"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="019-idx-earnings-order" author="Isroil">
+        <createIndex tableName="earnings" indexName="idx_earnings_order">
+            <column name="furniture_order_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- bonuses indexes -->
+    <changeSet id="019-idx-bonuses-worker-date" author="Isroil">
+        <createIndex tableName="bonuses" indexName="idx_bonuses_worker_date">
+            <column name="worker_id"/>
+            <column name="bonus_date"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Partial indexes for soft-deleted tables (deleted_at IS NULL) -->
+    <changeSet id="019-idx-partial-users-active" author="Isroil" dbms="postgresql">
+        <sql>CREATE INDEX idx_users_active ON users (id) WHERE deleted_at IS NULL</sql>
+    </changeSet>
+
+    <changeSet id="019-idx-partial-workshops-active" author="Isroil" dbms="postgresql">
+        <sql>CREATE INDEX idx_workshops_active ON workshops (id) WHERE deleted_at IS NULL</sql>
+    </changeSet>
+
+    <changeSet id="019-idx-partial-warehouse-items-active" author="Isroil" dbms="postgresql">
+        <sql>CREATE INDEX idx_warehouse_items_active ON warehouse_items (id) WHERE deleted_at IS NULL</sql>
+    </changeSet>
+
+    <changeSet id="019-idx-partial-furniture-orders-active" author="Isroil" dbms="postgresql">
+        <sql>CREATE INDEX idx_furniture_orders_active ON furniture_orders (id) WHERE deleted_at IS NULL</sql>
+    </changeSet>
+
+</databaseChangeLog>

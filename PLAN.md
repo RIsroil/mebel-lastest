@@ -1,14 +1,14 @@
 # MEBEL LOYIHASI — IMPLEMENTATION PLAN
-Sana: 2026-05-01  |  Holat: BOSHLANDI
+Sana: 2026-05-01  |  Holat: 1-5 BOSQICH BAJARILDI
 
 ---
 
-## QAYERDA TO'XTADIK (Ertaga shu yerdan davom ettiring)
+## QAYERDA TO'XTADIK
 
-**KEYINGI QADAM → 2-BOSQICH: Abstract entity classlarini yaratish**
+**KEYINGI QADAM → 6-BOSQICH (davom): Warehouse, Furniture, Attendance, Earning modullari**
 
-Hozircha faqat tahlil va reja tugallandi. Birorta Java fayl hali yozilmagan.
-Ertaga `2-BOSQICH` dan boshing.
+Auth (login/logout/createWorker) va Workshop CRUD tayyor.
+Keyingi: WarehouseService → FurnitureService → AttendanceService → EarningService
 
 ---
 
@@ -16,28 +16,37 @@ Ertaga `2-BOSQICH` dan boshing.
 
 ```
 src/main/java/project/mebel/
-├── config/          → JacksonConfig, SecurityConfig, SwaggerConfig, MessageService
-├── exception/       → GlobalExceptionHandler, ApiException, ResponseWrapper...
-├── minio/           → MinioConfig, MinioStorageService
-│   └── objects/     → ImageEntity (mavjud — lekin DD ga to'g'ri kelmaydi)
-├── user/            → UserEntity (mavjud — lekin yangi DD ga to'g'ri kelmaydi)
-│   ├── enums/       → Role.java, Status.java
-│   └── jwt/         → JwtAuthenticationFilter, JwtService
-└── utils/           → Utils.java
+├── common/
+│   ├── entity/         ✅ BaseEntity, CreatedAuditEntity, MutableAuditEntity, SoftDeleteEntity
+│   └── enums/          ✅ UserRole, PayType, UnitType, TransactionType, FurnitureStatus, EarnType
+├── config/             → JacksonConfig, SecurityConfig (yangilandi), SwaggerConfig, MessageService
+├── exception/          → GlobalExceptionHandler, ApiException, ResponseWrapper...
+├── minio/              → MinioConfig, MinioStorageService
+│   └── objects/        → ImageEntity (eski — ishlatilmaydi), ImageService va ImageEntityService
+├── user/               ✅ UserEntity (qayta yozildi), UserRepository (yangilandi)
+│   └── jwt/            ✅ JwtService (yangilandi), JwtAuthenticationFilter (yangilandi)
+├── workshop/           ✅ WorkshopEntity
+├── auth/               ✅ LoginAttemptEntity, UserSessionEntity
+├── warehouse/          ✅ WarehouseItemEntity, WarehouseTransactionEntity
+├── furniture/          ✅ FurnitureTemplateEntity, TemplateMaterialEntity, FurnitureOrderEntity,
+│                          FurnitureImageEntity, FurnitureAssignmentEntity, MaterialUsageEntity
+├── attendance/         ✅ DailyAttendanceEntity
+├── earning/            ✅ EarningEntity, BonusEntity
+└── utils/              → Utils.java
 ```
 
-**Mavjud UserEntity muammolari (DD bilan farqi):**
-- `email` bor, lekin DD da yo'q (o'rniga `username VARCHAR(50)`)
-- `createdBy` yo'q (faqat `createdAt`, `updatedAt`, `updatedBy` bor)
-- `deletedAt`, `deletedBy` yo'q
-- `is_blocked`, `failed_login_count`, `workshop_id`, `pay_type` va boshqa ko'p ustunlar yo'q
-- `Status` enum o'rniga `is_active + is_blocked` bo'lishi kerak
+### ⚠️ MUHIM: Database reset kerak
+Eski migrationlar (001-create-users-table.xml, 003_create_images_table.xml, 004_add_image_id_to_user-entity.xml)
+master.xml dan o'chirildi va yangi to'liq schema yaratildi.
+Mavjud local DB ni reset qiling:
+```sql
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+```
 
 ---
 
-## 1-BOSQICH: DD TAHLILI — AUDIT COLUMNLAR
-
-### Jadvallarni audit turiga ko'ra guruhlash:
+## 1-BOSQICH: DD TAHLILI — AUDIT COLUMNLAR ✅
 
 | Tur | Jadvallar |
 |-----|-----------|
@@ -45,11 +54,11 @@ src/main/java/project/mebel/
 | **Created + Updated** (soft delete yo'q) | `daily_attendance`, `furniture_assignments`, `template_materials`, `earnings` |
 | **Created + Deleted** (update yo'q) | `furniture_images` |
 | **Created only** (insert-only log) | `warehouse_transactions` |
-| **Maxsus** (mos kelmaydi) | `login_attempts`, `user_sessions` |
+| **Maxsus** | `login_attempts`, `user_sessions` |
 
 ---
 
-## 2-BOSQICH: ABSTRACT ENTITY HIERARCHY
+## 2-BOSQICH: ABSTRACT ENTITY HIERARCHY ✅
 
 ### Paket: `project.mebel.common.entity`
 
@@ -57,108 +66,89 @@ src/main/java/project/mebel/
 BaseEntity
     └── CreatedAuditEntity      (created_at, created_by)
             └── MutableAuditEntity   (+ updated_at, updated_by)
-                    └── SoftDeleteEntity  (+ deleted_at, deleted_by)
+                    └── SoftDeleteEntity  (+ deleted_at, deleted_by) [@SQLRestriction]
 ```
-
-### Har bir class nimani qamrab oladi:
-
-**`BaseEntity`** (`@MappedSuperclass`)
-```java
-@Id @UuidGenerator
-UUID id;
-```
-
-**`CreatedAuditEntity`** extends BaseEntity
-```java
-@CreationTimestamp
-LocalDateTime createdAt;
-
-@Column(name = "created_by")
-UUID createdBy;  // → users.id (nullable)
-```
-Ishlatiladi: `warehouse_transactions`
-
-**`MutableAuditEntity`** extends CreatedAuditEntity
-```java
-@UpdateTimestamp
-LocalDateTime updatedAt;
-
-@Column(name = "updated_by")
-UUID updatedBy;  // → users.id (nullable)
-```
-Ishlatiladi: `daily_attendance`, `furniture_assignments`, `template_materials`, `earnings`
-
-**`SoftDeleteEntity`** extends MutableAuditEntity
-```java
-LocalDateTime deletedAt;   // Soft delete vaqti (null = faol)
-
-@Column(name = "deleted_by")
-UUID deletedBy;  // → users.id (nullable)
-```
-Ishlatiladi: `users`, `workshops`, `warehouse_items`, `furniture_orders`,
-             `material_usages`, `furniture_templates`, `bonuses`, `furniture_images`
-
-> **Eslatma:** `furniture_images` da `updated_at/by` ishlatilmaydi (upload va delete only),
-> lekin `SoftDeleteEntity` dan extend qilish mumkin — faqat null qoladi.
-
-**Maxsus holat:** `login_attempts`, `user_sessions` → faqat `BaseEntity` dan extend qiladi
-(ularda audit columns yo'q yoki boshqacha struktura)
 
 ---
 
-## 3-BOSQICH: ENTITY CLASSLARINI QAYTA YOZISH
+## 3-BOSQICH: ENTITY CLASSLARINI QAYTA YOZISH ✅
 
-DD ga mos keladigan yangi entitylar (migration ketma-ketligiga ko'ra):
-
-| # | Entity class | Package | Extends | Eslatma |
+| # | Entity class | Package | Extends | Holat |
 |---|---|---|---|---|
-| 1 | `UserEntity` | `user` | `SoftDeleteEntity` | To'liq qayta yozish kerak |
-| 2 | `WorkshopEntity` | `workshop` | `SoftDeleteEntity` | Yangi |
-| 3 | `LoginAttemptEntity` | `auth` | `BaseEntity` | Yangi (insert-only) |
-| 4 | `UserSessionEntity` | `auth` | `BaseEntity` | Yangi |
-| 5 | `WarehouseItemEntity` | `warehouse` | `SoftDeleteEntity` | Yangi |
-| 6 | `FurnitureTemplateEntity` | `furniture` | `SoftDeleteEntity` | Yangi |
-| 7 | `TemplateMaterialEntity` | `furniture` | `MutableAuditEntity` | Yangi |
-| 8 | `FurnitureOrderEntity` | `furniture` | `SoftDeleteEntity` | Yangi |
-| 9 | `FurnitureImageEntity` | `furniture` | `SoftDeleteEntity` | Mavjud ImageEntity ni qayta yozish |
-| 10 | `FurnitureAssignmentEntity` | `furniture` | `MutableAuditEntity` | Yangi |
-| 11 | `WarehouseTransactionEntity` | `warehouse` | `CreatedAuditEntity` | Yangi (insert-only) |
-| 12 | `MaterialUsageEntity` | `furniture` | `SoftDeleteEntity` | Yangi |
-| 13 | `DailyAttendanceEntity` | `attendance` | `MutableAuditEntity` | Yangi |
-| 14 | `EarningEntity` | `earning` | `MutableAuditEntity` | Yangi |
-| 15 | `BonusEntity` | `earning` | `SoftDeleteEntity` | Yangi |
+| 1 | `UserEntity` | `user` | `SoftDeleteEntity` | ✅ Qayta yozildi |
+| 2 | `WorkshopEntity` | `workshop` | `SoftDeleteEntity` | ✅ Yaratildi |
+| 3 | `LoginAttemptEntity` | `auth` | `BaseEntity` | ✅ Yaratildi |
+| 4 | `UserSessionEntity` | `auth` | `BaseEntity` | ✅ Yaratildi |
+| 5 | `WarehouseItemEntity` | `warehouse` | `SoftDeleteEntity` | ✅ Yaratildi |
+| 6 | `FurnitureTemplateEntity` | `furniture` | `SoftDeleteEntity` | ✅ Yaratildi |
+| 7 | `TemplateMaterialEntity` | `furniture` | `MutableAuditEntity` | ✅ Yaratildi |
+| 8 | `FurnitureOrderEntity` | `furniture` | `SoftDeleteEntity` | ✅ Yaratildi |
+| 9 | `FurnitureImageEntity` | `furniture` | `SoftDeleteEntity` | ✅ Yaratildi |
+| 10 | `FurnitureAssignmentEntity` | `furniture` | `MutableAuditEntity` | ✅ Yaratildi |
+| 11 | `WarehouseTransactionEntity` | `warehouse` | `CreatedAuditEntity` | ✅ Yaratildi |
+| 12 | `MaterialUsageEntity` | `furniture` | `SoftDeleteEntity` | ✅ Yaratildi |
+| 13 | `DailyAttendanceEntity` | `attendance` | `MutableAuditEntity` | ✅ Yaratildi |
+| 14 | `EarningEntity` | `earning` | `MutableAuditEntity` | ✅ Yaratildi |
+| 15 | `BonusEntity` | `earning` | `SoftDeleteEntity` | ✅ Yaratildi |
 
 ---
 
-## 4-BOSQICH: ENUM CLASSLAR
+## 4-BOSQICH: ENUM CLASSLAR ✅
 
 Package: `project.mebel.common.enums`
 
-| Enum class | Qiymatlar |
+| Enum class | Holat |
 |---|---|
-| `UserRole` | `ADMIN`, `OWNER`, `WORKER` |
-| `PayType` | `HOURLY`, `DAILY`, `COMMISSION`, `HYBRID` |
-| `UnitType` | `KG`, `GRAM`, `LITRE`, `ML`, `PIECE`, `METER`, `CM`, `M2`, `M3` |
-| `TransactionType` | `IN`, `OUT`, `ADJUSTMENT` |
-| `FurnitureStatus` | `DRAFT`, `IN_PROGRESS`, `COMPLETED`, `SOLD`, `CANCELLED` |
-| `EarnType` | `DAILY_WAGE`, `HOURLY_WAGE`, `COMMISSION`, `BONUS` |
+| `UserRole` (ADMIN, OWNER, WORKER) | ✅ |
+| `PayType` (HOURLY, DAILY, COMMISSION, HYBRID) | ✅ |
+| `UnitType` (KG, GRAM, LITRE, ML, PIECE, METER, CM, M2, M3) | ✅ |
+| `TransactionType` (IN, OUT, ADJUSTMENT) | ✅ |
+| `FurnitureStatus` (DRAFT, IN_PROGRESS, COMPLETED, SOLD, CANCELLED) | ✅ |
+| `EarnType` (DAILY_WAGE, HOURLY_WAGE, COMMISSION, BONUS) | ✅ |
 
-> Mavjud `Role.java` va `Status.java` → `UserRole` ga almashtiriladi, `Status` o'chiriladi
+> Mavjud `Role.java` va `Status.java` → `UserRole` ishlatiladi (eski fayllar o'chirilmadi lekin ishlatilmaydi)
 
 ---
 
-## 5-BOSQICH: LIQUIBASE MIGRATIONS (DD §06 tartibida)
+## 5-BOSQICH: LIQUIBASE MIGRATIONS ✅
 
 ```
-001-create-users-table.xml           ← mavjud, lekin qayta yozish kerak
-002-create-workshops-table.xml       ← yangi
-003-alter-users-add-workshop-fk.xml  ← yangi
-004-alter-users-add-self-fks.xml     ← yangi
-005-create-login-attempts-table.xml  ← yangi
-006-create-user-sessions-table.xml   ← yangi
-007-create-warehouse-items-table.xml ← yangi
-... (davom etadi)
+000-create-postgis-extension.xml     ← mavjud, o'zgarmagan
+001-create-enums.xml                 ✅ yangi — 6 ta PostgreSQL ENUM
+002-create-users-table.xml           ✅ yangi — to'liq users jadvali
+003-create-workshops-table.xml       ✅ yangi
+004-alter-users-add-workshop-fk.xml  ✅ yangi
+005-alter-users-add-self-fks.xml     ✅ yangi
+006-create-login-attempts-table.xml  ✅ yangi
+007-create-user-sessions-table.xml   ✅ yangi
+008-create-warehouse-items-table.xml ✅ yangi
+009-create-furniture-templates-table.xml ✅ yangi
+010-create-template-materials-table.xml  ✅ yangi
+011-create-furniture-orders-table.xml    ✅ yangi
+012-create-furniture-images-table.xml    ✅ yangi
+013-create-furniture-assignments-table.xml ✅ yangi
+014-create-warehouse-transactions-table.xml ✅ yangi
+015-create-material-usages-table.xml     ✅ yangi
+016-create-daily-attendance-table.xml    ✅ yangi
+017-create-earnings-table.xml            ✅ yangi
+018-create-bonuses-table.xml             ✅ yangi
+019-create-indexes.xml                   ✅ yangi — barcha indekslar
 ```
+
+---
+
+## 6-BOSQICH: REPOSITORY VA SERVICE QATLAMI (KEYINGI)
+
+Har bir modul uchun:
+
+| Modul | Repository | Service Interface | ServiceImpl | Controller |
+|---|---|---|---|---|
+| user/auth | UserRepository ✅ | AuthService ✅ | AuthServiceImpl ✅ | AuthController ✅ |
+| workshop | WorkshopRepository ✅ | WorkshopService ✅ | WorkshopServiceImpl ✅ | WorkshopController ✅ |
+| warehouse | WarehouseItemRepository, WarehouseTransactionRepository | WarehouseService | - | WarehouseController |
+| furniture | FurnitureOrderRepository, FurnitureImageRepository... | FurnitureService | - | FurnitureController |
+| attendance | DailyAttendanceRepository | AttendanceService | - | AttendanceController |
+| earning | EarningRepository, BonusRepository | EarningService | - | EarningController |
 
 ---
 
@@ -167,20 +157,8 @@ Package: `project.mebel.common.enums`
 | Masala | Qaror | Sababi |
 |---|---|---|
 | `@MappedSuperclass` vs `@Inheritance` | `@MappedSuperclass` | Har bir jadval alohida, umumiy jadval kerak emas |
-| `createdBy/updatedBy/deletedBy` turi | `UUID` (FK siz) | Self-referencing FK sikl muammosini oldini oladi; application layer tekshiradi |
-| Vaqt turi | `LocalDateTime` (UTC) | `Instant` emas, chunki PostgreSQL timestamp UTC saqlanadi |
-| Soft delete filter | `@Where(clause = "deleted_at IS NULL")` | Har bir so'rovda qo'lda filter yozmaslik uchun |
-
----
-
-## KEYINGI SESSIYA UCHUN ESLATMA
-
-**Boshlash tartibi:**
-1. `project.mebel.common.entity` packageini yarating
-2. `BaseEntity.java` → `CreatedAuditEntity.java` → `MutableAuditEntity.java` → `SoftDeleteEntity.java` ketma-ket
-3. `project.mebel.common.enums` da 6 ta enum class
-4. `UserEntity` ni qayta yozish (eng murakkab — `UserDetails` implements qiladi)
-5. Qolgan entitylar
-
-**Hozir mavjud kod bilan muammo:** Mavjud `UserEntity` va `ImageEntity` yangi DD ga mos kelmaydi.
-Ularni to'liq qayta yozish kerak bo'ladi.
+| `createdBy/updatedBy/deletedBy` turi | `UUID` (FK siz) | Self-referencing FK sikl muammosini oldini oladi |
+| Vaqt turi | `LocalDateTime` (UTC) | PostgreSQL timestamp UTC saqlanadi |
+| Soft delete filter | `@SQLRestriction("deleted_at IS NULL")` | Hibernate 6.x compatible |
+| JWT subject | `username` (eski: `phone`) | DD da login identifier = username |
+| Builder | `@SuperBuilder` | Inheritance chain uchun Lombok SuperBuilder kerak |

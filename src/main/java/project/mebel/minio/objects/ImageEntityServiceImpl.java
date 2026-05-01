@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import project.mebel.utils.Utils;
-import project.mebel.user.enums.Role;
+import project.mebel.common.enums.UserRole;
 import project.mebel.exception.ApiException;
 import project.mebel.minio.MinioStorageService;
 import project.mebel.minio.objects.enums.ImageStatus;
@@ -63,7 +63,7 @@ public class ImageEntityServiceImpl implements ImageEntityService {
     @Transactional
     public void cleanupUnusedImages(Principal principal) {
         UserEntity user = utils.getUserFromPrincipal(principal);
-        if (user.getRole()!= Role.ADMIN) {
+        if (user.getRole() != UserRole.ADMIN) {
             throw ApiException.forbidden("access.denied");
         }
         log.info("Starting cleanup of unused images...");

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import project.mebel.utils.Utils;
-import project.mebel.user.enums.Role;
+import project.mebel.common.enums.UserRole;
 import project.mebel.exception.ApiException;
 import project.mebel.minio.MinioStorageService;
 import project.mebel.minio.objects.enums.ImageStatus;
@@ -55,7 +55,7 @@ public class ImageServiceImpl implements ImageService {
     @Transactional(readOnly = true)
     public Page<ImageResponse> getImages(UUID id, ImageStatus status, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable, Principal principal) {
         UserEntity user = utils.getUserFromPrincipal(principal);
-        if (user.getRole() != Role.ADMIN) {
+        if (user.getRole() != UserRole.ADMIN) {
             throw ApiException.forbidden("Only ADMIN can view images");
         }
         Page<ImageEntity> images = imageRepository.findImagesWithFilters(id, status, startDate, endDate, pageable);
@@ -66,7 +66,7 @@ public class ImageServiceImpl implements ImageService {
     @Transactional
     public int hardDeleteImages(UUID id, Principal principal) {
         UserEntity user = utils.getUserFromPrincipal(principal);
-        if (user.getRole() != Role.ADMIN) {
+        if (user.getRole() != UserRole.ADMIN) {
             throw ApiException.forbidden("Only ADMIN can delete images");
         }
         if (id != null) {

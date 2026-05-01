@@ -5,9 +5,24 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <include file="changes/000-create-postgis-extension.xml" relativeToChangelogFile="true"/>
-    <include file="changes/001-create-users-table.xml" relativeToChangelogFile="true"/>
-    <include file="changes/003_create_images_table.xml" relativeToChangelogFile="true"/>
-    <include file="changes/004_add_image_id_to_user-entity.xml" relativeToChangelogFile="true"/>
+    <include file="changes/001-create-enums.xml" relativeToChangelogFile="true"/>
+    <include file="changes/002-create-users-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/003-create-workshops-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/004-alter-users-add-workshop-fk.xml" relativeToChangelogFile="true"/>
+    <include file="changes/005-alter-users-add-self-fks.xml" relativeToChangelogFile="true"/>
+    <include file="changes/006-create-login-attempts-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/007-create-user-sessions-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/008-create-warehouse-items-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/009-create-furniture-templates-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/010-create-template-materials-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/011-create-furniture-orders-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/012-create-furniture-images-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/013-create-furniture-assignments-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/014-create-warehouse-transactions-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/015-create-material-usages-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/016-create-daily-attendance-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/017-create-earnings-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/018-create-bonuses-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/019-create-indexes.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

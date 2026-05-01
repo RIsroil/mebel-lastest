@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="014-create-warehouse-transactions-table" author="Isroil">
+        <createTable tableName="warehouse_transactions">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="item_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="workshop_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="transaction_type" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity" type="DECIMAL(12,3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unit_price" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_cost" type="DECIMAL(14,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="qty_before" type="DECIMAL(12,3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="qty_after" type="DECIMAL(12,3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="price_before" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="price_after" type="DECIMAL(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="supplier_name" type="VARCHAR(150)"/>
+            <column name="invoice_number" type="VARCHAR(100)"/>
+            <column name="furniture_order_id" type="UUID"/>
+            <column name="notes" type="TEXT"/>
+            <column name="created_by" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="warehouse_transactions" baseColumnNames="item_id"
+                constraintName="fk_warehouse_transactions_item"
+                referencedTableName="warehouse_items" referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="warehouse_transactions" baseColumnNames="workshop_id"
+                constraintName="fk_warehouse_transactions_workshop"
+                referencedTableName="workshops" referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="warehouse_transactions" baseColumnNames="furniture_order_id"
+                constraintName="fk_warehouse_transactions_order"
+                referencedTableName="furniture_orders" referencedColumnNames="id"
+                onDelete="SET NULL"/>
+    </changeSet>
+
+</databaseChangeLog>
