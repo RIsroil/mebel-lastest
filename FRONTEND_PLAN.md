@@ -247,7 +247,7 @@ npm install -D @types/node
 
 ---
 
-## BOSQICH 6 — Warehouse (06) + Transaksiya Modal (14) ⬜
+## BOSQICH 6 — Warehouse (06) + Transaksiya Modal (14) ✅
 
 **API:** GET/POST/PUT/DELETE /api/warehouse/items, POST /api/warehouse/items/{id}/transactions  
 **Fayllar:**
@@ -262,7 +262,7 @@ npm install -D @types/node
 
 ---
 
-## BOSQICH 7 — Workers List (07) + Create Modal (13) ⬜
+## BOSQICH 7 — Workers List (07) + Create Modal (13) ✅
 
 **API:** GET /api/auth/workers, POST /api/auth/workers, DELETE /api/auth/id  
 **Fayllar:**
@@ -378,8 +378,8 @@ npm install -D @types/node
 
 ## Joriy holat
 
-**Bajarilgan:** Bosqich 1 ✅ + Bosqich 2 ✅  
-**Keyingi qadam:** BOSQICH 3 — AppLayout (Sidebar + Topbar) + barcha reusable UI komponentlar
+**Bajarilgan:** Bosqich 1 ✅ + Bosqich 2 ✅ + Bosqich 3 ✅ + Bosqich 4 ✅ + Bosqich 5 ✅ + Bosqich 6 ✅ + Bosqich 7 ✅  
+**Keyingi qadam:** BOSQICH 8 — Earnings Management (EarningsPage + BonusModal)
 
 ---
 
