@@ -1,15 +1,21 @@
 import { Outlet } from 'react-router-dom'
+import { TopbarProvider } from '@/context/TopbarContext'
+import Sidebar from '@/components/layout/Sidebar'
+import Topbar from '@/components/layout/Topbar'
+import styles from './AppLayout.module.css'
 
-// TODO: Bosqich 3 da Sidebar va Topbar qo'shiladi
 const AppLayout = () => (
-  <div style={{ display: 'flex', height: '100%', background: 'var(--bg)' }}>
-    <aside style={{ width: 'var(--sidebar-w)', background: 'var(--text)', flexShrink: 0 }}>
-      {/* Sidebar — Bosqich 3 */}
-    </aside>
-    <main style={{ flex: 1, overflow: 'auto' }}>
-      <Outlet />
-    </main>
-  </div>
+  <TopbarProvider>
+    <div className={styles.shell}>
+      <Sidebar />
+      <div className={styles.main}>
+        <Topbar />
+        <div className={styles.content}>
+          <Outlet />
+        </div>
+      </div>
+    </div>
+  </TopbarProvider>
 )
 
 export default AppLayout

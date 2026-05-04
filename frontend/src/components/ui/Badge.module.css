@@ -1,0 +1,48 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Furniture / Order statuses */
+.DRAFT      { background: var(--surface2); color: var(--text3); border: 1px solid var(--border2); }
+.DRAFT::before      { background: var(--text3); }
+
+.IN_PROGRESS { background: var(--blue-bg); color: var(--blue); }
+.IN_PROGRESS::before { background: var(--blue); }
+
+.COMPLETED  { background: var(--green-bg); color: var(--green); }
+.COMPLETED::before  { background: var(--green); }
+
+.SOLD       { background: var(--accent-bg); color: var(--accent); }
+.SOLD::before       { background: var(--accent); }
+
+.CANCELLED  { background: var(--red-bg); color: var(--red); }
+.CANCELLED::before  { background: var(--red); }
+
+/* Earning / Payment statuses */
+.PAID       { background: var(--green-bg); color: var(--green); }
+.PAID::before       { background: var(--green); }
+
+.UNPAID     { background: var(--red-bg); color: var(--red); }
+.UNPAID::before     { background: var(--red); }
+
+/* User statuses */
+.ACTIVE     { background: var(--green-bg); color: var(--green); }
+.ACTIVE::before     { background: var(--green); }
+
+.BLOCKED    { background: var(--red-bg); color: var(--red); }
+.BLOCKED::before    { background: var(--red); }

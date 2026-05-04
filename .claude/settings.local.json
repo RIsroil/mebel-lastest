@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "PowerShell(Get-ChildItem C:\\\\Users\\\\isroi\\\\IdeaProjects\\\\mebel\\\\src -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object FullName)",
-      "Bash(mvnw.cmd compile *)"
+      "Bash(mvnw.cmd compile *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\isroi\\\\IdeaProjects\\\\mebel-lastest\\\\frontend\\\\src\" -Recurse | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\isroi\\\\IdeaProjects\\\\mebel-lastest\\\\frontend\\\\src\\\\\", \"\"\\) })",
+      "Bash(npm run *)"
     ]
   }
 }

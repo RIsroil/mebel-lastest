@@ -1,0 +1,23 @@
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.sm  { width: 28px; height: 28px; font-size: 11px; }
+.md  { width: 32px; height: 32px; font-size: 12px; }
+.lg  { width: 40px; height: 40px; font-size: 14px; }
+.xl  { width: 48px; height: 48px; font-size: 16px; }
+
+.owner  { background: var(--accent); }
+.worker { background: var(--green); }
+.admin  { background: var(--purple); }
+.default { background: var(--text3); }
