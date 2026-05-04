@@ -21,4 +21,7 @@ public interface AuthService {
     ResponseEntity<ApiResponseStructure<UserTokenResponse>> register(UserRegisterRequest request);
 
     ResponseEntity<ApiResponseStructure<Void>> deleteWorker(UUID id, Principal principal);
+
+    ResponseEntity<ApiResponseStructure<UserTokenResponse>> refreshToken(String refreshToken);
+
 }

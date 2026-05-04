@@ -153,6 +153,18 @@ public class AuthServiceImpl implements AuthService {
         return responseHelper.success("worker.created.successfully", toResponse(saved));
     }
 
+    @Override
+    public ResponseEntity<ApiResponseStructure<UserTokenResponse>> refreshToken(String refreshToken) {
+        String username = jwtService.extractUsername(refreshToken);
+        UserEntity user = userRepository.findByUsername(username);
+        if (!jwtService.isTokenValid(refreshToken, user)) {
+            throw ApiException.unauthorized("invalid.or.expired.refresh.token");
+        }
+        String newAccessToken = jwtService.generateAccessToken(user);
+        UserTokenResponse userResponse = new UserTokenResponse(newAccessToken, refreshToken);
+        return responseHelper.success("token.refreshed.successfully", userResponse);
+    }
+
     private UserResponse toResponse(UserEntity u) {
         WorkshopEntity workshopEntity = workshopRepository.findById(u.getWorkshopId()).orElseThrow(() -> ApiException.notFound("workshop.not.found"));
         return UserResponse.builder()

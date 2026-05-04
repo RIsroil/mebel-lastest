@@ -13,6 +13,7 @@ import project.mebel.auth.dto.LoginResponse;
 import project.mebel.auth.dto.UserRegisterRequest;
 import project.mebel.auth.dto.UserResponse;
 import project.mebel.auth.dto.UserTokenResponse;
+import project.mebel.exception.ApiException;
 import project.mebel.exception.ApiResponseStructure;
 
 import java.security.Principal;
@@ -49,5 +50,11 @@ public class AuthController {
     @Operation(summary = "Foydalanuvchini o'chirish (faqat OWNER)")
     public ResponseEntity<ApiResponseStructure<Void>> deleteWorker(@RequestParam UUID id, Principal principal) {
         return authService.deleteWorker(id, principal);
+    }
+
+    @PostMapping("/refresh-token")
+    @Operation(summary = "Refresh access token")
+    public ResponseEntity<ApiResponseStructure<UserResponse>> refresh(String refreshToken) {
+        return authService.refreshToken(refreshToken);
     }
 }
