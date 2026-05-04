@@ -1,0 +1,63 @@
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+}
+
+.wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+/* Ko'zcha tugmasi uchun o'ng padding */
+.input.withToggle { padding-right: 40px; }
+
+.input::placeholder { color: var(--text3); }
+
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(193,127,62,0.12);
+}
+
+.input.hasError { border-color: var(--red); }
+.input.hasError:focus { box-shadow: 0 0 0 3px rgba(192,57,43,0.1); }
+
+/* Ko'zcha tugmasi */
+.toggleBtn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+.toggleBtn:hover { color: var(--text2); }
+
+.errorText {
+  font-size: 11px;
+  color: var(--red);
+}

@@ -1,10 +1,27 @@
-import { Outlet } from 'react-router-dom'
+import { Navigate, Outlet } from 'react-router-dom'
+import { useAuthStore } from '@/store/auth.store'
+import type { UserRole } from '@/types/auth.types'
+import styles from './AuthLayout.module.css'
 
-// TODO: Bosqich 2 da dizayn qo'shiladi
-const AuthLayout = () => (
-  <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <Outlet />
-  </div>
-)
+const ROLE_HOME: Record<UserRole, string> = {
+  OWNER:  '/dashboard',
+  WORKER: '/check-in',
+  ADMIN:  '/admin/users',
+}
+
+const AuthLayout = () => {
+  const { isAuthenticated, user } = useAuthStore()
+
+  // Allaqachon kirgan foydalanuvchini uning sahifasiga yo'naltirish
+  if (isAuthenticated && user) {
+    return <Navigate to={ROLE_HOME[user.role]} replace />
+  }
+
+  return (
+    <div className={styles.wrap}>
+      <Outlet />
+    </div>
+  )
+}
 
 export default AuthLayout

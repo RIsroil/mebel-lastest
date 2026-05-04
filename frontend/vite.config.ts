@@ -9,8 +9,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': { target: 'http://localhost:8080', changeOrigin: true },
-      '/users': { target: 'http://localhost:8080', changeOrigin: true },
+      '/api': { target: 'http://localhost:9060', changeOrigin: true },
+      '/users': { target: 'http://localhost:9060', changeOrigin: true },
     },
   },
 })

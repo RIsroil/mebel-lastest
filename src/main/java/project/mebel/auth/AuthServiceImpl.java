@@ -81,6 +81,20 @@ public class AuthServiceImpl implements AuthService {
         UserEntity user = userRepository.findByUsernameAndDeletedAtIsNull(request.getUsername())
                 .orElseThrow(() -> ApiException.notFound("user.not.found"));
 
+        // Bloklangan foydalanuvchini tekshirish
+        if (user.isBlocked()) {
+            if (user.getBlockedUntil() != null && user.getBlockedUntil().isAfter(LocalDateTime.now())) {
+                long remainingSec = java.time.Duration.between(LocalDateTime.now(), user.getBlockedUntil()).getSeconds();
+                ApiException ex = ApiException.unauthorized("account.blocked");
+                ex.setRemainingSeconds((int) remainingSec);
+                throw ex;
+            }
+            // Blok muddati tugagan — avtomatik ochish
+            user.setBlocked(false);
+            user.setBlockedUntil(null);
+            user.setBlockReason(null);
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             user.setFailedLoginCount((short) (user.getFailedLoginCount() + 1));
             user.setLastFailedLoginAt(LocalDateTime.now());
@@ -94,11 +108,14 @@ public class AuthServiceImpl implements AuthService {
             userRepository.save(user);
             throw ApiException.unauthorized("invalid.credentials");
         }
+
+        // Muvaffaqiyatli login — xato hisoblagichni reset qilish
+        user.setFailedLoginCount((short) 0);
+        user.setLastFailedLoginAt(null);
         userRepository.save(user);
 
         UserTokenResponse userResponse = generateTokens(user);
-
-        return responseHelper.success("registration.completed.successfully", userResponse);
+        return responseHelper.success("login.successful", userResponse);
     }
 
     @Override

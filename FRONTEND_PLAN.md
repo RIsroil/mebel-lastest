@@ -192,7 +192,7 @@ npm install -D @types/node
 
 ---
 
-## BOSQICH 2 — Auth sahifalari (01, 02, 03) ⬜
+## BOSQICH 2 — Auth sahifalari (01, 02, 03) ✅
 
 **Fayllar:**
 1. `src/layouts/AuthLayout.tsx` — markaz karta, accent bg
@@ -378,8 +378,8 @@ npm install -D @types/node
 
 ## Joriy holat
 
-**Bajarilgan:** Bosqich 1 — Loyiha setup, barcha types, API qatlami, store, router, hooks, utils  
-**Keyingi qadam:** BOSQICH 2 — Auth sahifalari (Login, Register, Blocked) + AppLayout dizayn
+**Bajarilgan:** Bosqich 1 ✅ + Bosqich 2 ✅  
+**Keyingi qadam:** BOSQICH 3 — AppLayout (Sidebar + Topbar) + barcha reusable UI komponentlar
 
 ---
 

@@ -1,0 +1,58 @@
+.form { display: flex; flex-direction: column; gap: 16px; }
+
+.forgotRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -8px;
+}
+
+.forgotLink {
+  font-size: 11px;
+  color: var(--text3);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.forgotLink:hover { color: var(--accent); }
+
+.serverError {
+  background: var(--red-bg);
+  border: 1px solid #F5C6C2;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--red);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cooldownNotice {
+  background: #FFF8E6;
+  border: 1px solid #F5D98A;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #7A5C00;
+  text-align: center;
+  font-weight: 500;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.footerLink {
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.footerLink:hover { color: var(--accent2); }

@@ -1,6 +1,6 @@
 import axios from 'axios'
 import type { AxiosRequestConfig } from 'axios'
-import type { ApiResponse, } from '@/types/common.types'
+import type { ApiResponse } from '@/types/common.types'
 import type { TokenPair } from '@/types/auth.types'
 import { useAuthStore } from '@/store/auth.store'
 
@@ -9,16 +9,19 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// ── Request interceptor — har so'rovga Bearer token qo'shadi ──────────────────
+// Auth endpointlari o'z 401/404larini kutadi — refresh logiciga tushmasligi kerak
+const AUTH_ONLY_PATHS = ['/api/auth/login', '/api/auth/register', '/api/auth/refresh-token']
+const isAuthOnlyPath = (url?: string) =>
+  AUTH_ONLY_PATHS.some((p) => url?.includes(p))
+
+// ── Request interceptor — har so'rovga Bearer token qo'shadi ─────────────────
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
+  if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-// ── Response interceptor — 401 bo'lsa token yangilab retry qiladi ─────────────
+// ── Response interceptor — 401 bo'lsa token yangilab retry qiladi ────────────
 let isRefreshing = false
 let pendingQueue: Array<{
   resolve: (token: string) => void
@@ -35,7 +38,12 @@ api.interceptors.response.use(
   async (error) => {
     const original = error.config as AxiosRequestConfig & { _retried?: boolean }
 
-    // 401 va retry qilinmagan bo'lsa refresh qilamiz
+    // Login/register/refresh so'rovlarida 401 kutilgan xato — o'tkazib yuboramiz
+    if (isAuthOnlyPath(original.url)) {
+      return Promise.reject(error)
+    }
+
+    // Boshqa endpointlar uchun: 401 → token refresh → retry
     if (error.response?.status === 401 && !original._retried) {
       original._retried = true
       const { refreshToken, setTokens, logout } = useAuthStore.getState()
@@ -47,13 +55,10 @@ api.interceptors.response.use(
       }
 
       if (isRefreshing) {
-        // Boshqa so'rov allaqachon refresh qilayotgan bo'lsa, navbatga qo'shamiz
         return new Promise((resolve, reject) => {
           pendingQueue.push({
             resolve: (token) => {
-              if (original.headers) {
-                original.headers.Authorization = `Bearer ${token}`
-              }
+              if (original.headers) original.headers.Authorization = `Bearer ${token}`
               resolve(api(original))
             },
             reject,
@@ -62,7 +67,6 @@ api.interceptors.response.use(
       }
 
       isRefreshing = true
-
       try {
         const { data } = await axios.post<ApiResponse<TokenPair>>(
           '/api/auth/refresh-token',
@@ -72,9 +76,7 @@ api.interceptors.response.use(
         const tokens = data.data
         setTokens(tokens)
         flushQueue(tokens.accessToken)
-        if (original.headers) {
-          original.headers.Authorization = `Bearer ${tokens.accessToken}`
-        }
+        if (original.headers) original.headers.Authorization = `Bearer ${tokens.accessToken}`
         return api(original)
       } catch (refreshError) {
         flushQueue(null, refreshError)
