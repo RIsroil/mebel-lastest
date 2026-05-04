@@ -1,6 +1,8 @@
 package project.mebel.workshop;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import project.mebel.common.enums.UserRole;
@@ -13,7 +15,6 @@ import project.mebel.workshop.dto.WorkshopResponse;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -53,14 +54,14 @@ public class WorkshopServiceImpl implements WorkshopService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<WorkshopResponse> getAll(Principal principal) {
+    public Page<WorkshopResponse> getAll(Principal principal, Pageable pageable) {
         UserEntity user = utils.getUserFromPrincipal(principal);
 
         if (user.getRole() == UserRole.ADMIN) {
-            return workshopRepository.findAll().stream().map(this::toResponse).toList();
+            return workshopRepository.findAll(pageable).map(this::toResponse);
         }
         if (user.getRole() == UserRole.OWNER) {
-            return workshopRepository.findAllByOwnerId(user.getId()).stream().map(this::toResponse).toList();
+            return workshopRepository.findAllByOwnerId(user.getId(), pageable).map(this::toResponse);
         }
         throw ApiException.forbidden("access.denied");
     }

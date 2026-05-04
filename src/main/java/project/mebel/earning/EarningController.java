@@ -23,12 +23,14 @@ public class EarningController {
     private final EarningService earningService;
 
     @GetMapping("/my")
-    @Operation(summary = "O'z daromadlari (WORKER)")
+    @Operation(summary = "O'z daromadlari (WORKER). from/to berilmasa oxirgi 30 kun qaytariladi")
     public ResponseEntity<List<EarningResponse>> getMyEarnings(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             Principal principal) {
-        return ResponseEntity.ok(earningService.getMyEarnings(from, to, principal));
+        LocalDate effectiveTo = to != null ? to : LocalDate.now();
+        LocalDate effectiveFrom = from != null ? from : effectiveTo.minusDays(30);
+        return ResponseEntity.ok(earningService.getMyEarnings(effectiveFrom, effectiveTo, principal));
     }
 
     @GetMapping("/workers/{workerId}")

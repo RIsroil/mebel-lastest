@@ -1,0 +1,1199 @@
+================================================================================
+  MEBEL MANAGEMENT SYSTEM — API DOCUMENTATION
+  Base URL: http://localhost:8080
+  Auth: Bearer Token (JWT) — Authorization: Bearer <accessToken>
+================================================================================
+
+MUHIM ESLATMALAR:
+  - Barcha authenticated endpointlarda Header kerak: Authorization: Bearer <token>
+  - Pageable parametrlar: ?page=0&size=20&sort=createdAt,desc
+  - Sanalar formati: YYYY-MM-DD (masalan: 2025-01-15)
+  - UUID formatda ID lar ishlatiladi
+
+================================================================================
+  1. AUTH — /api/auth
+================================================================================
+
+────────────────────────────────────────────────────────────
+POST /api/auth/register
+Yangi OWNER foydalanuvchi ro'yxatdan o'tkazish
+Auth: YO'Q
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "username": "owner_user",
+  "password": "secret123"
+}
+
+RESPONSE 200:
+{
+  "success": true,
+  "message": "registration.completed.successfully",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiJ9..."
+  }
+}
+
+ERRORS:
+  409 — username.already.exists
+
+────────────────────────────────────────────────────────────
+POST /api/auth/login
+Tizimga kirish
+Auth: YO'Q
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "username": "owner_user",
+  "password": "secret123"
+}
+
+RESPONSE 200:
+{
+  "success": true,
+  "message": "registration.completed.successfully",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiJ9..."
+  }
+}
+
+ERRORS:
+  404 — user.not.found
+  401 — invalid.credentials
+  (5 marta xato paroldan keyin 1 kunlik bloklash)
+
+────────────────────────────────────────────────────────────
+POST /api/auth/workers
+Yangi worker yaratish (OWNER yoki ADMIN)
+Auth: BEARER TOKEN (OWNER yoki ADMIN)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "workshopId": "550e8400-e29b-41d4-a716-446655440000",
+  "username": "worker1",
+  "password": "pass123",
+  "payType": "DAILY",
+  "dailyHoursTarget": 8.0,
+  "dailySalary": 150000.00
+}
+
+payType qiymatlari: MONTHLY | DAILY
+
+RESPONSE 200:
+{
+  "success": true,
+  "message": "worker.created.successfully",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "username": "worker1",
+    "fullName": null,
+    "role": "WORKER",
+    "workshopId": "550e8400-e29b-41d4-a716-446655440000",
+    "workshopName": "Asosiy seh",
+    "payType": "DAILY",
+    "dailyHoursTarget": 8.0,
+    "dailySalary": 150000.00
+  }
+}
+
+ERRORS:
+  403 — access.denied
+  409 — username.already.exists
+  400 — owner.has.no.workshop
+
+────────────────────────────────────────────────────────────
+DELETE /api/auth/id?id={workerId}
+Worker o'chirish (OWNER)
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+QUERY PARAM: id=550e8400-e29b-41d4-a716-446655440001
+
+RESPONSE 200:
+{
+  "success": true,
+  "message": "worker.deleted.successfully",
+  "data": null
+}
+
+ERRORS:
+  403 — access.denied
+  404 — worker.not.found
+
+────────────────────────────────────────────────────────────
+POST /api/auth/refresh-token
+Access tokenni yangilash
+Auth: YO'Q
+────────────────────────────────────────────────────────────
+REQUEST BODY (plain string):
+"eyJhbGciOiJIUzI1NiJ9..."
+
+RESPONSE 200:
+{
+  "success": true,
+  "message": "token.refreshed.successfully",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiJ9..."
+  }
+}
+
+ERRORS:
+  401 — invalid.or.expired.refresh.token
+
+================================================================================
+  2. USER — /users
+================================================================================
+
+────────────────────────────────────────────────────────────
+GET /users/me
+O'z profilingizni ko'rish
+Auth: BEARER TOKEN (har qanday rol)
+────────────────────────────────────────────────────────────
+RESPONSE 200:
+{
+  "success": true,
+  "message": "get.me",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "username": "owner_user",
+    "fullName": "Jasur Karimov",
+    "phone": "+998901234567",
+    "role": "OWNER",
+    "workshopId": "550e8400-e29b-41d4-a716-446655440000",
+    "dailyHoursTarget": 8.0,
+    "dailySalary": 250000.00
+  }
+}
+
+────────────────────────────────────────────────────────────
+PATCH /users/update
+O'z profilingizni yangilash
+Auth: BEARER TOKEN (har qanday rol)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "fullName": "Jasur Karimov",
+  "phone": "+998901234567"
+}
+
+RESPONSE 200:
+{
+  "success": true,
+  "message": "update.me",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "username": "owner_user",
+    "fullName": "Jasur Karimov",
+    "phone": "+998901234567",
+    "role": "OWNER",
+    "workshopId": "550e8400-e29b-41d4-a716-446655440000",
+    "dailyHoursTarget": 8.0,
+    "dailySalary": 250000.00
+  }
+}
+
+================================================================================
+  3. WORKSHOPS — /api/workshops
+================================================================================
+
+────────────────────────────────────────────────────────────
+POST /api/workshops
+Yangi seh yaratish (faqat OWNER)
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "name": "Asosiy seh",
+  "address": "Toshkent, Chilonzor 5",
+  "phone": "+998712345678",
+  "description": "Mebel ishlab chiqarish sehi"
+}
+
+RESPONSE 201:
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Asosiy seh",
+  "address": "Toshkent, Chilonzor 5",
+  "phone": "+998712345678",
+  "description": "Mebel ishlab chiqarish sehi",
+  "active": true,
+  "ownerId": "550e8400-e29b-41d4-a716-446655440002",
+  "createdAt": "2025-01-15T10:00:00"
+}
+
+ERRORS:
+  403 — access.denied
+
+────────────────────────────────────────────────────────────
+GET /api/workshops
+Sehlar ro'yxati (Pageable)
+Auth: BEARER TOKEN (ADMIN — hammasi, OWNER — o'ziniki)
+────────────────────────────────────────────────────────────
+QUERY PARAMS (ixtiyoriy):
+  ?page=0&size=20&sort=createdAt,desc
+  ?page=0&size=10&sort=name,asc
+
+RESPONSE 200:
+{
+  "content": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Asosiy seh",
+      "address": "Toshkent, Chilonzor 5",
+      "phone": "+998712345678",
+      "description": "Mebel ishlab chiqarish sehi",
+      "active": true,
+      "ownerId": "550e8400-e29b-41d4-a716-446655440002",
+      "createdAt": "2025-01-15T10:00:00"
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 20,
+    "sort": { "sorted": true, "ascending": false }
+  },
+  "totalElements": 1,
+  "totalPages": 1,
+  "last": true,
+  "first": true,
+  "size": 20,
+  "number": 0
+}
+
+────────────────────────────────────────────────────────────
+GET /api/workshops/{id}
+Seh ma'lumotlari
+Auth: BEARER TOKEN (ADMIN yoki OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 200:
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Asosiy seh",
+  "address": "Toshkent, Chilonzor 5",
+  "phone": "+998712345678",
+  "description": "Mebel ishlab chiqarish sehi",
+  "active": true,
+  "ownerId": "550e8400-e29b-41d4-a716-446655440002",
+  "createdAt": "2025-01-15T10:00:00"
+}
+
+ERRORS:
+  404 — workshop.not.found
+  403 — access.denied
+
+────────────────────────────────────────────────────────────
+PUT /api/workshops/{id}
+Seh ma'lumotlarini yangilash
+Auth: BEARER TOKEN (ADMIN yoki OWNER)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "name": "Yangilangan seh nomi",
+  "address": "Yangi manzil",
+  "phone": "+998712345679",
+  "description": "Yangilangan tavsif"
+}
+
+RESPONSE 200: (WorkshopResponse yuqoridagi kabi)
+
+────────────────────────────────────────────────────────────
+DELETE /api/workshops/{id}
+Sehni o'chirish (soft delete)
+Auth: BEARER TOKEN (ADMIN yoki OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 204: (body yo'q)
+
+ERRORS:
+  404 — workshop.not.found
+  403 — access.denied
+
+================================================================================
+  4. FURNITURE ORDERS — /api/furniture/orders
+================================================================================
+
+────────────────────────────────────────────────────────────
+POST /api/furniture/orders
+Yangi buyurtma yaratish
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "title": "Uch o'rinli divan",
+  "description": "Qizil rangli zamsha divan",
+  "salePrice": 3500000.00,
+  "estimatedCost": 1200000.00,
+  "templateId": "550e8400-e29b-41d4-a716-446655440010",
+  "clientName": "Alisher Umarov",
+  "clientPhone": "+998901112233",
+  "notes": "Mijoz talabi: krem rang"
+}
+
+templateId — ixtiyoriy
+
+RESPONSE 201:
+{
+  "id": "550e8400-e29b-41d4-a716-446655440020",
+  "workshopId": "550e8400-e29b-41d4-a716-446655440000",
+  "orderNumber": "ORD-2025-001",
+  "title": "Uch o'rinli divan",
+  "description": "Qizil rangli zamsha divan",
+  "status": "DRAFT",
+  "salePrice": 3500000.00,
+  "estimatedCost": 1200000.00,
+  "actualMaterialCost": 0.00,
+  "templateId": null,
+  "startedAt": null,
+  "completedAt": null,
+  "soldAt": null,
+  "clientName": "Alisher Umarov",
+  "clientPhone": "+998901112233",
+  "notes": "Mijoz talabi: krem rang",
+  "assignedWorkers": [],
+  "materialUsages": []
+}
+
+status qiymatlari: DRAFT | IN_PROGRESS | COMPLETED | SOLD | CANCELLED
+
+────────────────────────────────────────────────────────────
+GET /api/furniture/orders
+Barcha buyurtmalar (seh bo'yicha)
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 200: (FurnitureOrderResponse ro'yxati)
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440020",
+    "workshopId": "550e8400-e29b-41d4-a716-446655440000",
+    "orderNumber": "ORD-2025-001",
+    "title": "Uch o'rinli divan",
+    "status": "IN_PROGRESS",
+    "salePrice": 3500000.00,
+    "estimatedCost": 1200000.00,
+    "actualMaterialCost": 850000.00,
+    "clientName": "Alisher Umarov",
+    "clientPhone": "+998901112233",
+    "assignedWorkers": [
+      {
+        "workerId": "550e8400-e29b-41d4-a716-446655440001",
+        "workerName": "Bobur Toshmatov",
+        "assignedAt": "2025-01-15T09:00:00"
+      }
+    ],
+    "materialUsages": []
+  }
+]
+
+────────────────────────────────────────────────────────────
+GET /api/furniture/orders/{id}
+Buyurtma tafsilotlari
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 200: (FurnitureOrderResponse to'liq)
+{
+  "id": "550e8400-e29b-41d4-a716-446655440020",
+  "orderNumber": "ORD-2025-001",
+  "title": "Uch o'rinli divan",
+  "status": "IN_PROGRESS",
+  "salePrice": 3500000.00,
+  "estimatedCost": 1200000.00,
+  "actualMaterialCost": 850000.00,
+  "assignedWorkers": [
+    {
+      "workerId": "550e8400-e29b-41d4-a716-446655440001",
+      "workerName": "Bobur Toshmatov",
+      "assignedAt": "2025-01-15T09:00:00"
+    }
+  ],
+  "materialUsages": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440030",
+      "warehouseItemId": "550e8400-e29b-41d4-a716-446655440040",
+      "itemName": "Yog'och taxtasi",
+      "quantityUsed": 5.0,
+      "unitPriceAtTime": 50000.00,
+      "totalCost": 250000.00,
+      "notes": "5 dona taxtasi ishlatildi"
+    }
+  ]
+}
+
+────────────────────────────────────────────────────────────
+PUT /api/furniture/orders/{id}
+Buyurtmani yangilash
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+REQUEST: (POST bilan bir xil)
+
+RESPONSE 200: (FurnitureOrderResponse)
+
+────────────────────────────────────────────────────────────
+DELETE /api/furniture/orders/{id}
+Buyurtmani o'chirish (faqat DRAFT holatda)
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 204: (body yo'q)
+
+────────────────────────────────────────────────────────────
+PATCH /api/furniture/orders/{id}/status
+Buyurtma holatini o'zgartirish
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+Status o'tish tartibi: DRAFT → IN_PROGRESS → COMPLETED → SOLD (yoki CANCELLED)
+SOLD bo'lganda ishchilarga commission avtomatik hisoblanadi.
+
+REQUEST:
+{
+  "status": "IN_PROGRESS"
+}
+
+RESPONSE 200: (FurnitureOrderResponse)
+
+────────────────────────────────────────────────────────────
+POST /api/furniture/orders/{id}/workers
+Buyurtmaga ishchi biriktirish
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "workerId": "550e8400-e29b-41d4-a716-446655440001"
+}
+
+RESPONSE 200: (FurnitureOrderResponse)
+
+────────────────────────────────────────────────────────────
+DELETE /api/furniture/orders/{id}/workers/{workerId}
+Buyurtmadan ishchini olib tashlash
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 204: (body yo'q)
+
+────────────────────────────────────────────────────────────
+POST /api/furniture/orders/{id}/materials
+Buyurtmaga material sarfini qo'shish
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "warehouseItemId": "550e8400-e29b-41d4-a716-446655440040",
+  "quantityUsed": 5.0,
+  "notes": "5 dona taxtasi ishlatildi"
+}
+
+RESPONSE 200: (FurnitureOrderResponse)
+
+ERRORS:
+  400 — insufficient.stock (yetarli material yo'q)
+
+================================================================================
+  5. FURNITURE TEMPLATES — /api/furniture/templates
+================================================================================
+
+────────────────────────────────────────────────────────────
+POST /api/furniture/templates
+Yangi shablon yaratish
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "name": "Standart 3 o'rinli divan",
+  "description": "Klassik uslubdagi divan",
+  "estimatedProdDays": 7
+}
+
+RESPONSE 201:
+{
+  "id": "550e8400-e29b-41d4-a716-446655440010",
+  "workshopId": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Standart 3 o'rinli divan",
+  "description": "Klassik uslubdagi divan",
+  "estimatedProdDays": 7,
+  "active": true,
+  "materials": []
+}
+
+────────────────────────────────────────────────────────────
+GET /api/furniture/templates
+Barcha shablonlar
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 200: (FurnitureTemplateResponse ro'yxati)
+
+────────────────────────────────────────────────────────────
+GET /api/furniture/templates/{id}
+Shablon tafsilotlari
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 200:
+{
+  "id": "550e8400-e29b-41d4-a716-446655440010",
+  "name": "Standart 3 o'rinli divan",
+  "estimatedProdDays": 7,
+  "materials": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440050",
+      "warehouseItemId": "550e8400-e29b-41d4-a716-446655440040",
+      "itemName": "Yog'och taxtasi",
+      "quantityNeeded": 10.0,
+      "notes": "10 dona taxtasi kerak"
+    }
+  ]
+}
+
+────────────────────────────────────────────────────────────
+PUT /api/furniture/templates/{id}
+Shablonni yangilash
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+REQUEST: (POST bilan bir xil)
+RESPONSE 200: (FurnitureTemplateResponse)
+
+────────────────────────────────────────────────────────────
+DELETE /api/furniture/templates/{id}
+Shablonni o'chirish
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 204: (body yo'q)
+
+────────────────────────────────────────────────────────────
+POST /api/furniture/templates/{id}/materials
+Shablonga material qo'shish
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "warehouseItemId": "550e8400-e29b-41d4-a716-446655440040",
+  "quantityNeeded": 10.0,
+  "notes": "10 dona taxtasi kerak"
+}
+
+RESPONSE 200: (FurnitureTemplateResponse)
+
+────────────────────────────────────────────────────────────
+DELETE /api/furniture/templates/{id}/materials/{materialId}
+Shablondan materialni olib tashlash
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 204: (body yo'q)
+
+================================================================================
+  6. WAREHOUSE — /api/warehouse
+================================================================================
+
+────────────────────────────────────────────────────────────
+POST /api/warehouse/items
+Yangi ombor elementi yaratish
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "name": "Yog'och taxtasi",
+  "description": "Qalin yog'och taxtasi, 50mm",
+  "unitType": "PIECE",
+  "minQuantityAlert": 10.0,
+  "sku": "WOOD-50MM-001"
+}
+
+unitType qiymatlari: PIECE | KG | METER | LITER | SQUARE_METER | CUBIC_METER | PACK | SET | OTHER
+
+RESPONSE 201:
+{
+  "id": "550e8400-e29b-41d4-a716-446655440040",
+  "workshopId": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Yog'och taxtasi",
+  "description": "Qalin yog'och taxtasi, 50mm",
+  "unitType": "PIECE",
+  "quantity": 0.0,
+  "avgUnitPrice": 0.00,
+  "totalValue": 0.00,
+  "minQuantityAlert": 10.0,
+  "sku": "WOOD-50MM-001",
+  "active": true,
+  "lowStock": true
+}
+
+────────────────────────────────────────────────────────────
+GET /api/warehouse/items
+Barcha ombor elementlari
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 200: (WarehouseItemResponse ro'yxati)
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440040",
+    "name": "Yog'och taxtasi",
+    "unitType": "PIECE",
+    "quantity": 50.0,
+    "avgUnitPrice": 48000.00,
+    "totalValue": 2400000.00,
+    "minQuantityAlert": 10.0,
+    "sku": "WOOD-50MM-001",
+    "active": true,
+    "lowStock": false
+  }
+]
+
+────────────────────────────────────────────────────────────
+GET /api/warehouse/items/{id}
+Ombor elementi tafsilotlari
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 200: (WarehouseItemResponse)
+
+────────────────────────────────────────────────────────────
+PUT /api/warehouse/items/{id}
+Ombor elementini yangilash
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+REQUEST: (POST bilan bir xil)
+RESPONSE 200: (WarehouseItemResponse)
+
+────────────────────────────────────────────────────────────
+DELETE /api/warehouse/items/{id}
+Ombor elementini o'chirish
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 204: (body yo'q)
+
+────────────────────────────────────────────────────────────
+POST /api/warehouse/items/{id}/transactions
+Ombor tranzaksiyasi qo'shish (kirim/chiqim/tuzatish)
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "transactionType": "IN",
+  "quantity": 20.0,
+  "unitPrice": 50000.00,
+  "supplierName": "Yog'och LLC",
+  "invoiceNumber": "INV-2025-001",
+  "furnitureOrderId": null,
+  "notes": "Yangi partiya keldi"
+}
+
+transactionType: IN (kirim) | OUT (chiqim) | ADJUSTMENT (tuzatish)
+
+RESPONSE 201:
+{
+  "id": "550e8400-e29b-41d4-a716-446655440060",
+  "itemId": "550e8400-e29b-41d4-a716-446655440040",
+  "itemName": "Yog'och taxtasi",
+  "transactionType": "IN",
+  "quantity": 20.0,
+  "unitPrice": 50000.00,
+  "totalCost": 1000000.00,
+  "qtyBefore": 30.0,
+  "qtyAfter": 50.0,
+  "priceBefore": 45000.00,
+  "priceAfter": 48000.00,
+  "supplierName": "Yog'och LLC",
+  "invoiceNumber": "INV-2025-001",
+  "createdAt": "2025-01-15T10:00:00"
+}
+
+────────────────────────────────────────────────────────────
+GET /api/warehouse/items/{id}/transactions
+Ombor elementi tranzaksiyalari tarixi
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 200: (WarehouseTransactionResponse ro'yxati)
+
+================================================================================
+  7. ATTENDANCE — /api/attendance
+================================================================================
+
+────────────────────────────────────────────────────────────
+POST /api/attendance/check-in
+Ishga kirish (WORKER)
+Auth: BEARER TOKEN (WORKER)
+────────────────────────────────────────────────────────────
+REQUEST: (body yo'q)
+
+RESPONSE 200:
+{
+  "id": "550e8400-e29b-41d4-a716-446655440070",
+  "userId": "550e8400-e29b-41d4-a716-446655440001",
+  "workshopId": "550e8400-e29b-41d4-a716-446655440000",
+  "workDate": "2025-01-15",
+  "checkInTime": "2025-01-15T08:30:00",
+  "checkOutTime": null,
+  "hoursWorked": null,
+  "hoursSelfReported": null,
+  "hoursDeadline": "2025-01-18T23:59:59",
+  "hoursLocked": false,
+  "ownerOverrideHours": null,
+  "notes": null
+}
+
+ERRORS:
+  400 — already.checked.in.today
+
+────────────────────────────────────────────────────────────
+POST /api/attendance/submit-hours
+Ishlangan soatlarni yuborish (WORKER, 3 kun muhlat)
+Auth: BEARER TOKEN (WORKER)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "hoursWorked": 8.5,
+  "notes": "Tushlikda 30 daqiqa tanaffus bo'ldi"
+}
+
+RESPONSE 200: (AttendanceResponse)
+
+ERRORS:
+  400 — attendance.not.found.today
+  400 — hours.submission.deadline.passed
+  400 — hours.already.locked
+
+────────────────────────────────────────────────────────────
+PATCH /api/attendance/{id}/override
+Soatlarni OWNER tomonidan tuzatish
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "hoursWorked": 8.0,
+  "notes": "Qayta hisoblandi"
+}
+
+RESPONSE 200: (AttendanceResponse)
+
+────────────────────────────────────────────────────────────
+GET /api/attendance/my
+O'z davomat tarixi (WORKER)
+Auth: BEARER TOKEN (WORKER)
+────────────────────────────────────────────────────────────
+QUERY PARAMS:
+  ?from=2025-01-01&to=2025-01-31
+
+RESPONSE 200: (AttendanceResponse ro'yxati)
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440070",
+    "userId": "550e8400-e29b-41d4-a716-446655440001",
+    "workDate": "2025-01-15",
+    "checkInTime": "2025-01-15T08:30:00",
+    "hoursWorked": 8.5,
+    "hoursSelfReported": 8.5,
+    "hoursDeadline": "2025-01-18T23:59:59",
+    "hoursLocked": true,
+    "ownerOverrideHours": null
+  }
+]
+
+────────────────────────────────────────────────────────────
+GET /api/attendance/workshop
+Sehning kundangi davomati (OWNER)
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+QUERY PARAMS:
+  ?date=2025-01-15
+
+RESPONSE 200: (AttendanceResponse ro'yxati)
+
+────────────────────────────────────────────────────────────
+GET /api/attendance/workers/{workerId}
+Ishchining davomat tarixi (OWNER)
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+QUERY PARAMS:
+  ?from=2025-01-01&to=2025-01-31
+
+RESPONSE 200: (AttendanceResponse ro'yxati)
+
+================================================================================
+  8. EARNINGS — /api/earnings
+================================================================================
+
+────────────────────────────────────────────────────────────
+GET /api/earnings/my
+O'z daromadlari (WORKER)
+Auth: BEARER TOKEN (WORKER)
+────────────────────────────────────────────────────────────
+QUERY PARAMS (ixtiyoriy — berilmasa oxirgi 30 kun):
+  ?from=2025-01-01&to=2025-01-31
+
+RESPONSE 200:
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440080",
+    "workerId": "550e8400-e29b-41d4-a716-446655440001",
+    "workerName": "Bobur Toshmatov",
+    "workshopId": "550e8400-e29b-41d4-a716-446655440000",
+    "earnDate": "2025-01-15",
+    "earnType": "DAILY_WAGE",
+    "attendanceId": "550e8400-e29b-41d4-a716-446655440070",
+    "hoursWorked": 8.5,
+    "hourlyRate": 18000.00,
+    "daysWorked": 1.0,
+    "dailyRate": 150000.00,
+    "furnitureOrderId": null,
+    "commissionPct": null,
+    "commissionAmount": null,
+    "baseAmount": 150000.00,
+    "totalAmount": 150000.00,
+    "description": "Kunlik ish haqi",
+    "paid": false,
+    "paidAt": null
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440081",
+    "earnType": "COMMISSION",
+    "furnitureOrderId": "550e8400-e29b-41d4-a716-446655440020",
+    "commissionPct": 5.00,
+    "commissionAmount": 87500.00,
+    "totalAmount": 87500.00,
+    "paid": true,
+    "paidAt": "2025-01-20T14:00:00"
+  }
+]
+
+earnType qiymatlari: DAILY_WAGE | HOURLY_WAGE | COMMISSION | BONUS
+
+────────────────────────────────────────────────────────────
+GET /api/earnings/workers/{workerId}
+Ishchi daromadlari (OWNER)
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+QUERY PARAMS:
+  ?from=2025-01-01&to=2025-01-31
+
+RESPONSE 200: (EarningResponse ro'yxati — yuqoridagi kabi)
+
+────────────────────────────────────────────────────────────
+GET /api/earnings/workshop
+Sehning umumiy daromadlari (OWNER)
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+QUERY PARAMS:
+  ?from=2025-01-01&to=2025-01-31
+
+RESPONSE 200: (EarningResponse ro'yxati)
+
+────────────────────────────────────────────────────────────
+PATCH /api/earnings/{id}/pay
+Daromadni to'langan deb belgilash (OWNER)
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+RESPONSE 200: (EarningResponse)
+
+ERRORS:
+  400 — earning.already.paid
+
+────────────────────────────────────────────────────────────
+POST /api/earnings/bonus
+Ishchiga bonus qo'shish (OWNER)
+Auth: BEARER TOKEN (OWNER)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "workerId": "550e8400-e29b-41d4-a716-446655440001",
+  "amount": 200000.00,
+  "reason": "Oylik ish samaradorligi uchun",
+  "bonusDate": "2025-01-15"
+}
+
+RESPONSE 200: (EarningResponse earnType=BONUS)
+
+================================================================================
+  9. ADMIN — /api/admin (faqat ADMIN roli)
+================================================================================
+
+────────────────────────────────────────────────────────────
+GET /api/admin/users
+Barcha foydalanuvchilar (pageable, filterable)
+Auth: BEARER TOKEN (ADMIN)
+────────────────────────────────────────────────────────────
+QUERY PARAMS (ixtiyoriy):
+  ?role=WORKER&workshopId=550e8400-...&active=true
+  ?page=0&size=20&sort=createdAt,desc
+
+RESPONSE 200:
+{
+  "content": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "username": "worker1",
+      "fullName": "Bobur Toshmatov",
+      "phone": "+998901234567",
+      "role": "WORKER",
+      "active": true,
+      "blocked": false,
+      "blockedUntil": null,
+      "blockReason": null,
+      "workshopId": "550e8400-e29b-41d4-a716-446655440000",
+      "workshopName": null,
+      "payType": "DAILY",
+      "hourlyRate": null,
+      "dailyRate": null,
+      "dailyHoursTarget": 8.0,
+      "dailySalary": 150000.00,
+      "commissionPct": null,
+      "hybridPay": false,
+      "createdAt": "2025-01-10T12:00:00"
+    }
+  ],
+  "totalElements": 15,
+  "totalPages": 1,
+  "pageNumber": 0,
+  "pageSize": 20
+}
+
+role filtri: ADMIN | OWNER | WORKER
+
+────────────────────────────────────────────────────────────
+GET /api/admin/users/{id}
+Foydalanuvchi tafsilotlari (workshopName bilan)
+Auth: BEARER TOKEN (ADMIN)
+────────────────────────────────────────────────────────────
+RESPONSE 200:
+{
+  "id": "550e8400-e29b-41d4-a716-446655440001",
+  "username": "worker1",
+  "fullName": "Bobur Toshmatov",
+  "phone": "+998901234567",
+  "role": "WORKER",
+  "active": true,
+  "blocked": false,
+  "blockedUntil": null,
+  "blockReason": null,
+  "workshopId": "550e8400-e29b-41d4-a716-446655440000",
+  "workshopName": "Asosiy seh",
+  "payType": "DAILY",
+  "hourlyRate": null,
+  "dailyRate": null,
+  "dailyHoursTarget": 8.0,
+  "dailySalary": 150000.00,
+  "commissionPct": null,
+  "hybridPay": false,
+  "createdAt": "2025-01-10T12:00:00"
+}
+
+ERRORS:
+  404 — user.not.found
+
+────────────────────────────────────────────────────────────
+POST /api/admin/users
+Istalgan rolda yangi foydalanuvchi yaratish
+Auth: BEARER TOKEN (ADMIN)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "username": "new_owner",
+  "password": "secure_pass",
+  "fullName": "Jasur Karimov",
+  "phone": "+998901112233",
+  "role": "OWNER",
+  "workshopId": "550e8400-e29b-41d4-a716-446655440000",
+  "payType": "DAILY",
+  "hourlyRate": null,
+  "dailyRate": null,
+  "dailyHoursTarget": 8.0,
+  "dailySalary": 250000.00,
+  "commissionPct": null,
+  "hybridPay": false
+}
+
+role: ADMIN | OWNER | WORKER
+Barcha maydonlar ixtiyoriy (username, password, role majburiy)
+
+RESPONSE 201: (AdminUserResponse — yuqoridagi kabi)
+
+ERRORS:
+  409 — username.already.exists
+  403 — access.denied
+
+────────────────────────────────────────────────────────────
+PUT /api/admin/users/{id}
+Foydalanuvchi ma'lumotlarini to'liq yangilash
+Auth: BEARER TOKEN (ADMIN)
+────────────────────────────────────────────────────────────
+REQUEST (barcha maydonlar ixtiyoriy, null bo'lsa o'zgarmaydi):
+{
+  "fullName": "Yangi ism",
+  "phone": "+998901112233",
+  "role": "OWNER",
+  "workshopId": "550e8400-e29b-41d4-a716-446655440000",
+  "active": true,
+  "payType": "DAILY",
+  "hourlyRate": null,
+  "dailyRate": null,
+  "dailyHoursTarget": 8.0,
+  "dailySalary": 200000.00,
+  "commissionPct": 5.00,
+  "hybridPay": false,
+  "newPassword": "yangi_parol123"
+}
+
+newPassword — null bo'lsa parol o'zgarmaydi
+
+RESPONSE 200: (AdminUserResponse)
+
+ERRORS:
+  404 — user.not.found
+  403 — access.denied
+
+────────────────────────────────────────────────────────────
+DELETE /api/admin/users/{id}
+Foydalanuvchini o'chirish (soft delete)
+Auth: BEARER TOKEN (ADMIN)
+────────────────────────────────────────────────────────────
+RESPONSE 204: (body yo'q)
+
+ERRORS:
+  404 — user.not.found
+  403 — access.denied
+
+────────────────────────────────────────────────────────────
+PATCH /api/admin/users/{id}/block
+Foydalanuvchini bloklash
+Auth: BEARER TOKEN (ADMIN)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "reason": "Qoidabuzarlik uchun",
+  "blockDays": 7
+}
+
+blockDays — qancha kun bloklash (default: 1 kun)
+
+RESPONSE 200: (body yo'q)
+
+ERRORS:
+  404 — user.not.found
+  403 — access.denied
+
+────────────────────────────────────────────────────────────
+PATCH /api/admin/users/{id}/unblock
+Foydalanuvchi blokini ochish
+Auth: BEARER TOKEN (ADMIN)
+────────────────────────────────────────────────────────────
+REQUEST: (body yo'q)
+
+RESPONSE 200: (body yo'q)
+
+ERRORS:
+  404 — user.not.found
+  403 — access.denied
+
+────────────────────────────────────────────────────────────
+POST /api/admin/workshops
+Admin tomonidan yangi seh yaratish
+Auth: BEARER TOKEN (ADMIN)
+────────────────────────────────────────────────────────────
+REQUEST:
+{
+  "name": "Yangi seh",
+  "address": "Samarqand, Registon ko'chasi",
+  "phone": "+998662345678",
+  "description": "Samarqand filiali"
+}
+
+RESPONSE 201:
+{
+  "id": "550e8400-e29b-41d4-a716-446655440099",
+  "name": "Yangi seh",
+  "address": "Samarqand, Registon ko'chasi",
+  "phone": "+998662345678",
+  "description": "Samarqand filiali",
+  "active": true,
+  "ownerId": "550e8400-e29b-41d4-a716-446655440005",
+  "createdAt": "2025-01-15T10:00:00"
+}
+
+================================================================================
+  10. IMAGES — /api/images
+================================================================================
+
+────────────────────────────────────────────────────────────
+POST /api/images/upload
+Rasm yuklash (MinIO)
+Auth: BEARER TOKEN
+────────────────────────────────────────────────────────────
+REQUEST: multipart/form-data
+  file: <binary rasm fayl>
+
+RESPONSE 200:
+{
+  "id": "550e8400-e29b-41d4-a716-446655440090",
+  "url": "http://minio:9000/bucket/image-uuid.jpg",
+  "status": "ACTIVE"
+}
+
+────────────────────────────────────────────────────────────
+GET /api/images/{id}
+Rasm ma'lumotlari
+Auth: BEARER TOKEN
+────────────────────────────────────────────────────────────
+RESPONSE 200:
+{
+  "id": "550e8400-e29b-41d4-a716-446655440090",
+  "url": "http://minio:9000/bucket/image-uuid.jpg",
+  "status": "ACTIVE"
+}
+
+================================================================================
+  XATO FORMATLARI
+================================================================================
+
+Barcha xatolar quyidagi formatda qaytadi:
+
+{
+  "success": false,
+  "message": "xato.kodi",
+  "data": null
+}
+
+Asosiy HTTP status kodlari:
+  200 OK         — Muvaffaqiyatli
+  201 Created    — Yangi resurs yaratildi
+  204 No Content — Muvaffaqiyatli (body yo'q)
+  400 Bad Request — Noto'g'ri so'rov
+  401 Unauthorized — Autentifikatsiya talab qilinadi
+  403 Forbidden  — Ruxsat yo'q
+  404 Not Found  — Topilmadi
+  409 Conflict   — Konflikt (masalan: username band)
+  500 Internal Server Error — Ichki xato
+
+================================================================================
+  ROLLAR VA RUXSATLAR
+================================================================================
+
+  ADMIN   — Barcha endpointlarga kirish:
+              /api/admin/* (to'liq)
+              /api/workshops/* (read/update/delete, POST /api/admin/workshops orqali)
+              /api/furniture/* (read access)
+              /api/earnings/* (read access)
+              Barcha GET endpointlar
+
+  OWNER   — O'z sehi bilan bog'liq operatsiyalar:
+              /api/workshops (yaratish, o'zinikini ko'rish/yangilash/o'chirish)
+              /api/furniture/orders/* (to'liq CRUD)
+              /api/furniture/templates/* (to'liq CRUD)
+              /api/warehouse/* (to'liq CRUD)
+              /api/attendance/workshop, /api/attendance/{id}/override
+              /api/earnings/workers/*, /api/earnings/workshop
+              /api/earnings/{id}/pay, /api/earnings/bonus
+              /api/auth/workers (worker yaratish)
+
+  WORKER  — Faqat o'z ma'lumotlari:
+              /users/me, /users/update
+              /api/attendance/check-in, /api/attendance/submit-hours
+              /api/attendance/my
+              /api/earnings/my
+
+================================================================================
+  PAGEABLE PARAMETRLAR (umumiy)
+================================================================================
+
+Pageable qo'llab-quvvatlaydigan endpointlar uchun:
+  ?page=0        — Sahifa raqami (0 dan boshlanadi)
+  ?size=20       — Har sahifada nechta element
+  ?sort=fieldName,asc   — O'sish tartibida saralash
+  ?sort=fieldName,desc  — Kamayish tartibida saralash
+
+Misol: GET /api/admin/users?page=0&size=10&sort=username,asc&role=WORKER
+
+================================================================================

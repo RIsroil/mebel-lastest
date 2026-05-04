@@ -1,17 +1,18 @@
 package project.mebel.workshop;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import project.mebel.workshop.dto.WorkshopRequest;
 import project.mebel.workshop.dto.WorkshopResponse;
 
 import java.security.Principal;
-import java.util.List;
 import java.util.UUID;
 
 public interface WorkshopService {
 
     WorkshopResponse create(WorkshopRequest request, Principal principal);
 
-    List<WorkshopResponse> getAll(Principal principal);
+    Page<WorkshopResponse> getAll(Principal principal, Pageable pageable);
 
     WorkshopResponse getById(UUID id, Principal principal);
 

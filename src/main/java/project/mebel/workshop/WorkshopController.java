@@ -3,6 +3,10 @@ package project.mebel.workshop;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,7 +14,6 @@ import project.mebel.workshop.dto.WorkshopRequest;
 import project.mebel.workshop.dto.WorkshopResponse;
 
 import java.security.Principal;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -29,9 +32,11 @@ public class WorkshopController {
     }
 
     @GetMapping
-    @Operation(summary = "Sehlar ro'yxati (ADMIN — hammasi, OWNER — o'ziniki)")
-    public ResponseEntity<List<WorkshopResponse>> getAll(Principal principal) {
-        return ResponseEntity.ok(workshopService.getAll(principal));
+    @Operation(summary = "Sehlar ro'yxati (ADMIN — hammasi, OWNER — o'ziniki). Pageable: ?page=0&size=10&sort=name,asc")
+    public ResponseEntity<Page<WorkshopResponse>> getAll(
+            Principal principal,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(workshopService.getAll(principal, pageable));
     }
 
     @GetMapping("/{id}")
