@@ -166,6 +166,8 @@
 .txAdj::before { background: var(--blue); }
 
 .qtyCell { font-weight: 700; }
+.qtyIn  { color: var(--green); font-weight: 700; }
+.qtyOut { color: var(--red);   font-weight: 700; }
 .arrowCell { color: var(--text2) !important; font-size: 12px !important; }
 .totalCell { font-weight: 600; }
 .invoiceCell { font-size: 12px !important; color: var(--text3) !important; font-family: 'Courier New', monospace; }

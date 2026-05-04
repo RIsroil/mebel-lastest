@@ -2,6 +2,7 @@
   display: flex;
   height: 100vh;
   overflow: hidden;
+  position: relative;
 }
 
 .main {
@@ -10,10 +11,27 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--bg);
+  min-width: 0;
 }
 
 .content {
   flex: 1;
   overflow-y: auto;
   padding: 24px;
+}
+
+/* Mobile overlay backdrop */
+.backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 40;
+  backdrop-filter: blur(1px);
+}
+
+@media (max-width: 768px) {
+  .backdrop { display: block; }
+
+  .content { padding: 16px; }
 }

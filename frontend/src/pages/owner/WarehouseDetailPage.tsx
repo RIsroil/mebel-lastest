@@ -132,8 +132,18 @@ const WarehouseDetailPage = () => {
                   </span>
                 </td>
                 <td className={styles.qtyCell}>
-                  {tx.transactionType === 'OUT' ? '-' : '+'}
-                  {formatNumber(tx.quantity)}
+                  {tx.transactionType === 'IN' && (
+                    <span className={styles.qtyIn}>+{formatNumber(tx.quantity)}</span>
+                  )}
+                  {tx.transactionType === 'OUT' && (
+                    <span className={styles.qtyOut}>−{formatNumber(tx.quantity)}</span>
+                  )}
+                  {tx.transactionType === 'ADJUSTMENT' && (() => {
+                    const diff = tx.qtyAfter - tx.qtyBefore
+                    return diff >= 0
+                      ? <span className={styles.qtyIn}>+{formatNumber(Math.abs(diff))}</span>
+                      : <span className={styles.qtyOut}>−{formatNumber(Math.abs(diff))}</span>
+                  })()}
                 </td>
                 <td className={styles.arrowCell}>
                   {formatNumber(tx.qtyBefore)} → {formatNumber(tx.qtyAfter)}

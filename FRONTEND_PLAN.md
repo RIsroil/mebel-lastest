@@ -274,7 +274,7 @@ npm install -D @types/node
 
 ---
 
-## BOSQICH 8 — Earnings Management (08) + Bonus Modal (15) ⬜
+## BOSQICH 8 — Earnings Management (08) + Bonus Modal (15) ✅
 
 **API:** GET /api/earnings/workshop, GET /api/earnings/workers/{id}, PATCH /api/earnings/{id}/pay, POST /api/earnings/bonus  
 **Fayllar:**
@@ -288,7 +288,7 @@ npm install -D @types/node
 
 ---
 
-## BOSQICH 9 — Worker sahifalari (09, 10, 11) ⬜
+## BOSQICH 9 — Worker sahifalari (09, 10, 11) ✅
 
 **API:** POST check-in, POST submit-hours, GET /api/attendance/my, GET /api/earnings/my  
 **Fayllar:**
@@ -310,7 +310,7 @@ npm install -D @types/node
 
 ---
 
-## BOSQICH 10 — Admin sahifasi (12) + Block Modal (16) ⬜
+## BOSQICH 10 — Admin sahifasi (12) + Block Modal (16) ✅
 
 **API:** GET /api/admin/users, POST /api/admin/users, PUT /api/admin/users/{id}, DELETE /api/admin/users/{id}, PATCH block/unblock  
 **Fayllar:**
@@ -323,7 +323,7 @@ npm install -D @types/node
 
 ---
 
-## BOSQICH 11 — Yakuniy ishlalar ⬜
+## BOSQICH 11 — Yakuniy ishlalar ✅
 
 1. **Token refresh interceptor** — 401 response → auto refresh → retry
 2. **Error boundary** + global toast xabarlar (API xatolar)
@@ -378,8 +378,8 @@ npm install -D @types/node
 
 ## Joriy holat
 
-**Bajarilgan:** Bosqich 1 ✅ + Bosqich 2 ✅ + Bosqich 3 ✅ + Bosqich 4 ✅ + Bosqich 5 ✅ + Bosqich 6 ✅ + Bosqich 7 ✅  
-**Keyingi qadam:** BOSQICH 8 — Earnings Management (EarningsPage + BonusModal)
+**Bajarilgan:** Bosqich 1–11 HAMMASI ✅ — Frontend to'liq yakunlandi  
+**Build:** `npm run build` — muvaffaqiyatli (281 modul, 560 kB JS, 54 kB CSS)
 
 ---
 

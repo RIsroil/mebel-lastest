@@ -1,32 +1,58 @@
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
   margin-bottom: 16px;
 }
 
-.searchInput {
-  flex: 1;
-  max-width: 280px;
+/* Filters */
+.filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin-bottom: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+  flex-wrap: wrap;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.filterLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.filterSelect,
+.filterDate {
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 8px 10px;
   font-size: 13px;
   color: var(--text);
   font-family: var(--font);
   outline: none;
+  cursor: pointer;
   transition: border-color 0.15s;
+  min-width: 160px;
 }
-.searchInput:focus { border-color: var(--accent); }
+.filterSelect:focus,
+.filterDate:focus { border-color: var(--accent); }
 
-.hint {
+.countHint {
   font-size: 12px;
   color: var(--text3);
-}
-.lowAlert {
-  color: var(--red);
-  font-weight: 600;
+  margin-left: auto;
+  align-self: center;
 }
 
 /* Table */
@@ -63,109 +89,45 @@
 .table tbody tr:last-child td { border-bottom: none; }
 .table tbody tr:hover td { background: var(--surface2); }
 
-.itemName {
-  font-weight: 600;
-  cursor: pointer;
-  color: var(--text) !important;
-  transition: color 0.15s;
-}
-.itemName:hover { color: var(--accent) !important; }
+.workerName { font-weight: 600; }
+.dateCell   { color: var(--text2) !important; font-size: 12px !important; }
+.totalCell  { font-weight: 700; }
 
-.itemDesc {
-  display: block;
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--text3);
-  margin-top: 2px;
-}
-
-.sku {
-  font-size: 12px !important;
-  color: var(--text3) !important;
-  font-family: 'Courier New', monospace;
-}
-
-.qty { font-weight: 600; }
-.lowQty { font-weight: 700; color: var(--red) !important; }
-.minHint { font-size: 11px; color: var(--text3); font-weight: 400; }
-
-.price { font-weight: 700; }
-
-/* Status badges */
-.lowBadge {
+/* Earn type badge */
+.earnBadge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   padding: 3px 9px;
   border-radius: 20px;
   font-size: 11px;
   font-weight: 600;
-  background: var(--red-bg);
-  color: var(--red);
 }
-.lowBadge::before {
-  content: '';
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--red);
-  flex-shrink: 0;
-}
+.earnDaily   { background: var(--blue-bg);   color: var(--blue); }
+.earnHourly  { background: var(--purple-bg); color: var(--purple); }
+.earnComm    { background: var(--accent-bg); color: var(--accent); }
+.earnBonus   { background: var(--green-bg);  color: var(--green); }
 
-.okBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 9px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  background: var(--green-bg);
-  color: var(--green);
-}
-.okBadge::before {
-  content: '';
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--green);
-  flex-shrink: 0;
-}
-
-/* Actions */
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.actionBtn {
-  padding: 5px 10px;
+/* Pay button */
+.payBtn {
+  padding: 5px 11px;
   font-size: 11px;
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text2);
+  border: 1px solid var(--green);
+  background: var(--green-bg);
+  color: var(--green);
   font-family: var(--font);
   transition: all 0.15s;
   white-space: nowrap;
 }
-.actionBtn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.payBtn:hover:not(:disabled) { background: var(--green); color: #fff; }
+.payBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.editBtn { color: var(--accent); border-color: var(--accent); }
-.editBtn:hover { background: var(--accent); color: #fff; }
-
-.arrowBtn {
-  padding: 5px 9px;
-  font-size: 13px;
-  border-radius: 6px;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  background: transparent;
+.paidDate {
+  font-size: 11px;
   color: var(--text3);
-  transition: all 0.15s;
 }
-.arrowBtn:hover { background: var(--surface2); color: var(--text); }
 
 .empty {
   text-align: center;
@@ -174,7 +136,7 @@
   font-size: 13px;
 }
 
-/* Form inside modal */
+/* Bonus form */
 .formRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -205,7 +167,6 @@
   transition: border-color 0.15s;
 }
 .formInput:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(193,127,62,0.1); }
-.formInput:disabled { background: var(--surface2); color: var(--text3); cursor: not-allowed; }
 
 .formSelect {
   width: 100%;
@@ -222,25 +183,6 @@
   transition: border-color 0.15s;
 }
 .formSelect:focus { border-color: var(--accent); }
-
-.txHint {
-  font-size: 12px;
-  color: var(--text2);
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin-bottom: 14px;
-  line-height: 1.4;
-}
-
-.fieldHint {
-  font-size: 10px;
-  color: var(--text3);
-  margin-top: 3px;
-  display: block;
-  font-style: italic;
-}
 
 .errText {
   font-size: 11px;

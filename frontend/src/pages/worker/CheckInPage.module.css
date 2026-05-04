@@ -1,0 +1,211 @@
+.page { display: flex; flex-direction: column; gap: 16px; }
+
+.topGrid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 16px;
+}
+
+/* Clock card */
+.clockCard {
+  background: var(--text);
+  border-radius: var(--radius);
+  padding: 36px 40px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 220px;
+}
+
+.clockTime {
+  font-family: var(--font-display);
+  font-size: 64px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -2px;
+  line-height: 1;
+}
+
+.clockDate {
+  font-size: 14px;
+  color: rgba(255,255,255,0.5);
+  text-transform: capitalize;
+  letter-spacing: 0.3px;
+}
+
+.statusLoading {
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+}
+
+.checkedInStatus {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 8px;
+  background: rgba(45,125,90,0.2);
+  border: 1px solid rgba(45,125,90,0.4);
+  border-radius: 10px;
+  padding: 12px 20px;
+}
+
+.checkIcon {
+  font-size: 22px;
+  color: var(--green);
+  background: var(--green-bg);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.statusTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+.statusSub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  margin-top: 2px;
+}
+
+.checkInBtn {
+  margin-top: 8px;
+  padding: 14px 40px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+}
+
+/* Orders card */
+.ordersCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.emptySmall {
+  font-size: 13px;
+  color: var(--text3);
+}
+
+.orderList { display: flex; flex-direction: column; gap: 10px; }
+
+.orderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  gap: 10px;
+}
+
+.orderInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.orderNum {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.orderTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* History table */
+.tableCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.tableHeader {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.tableTitle { font-size: 14px; font-weight: 700; color: var(--text); flex: 1; }
+.txCount    { font-size: 12px; color: var(--text3); }
+
+.table { width: 100%; border-collapse: collapse; }
+
+.table thead th {
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+
+.table tbody td {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.table tbody tr:last-child td { border-bottom: none; }
+.table tbody tr:hover td { background: var(--surface2); }
+
+.hoursCell { font-weight: 600; }
+.hoursOk      { color: var(--green); }
+.hoursLocked  { color: var(--text3); font-weight: 400; font-size: 12px; }
+.hoursPending { color: var(--red); }
+
+.submittedBadge,
+.lockedBadge,
+.pendingBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.submittedBadge { background: var(--green-bg); color: var(--green); }
+.lockedBadge    { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
+.pendingBadge   { background: var(--accent-bg); color: var(--accent); }
+
+.empty {
+  text-align: center;
+  padding: 32px !important;
+  color: var(--text3);
+  font-size: 13px;
+}

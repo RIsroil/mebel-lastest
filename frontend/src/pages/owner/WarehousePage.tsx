@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import type { Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -40,11 +40,15 @@ type ItemForm = z.infer<typeof itemSchema>
 
 const txSchema = z.object({
   transactionType: z.enum(['IN','OUT','ADJUSTMENT']),
-  quantity:        z.coerce.number().min(0.001, 'Miqdor kiritish shart'),
+  quantity:        z.coerce.number().min(0, "Miqdor kiriting"),
   unitPrice:       z.coerce.number().min(0),
   supplierName:    z.string().optional(),
   invoiceNumber:   z.string().optional(),
   notes:           z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.transactionType !== 'ADJUSTMENT' && data.quantity <= 0) {
+    ctx.addIssue({ code: 'custom', path: ['quantity'], message: "Miqdor 0 dan katta bo'lishi kerak" })
+  }
 })
 type TxForm = z.infer<typeof txSchema>
 
@@ -82,8 +86,11 @@ const WarehousePage = () => {
   })
   const txForm = useForm<TxForm>({
     resolver:      zodResolver(txSchema) as Resolver<TxForm>,
-    defaultValues: { transactionType: 'IN', quantity: 0, unitPrice: 0 },
+    defaultValues: { transactionType: 'IN', unitPrice: 0 },
   })
+
+  // Tranzaksiya turi o'zgarganda dinamik UI uchun
+  const txType = useWatch({ control: txForm.control, name: 'transactionType' })
 
   useEffect(() => {
     setTitle('Ombor')
@@ -102,7 +109,7 @@ const WarehousePage = () => {
   }
   const closeTx = () => {
     setTxItemId(null)
-    txForm.reset({ transactionType: 'IN', quantity: 0, unitPrice: 0 })
+    txForm.reset({ transactionType: 'IN', unitPrice: 0 })
   }
 
   const openEdit = (item: WarehouseItemResponse) => {
@@ -196,7 +203,7 @@ const WarehousePage = () => {
                     <button
                       type="button"
                       className={styles.actionBtn}
-                      onClick={() => { setTxItemId(item.id); txForm.reset({ transactionType: 'IN', quantity: 0, unitPrice: 0 }) }}
+                      onClick={() => { setTxItemId(item.id); txForm.reset({ transactionType: 'IN', unitPrice: 0 }) }}
                     >
                       Tranzaksiya
                     </button>
@@ -319,14 +326,24 @@ const WarehousePage = () => {
             </select>
           </div>
 
+          {/* Kontekstual izoh */}
+          <div className={styles.txHint}>
+            {txType === 'IN'         && '📥 Kirim: zaxira ko\'payadi, o\'rtacha narx yangilanadi'}
+            {txType === 'OUT'        && '📤 Chiqim: zaxira kamayadi, narx o\'rtacha qiymatda hisoblanadi'}
+            {txType === 'ADJUSTMENT' && '⚙ Tuzatish: yangi mutlaq miqdorni kiriting (inventarizatsiya)'}
+          </div>
+
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Miqdor *</label>
+              <label className={styles.formLabel}>
+                {txType === 'ADJUSTMENT' ? 'Yangi mutlaq miqdor *' : 'Miqdor *'}
+              </label>
               <input
                 className={styles.formInput}
                 type="number"
                 step="0.001"
-                placeholder="100"
+                min="0"
+                placeholder={txType === 'ADJUSTMENT' ? 'Masalan: 150' : 'Masalan: 50'}
                 {...txForm.register('quantity')}
               />
               {txForm.formState.errors.quantity && (
@@ -334,34 +351,44 @@ const WarehousePage = () => {
               )}
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Birlik narxi (UZS)</label>
+              <label className={styles.formLabel}>
+                {txType === 'IN' ? 'Birlik narxi (UZS) *' : 'Birlik narxi (UZS)'}
+              </label>
               <input
                 className={styles.formInput}
                 type="number"
-                placeholder="25000"
+                min="0"
+                placeholder={txType === 'IN' ? '25 000' : "O'rtacha narxdan foydalaniladi"}
+                disabled={txType === 'OUT'}
                 {...txForm.register('unitPrice')}
               />
+              {txType === 'OUT' && (
+                <span className={styles.fieldHint}>OUT da backend o'rtacha narxni ishlatadi</span>
+              )}
             </div>
           </div>
 
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Yetkazib beruvchi</label>
-              <input
-                className={styles.formInput}
-                placeholder="Optima"
-                {...txForm.register('supplierName')}
-              />
+          {/* Yetkazib beruvchi va faktura faqat IN uchun */}
+          {txType === 'IN' && (
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Yetkazib beruvchi</label>
+                <input
+                  className={styles.formInput}
+                  placeholder="Optima"
+                  {...txForm.register('supplierName')}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Hisob-faktura №</label>
+                <input
+                  className={styles.formInput}
+                  placeholder="INV-2024-001"
+                  {...txForm.register('invoiceNumber')}
+                />
+              </div>
             </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Hisob-faktura №</label>
-              <input
-                className={styles.formInput}
-                placeholder="INV-2024-001"
-                {...txForm.register('invoiceNumber')}
-              />
-            </div>
-          </div>
+          )}
 
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Izoh</label>

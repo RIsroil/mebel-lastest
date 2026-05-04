@@ -1,8 +1,282 @@
-// TODO: Bosqich 8
-const EarningsPage = () => (
-  <div style={{ padding: 24 }}>
-    <p style={{ fontFamily: 'var(--font)', color: 'var(--text2)' }}>Maosh boshqaruvi — Bosqich 8 da quriladi</p>
-  </div>
-)
+import { useEffect, useMemo, useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useForm } from 'react-hook-form'
+import type { Resolver } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { useTopbar } from '@/context/TopbarContext'
+import { earningApi } from '@/api/earning.api'
+import { adminApi } from '@/api/admin.api'
+import type { EarnType } from '@/types/earning.types'
+import { formatNumber } from '@/utils/formatMoney'
+import { formatDate, toApiDate } from '@/utils/formatDate'
+import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
+import Modal from '@/components/ui/Modal'
+import StatCard from '@/components/ui/StatCard'
+import styles from './EarningsPage.module.css'
+
+const EARN_LABELS: Record<EarnType, string> = {
+  DAILY_WAGE:  'Kunlik',
+  HOURLY_WAGE: 'Soatlik',
+  COMMISSION:  'Komissiya',
+  BONUS:       'Bonus',
+}
+const EARN_CLASS: Record<EarnType, string> = {
+  DAILY_WAGE:  'earnDaily',
+  HOURLY_WAGE: 'earnHourly',
+  COMMISSION:  'earnComm',
+  BONUS:       'earnBonus',
+}
+
+// Default: joriy oy
+const firstOfMonth = (): string => {
+  const d = new Date()
+  d.setDate(1)
+  return toApiDate(d)
+}
+
+const bonusSchema = z.object({
+  workerId:  z.string().min(1, 'Ishchi tanlash shart'),
+  amount:    z.coerce.number().min(1, 'Miqdor kiritish shart'),
+  reason:    z.string().min(2, 'Sabab kiritish shart'),
+  bonusDate: z.string().min(1, 'Sana kiritish shart'),
+})
+type BonusForm = z.infer<typeof bonusSchema>
+
+const EarningsPage = () => {
+  const { setTitle, setActions } = useTopbar()
+  const queryClient = useQueryClient()
+
+  const today = toApiDate(new Date())
+  const [from, setFrom]           = useState(firstOfMonth())
+  const [to, setTo]               = useState(today)
+  const [workerId, setWorkerId]   = useState('')
+  const [showBonus, setShowBonus] = useState(false)
+
+  const { data: workersResp } = useQuery({
+    queryKey: ['workers'],
+    queryFn:  () => adminApi.users.getAll({ role: 'WORKER', size: 200 }),
+  })
+
+  const earningsKey = ['earnings', from, to, workerId]
+  const { data: earningsResp, isLoading } = useQuery({
+    queryKey: earningsKey,
+    queryFn:  () =>
+      workerId
+        ? earningApi.getWorkerEarnings(workerId, { from, to })
+        : earningApi.getWorkshopEarnings({ from, to }),
+  })
+
+  const payMut = useMutation({
+    mutationFn: (id: string) => earningApi.markPaid(id),
+    onSuccess:  () => queryClient.invalidateQueries({ queryKey: earningsKey }),
+  })
+
+  const bonusMut = useMutation({
+    mutationFn: earningApi.addBonus,
+    onSuccess:  () => { queryClient.invalidateQueries({ queryKey: earningsKey }); closeBonus() },
+  })
+
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<BonusForm>({
+    resolver:      zodResolver(bonusSchema) as Resolver<BonusForm>,
+    defaultValues: { bonusDate: today },
+  })
+
+  useEffect(() => {
+    setTitle('Maosh boshqaruvi')
+    setActions(
+      <Button size="sm" onClick={() => setShowBonus(true)}>+ Bonus berish</Button>
+    )
+    return () => { setTitle(''); setActions(null) }
+  }, [setTitle, setActions])
+
+  const closeBonus = () => { setShowBonus(false); reset({ bonusDate: today }) }
+
+  const earnings = earningsResp?.data ?? []
+  const workers  = workersResp?.data?.content ?? []
+
+  const stats = useMemo(() => {
+    const total    = earnings.reduce((s, e) => s + e.totalAmount, 0)
+    const paid     = earnings.filter((e) => e.paid).reduce((s, e) => s + e.totalAmount, 0)
+    const unpaid   = total - paid
+    return { total, paid, unpaid }
+  }, [earnings])
+
+  const onBonusSubmit = (data: BonusForm) => {
+    bonusMut.mutate({
+      workerId:  data.workerId,
+      amount:    data.amount,
+      reason:    data.reason,
+      bonusDate: data.bonusDate,
+    })
+  }
+
+  return (
+    <div>
+      {/* Stats */}
+      <div className={styles.statGrid}>
+        <StatCard label="Jami hisoblangan" value={formatNumber(stats.total)} change="UZS" icon="💰" />
+        <StatCard label="To'langan"         value={formatNumber(stats.paid)}  change="UZS" icon="✅" />
+        <StatCard label="Kutilayotgan"      value={formatNumber(stats.unpaid)} change="UZS" icon="⏳" />
+      </div>
+
+      {/* Filters */}
+      <div className={styles.filters}>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Ishchi</label>
+          <select
+            className={styles.filterSelect}
+            value={workerId}
+            onChange={(e) => setWorkerId(e.target.value)}
+          >
+            <option value="">— Barchasi —</option>
+            {workers.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.fullName || w.username}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Dan</label>
+          <input
+            type="date"
+            className={styles.filterDate}
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+          />
+        </div>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Gacha</label>
+          <input
+            type="date"
+            className={styles.filterDate}
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+          />
+        </div>
+        <span className={styles.countHint}>
+          {earnings.length} ta yozuv
+        </span>
+      </div>
+
+      {/* Table */}
+      <div className={styles.tableCard}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Ishchi</th>
+              <th>Sana</th>
+              <th>Tur</th>
+              <th>Asosiy summa</th>
+              <th>Jami</th>
+              <th>Holat</th>
+              <th>Amal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {earnings.map((e) => (
+              <tr key={e.id}>
+                <td className={styles.workerName}>{e.workerName}</td>
+                <td className={styles.dateCell}>{formatDate(e.earnDate)}</td>
+                <td>
+                  <span className={`${styles.earnBadge} ${styles[EARN_CLASS[e.earnType]]}`}>
+                    {EARN_LABELS[e.earnType]}
+                  </span>
+                </td>
+                <td>{formatNumber(e.baseAmount)}</td>
+                <td className={styles.totalCell}>{formatNumber(e.totalAmount)}</td>
+                <td>
+                  <Badge variant={e.paid ? 'PAID' : 'UNPAID'} />
+                </td>
+                <td>
+                  {!e.paid && (
+                    <button
+                      type="button"
+                      className={styles.payBtn}
+                      disabled={payMut.isPending}
+                      onClick={() => payMut.mutate(e.id)}
+                    >
+                      To'landi ✓
+                    </button>
+                  )}
+                  {e.paid && e.paidAt && (
+                    <span className={styles.paidDate}>{formatDate(e.paidAt)}</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {!isLoading && earnings.length === 0 && (
+              <tr>
+                <td colSpan={7} className={styles.empty}>
+                  Daromad yozuvlari topilmadi
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Bonus modal */}
+      <Modal isOpen={showBonus} onClose={closeBonus} title="Bonus berish">
+        <form onSubmit={handleSubmit(onBonusSubmit)} noValidate>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Ishchi *</label>
+            <select className={styles.formSelect} {...register('workerId')}>
+              <option value="">— Ishchi tanlang —</option>
+              {workers.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.fullName || w.username}
+                </option>
+              ))}
+            </select>
+            {errors.workerId && <span className={styles.errText}>{errors.workerId.message}</span>}
+          </div>
+
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Summa (UZS) *</label>
+              <input
+                className={styles.formInput}
+                type="number"
+                placeholder="50000"
+                {...register('amount')}
+              />
+              {errors.amount && <span className={styles.errText}>{errors.amount.message}</span>}
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Sana *</label>
+              <input
+                className={styles.formInput}
+                type="date"
+                {...register('bonusDate')}
+              />
+            </div>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Sabab *</label>
+            <input
+              className={styles.formInput}
+              placeholder="Yaxshi ish uchun mukofot"
+              {...register('reason')}
+            />
+            {errors.reason && <span className={styles.errText}>{errors.reason.message}</span>}
+          </div>
+
+          <div className={styles.formActions}>
+            <Button type="button" variant="ghost" size="sm" onClick={closeBonus}>
+              Bekor qilish
+            </Button>
+            <Button type="submit" size="sm" loading={bonusMut.isPending}>
+              Bonus berish →
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  )
+}
 
 export default EarningsPage

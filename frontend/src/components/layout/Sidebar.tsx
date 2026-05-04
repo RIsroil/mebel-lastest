@@ -4,16 +4,20 @@ import Avatar from '@/components/ui/Avatar'
 import styles from './Sidebar.module.css'
 import { cn } from '@/utils/cn'
 
+interface Props {
+  isOpen:  boolean
+  onClose: () => void
+}
+
 interface NavItem {
-  to: string
-  icon: string
-  label: string
-  badge?: number
+  to:     string
+  icon:   string
+  label:  string
 }
 
 interface NavSection {
   sectionLabel?: string
-  items: NavItem[]
+  items:         NavItem[]
 }
 
 const OWNER_NAV: NavSection[] = [
@@ -36,9 +40,9 @@ const OWNER_NAV: NavSection[] = [
 const WORKER_NAV: NavSection[] = [
   {
     items: [
-      { to: '/check-in',      icon: '📅', label: 'Kirish / Chiqish' },
-      { to: '/submit-hours',  icon: '⏱️', label: 'Soatlarni topshirish' },
-      { to: '/my-earnings',   icon: '💰', label: 'Mening maoshim' },
+      { to: '/check-in',     icon: '📅', label: 'Kirish / Chiqish' },
+      { to: '/submit-hours', icon: '⏱️', label: 'Soatlarni topshirish' },
+      { to: '/my-earnings',  icon: '💰', label: 'Mening maoshim' },
     ],
   },
 ]
@@ -57,7 +61,7 @@ const ROLE_LABEL: Record<string, string> = {
   ADMIN:  'Admin',
 }
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose }: Props) => {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
 
@@ -73,8 +77,23 @@ const Sidebar = () => {
     navigate('/login', { replace: true })
   }
 
+  const handleNavClick = () => {
+    // Mobilda nav item bosilganda sidebarni yopish
+    onClose()
+  }
+
   return (
-    <nav className={styles.sidebar}>
+    <nav className={cn(styles.sidebar, isOpen && styles.sidebarOpen)}>
+      {/* Mobile close button */}
+      <button
+        type="button"
+        className={styles.closeBtn}
+        onClick={onClose}
+        aria-label="Yopish"
+      >
+        ×
+      </button>
+
       <div className={styles.logo}>
         <div className={styles.logoText}>✦ Mebel MS</div>
         {user.workshopName && (
@@ -91,15 +110,13 @@ const Sidebar = () => {
             <NavLink
               key={item.to}
               to={item.to}
+              onClick={handleNavClick}
               className={({ isActive }) =>
                 cn(styles.item, isActive && styles.active)
               }
             >
               <span className={styles.itemIcon}>{item.icon}</span>
               {item.label}
-              {item.badge != null && item.badge > 0 && (
-                <span className={styles.itemBadge}>{item.badge}</span>
-              )}
             </NavLink>
           ))}
         </div>

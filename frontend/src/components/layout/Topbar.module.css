@@ -5,11 +5,36 @@
   display: flex;
   align-items: center;
   padding: 0 24px;
-  gap: 16px;
+  gap: 14px;
   flex-shrink: 0;
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.hamburger:hover { background: var(--surface2); }
+.hamburger span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: var(--text2);
+  border-radius: 2px;
+  transition: background 0.15s;
 }
 
 .title {
@@ -23,4 +48,9 @@
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .hamburger { display: flex; }
+  .topbar { padding: 0 16px; }
 }
