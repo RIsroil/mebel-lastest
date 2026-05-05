@@ -138,7 +138,6 @@ const WorkshopsPage = () => {
           <DetailRow icon="📍" label="Manzil"   value={workshop.address} />
           <DetailRow icon="📞" label="Telefon"  value={workshop.phone} />
           <DetailRow icon="📝" label="Tavsif"   value={workshop.description} />
-          <DetailRow icon="🆔" label="ID"       value={workshop.id} mono />
           <DetailRow icon="📅" label="Yaratilgan" value={formatDate(workshop.createdAt)} />
         </div>
       </div>
@@ -178,9 +177,10 @@ const DetailRow = ({ icon, label, value, mono }: DetailRowProps) => (
   </div>
 )
 
+const MONTHS = ['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr']
 const formatDate = (iso: string) => {
   const d = new Date(iso)
-  return d.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long', day: 'numeric' })
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
 }
 
 // ── WorkshopForm ─────────────────────────────────────────────────────────────

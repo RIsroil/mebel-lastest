@@ -32,6 +32,16 @@ const schema = z.object({
 })
 type FormData = z.infer<typeof schema>
 
+const updateSchema = z.object({
+  fullName:         z.string().optional(),
+  phone:            z.string().optional(),
+  payType:          z.enum(['DAILY','MONTHLY']),
+  dailyHoursTarget: z.coerce.number().min(1).max(24),
+  dailySalary:      z.coerce.number().min(0),
+  commissionPct:    z.coerce.number().min(0).max(100).optional(),
+})
+type UpdateFormData = z.infer<typeof updateSchema>
+
 const WorkersPage = () => {
   const { setTitle, setActions } = useTopbar()
   const queryClient = useQueryClient()
@@ -39,6 +49,7 @@ const WorkersPage = () => {
   const [search, setSearch]         = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<AdminUserResponse | null>(null)
+  const [editTarget, setEditTarget]     = useState<AdminUserResponse | null>(null)
 
   const { data: workersResp, isLoading } = useQuery({
     queryKey: ['workers'],
@@ -66,6 +77,20 @@ const WorkersPage = () => {
     },
   })
 
+  const updateMut = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateFormData }) =>
+      adminApi.users.update(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workers'] })
+      setEditTarget(null)
+      editForm.reset()
+    },
+  })
+
+  const editForm = useForm<UpdateFormData>({
+    resolver: zodResolver(updateSchema) as Resolver<UpdateFormData>,
+  })
+
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<FormData>({
     resolver:      zodResolver(schema) as Resolver<FormData>,
     defaultValues: { payType: 'DAILY', dailyHoursTarget: 8, dailySalary: 0 },
@@ -78,6 +103,23 @@ const WorkersPage = () => {
   }, [setTitle, setActions])
 
   const handleClose = () => { setShowCreate(false); reset() }
+
+  const openEdit = (worker: AdminUserResponse) => {
+    editForm.reset({
+      fullName:         worker.fullName ?? '',
+      phone:            worker.phone ?? '',
+      payType:          worker.payType ?? 'DAILY',
+      dailyHoursTarget: worker.dailyHoursTarget ?? 8,
+      dailySalary:      worker.dailySalary ?? 0,
+      commissionPct:    worker.commissionPct ?? 0,
+    })
+    setEditTarget(worker)
+  }
+
+  const onEditSubmit = (data: UpdateFormData) => {
+    if (!editTarget) return
+    updateMut.mutate({ id: editTarget.id, body: data })
+  }
 
   const onSubmit = (data: FormData) => {
     createMut.mutate({
@@ -170,13 +212,22 @@ const WorkersPage = () => {
                       : <span className={styles.inactiveBadge}>Nofaol</span>}
                 </td>
                 <td>
-                  <button
-                    type="button"
-                    className={styles.deleteBtn}
-                    onClick={() => setDeleteTarget(worker)}
-                  >
-                    O'chirish
-                  </button>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      type="button"
+                      className={styles.editBtn}
+                      onClick={() => openEdit(worker)}
+                    >
+                      Tahrirlash
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.deleteBtn}
+                      onClick={() => setDeleteTarget(worker)}
+                    >
+                      O'chirish
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -280,6 +331,73 @@ const WorkersPage = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Edit worker modal */}
+      <Modal
+        isOpen={editTarget !== null}
+        onClose={() => { setEditTarget(null); editForm.reset() }}
+        title="Ishchini tahrirlash"
+      >
+        {editTarget && (
+          <form onSubmit={editForm.handleSubmit(onEditSubmit)} noValidate>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, padding: '10px 12px', background: 'var(--surface2)', borderRadius: 8 }}>
+              <Avatar name={editTarget.fullName || editTarget.username} role="WORKER" size="sm" />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{editTarget.fullName || editTarget.username}</div>
+                <div style={{ fontSize: 11, color: 'var(--text3)' }}>@{editTarget.username}</div>
+              </div>
+            </div>
+
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>To'liq ism</label>
+                <input className={styles.formInput} placeholder="Ali Xasanov" {...editForm.register('fullName')} />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Telefon</label>
+                <input className={styles.formInput} placeholder="+998901234567" {...editForm.register('phone')} />
+              </div>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>To'lov turi *</label>
+              <div className={styles.radioGroup}>
+                <label className={styles.radioLabel}>
+                  <input type="radio" value="DAILY" {...editForm.register('payType')} /> Kunlik
+                </label>
+                <label className={styles.radioLabel}>
+                  <input type="radio" value="MONTHLY" {...editForm.register('payType')} /> Oylik
+                </label>
+              </div>
+            </div>
+
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Kunlik soat maqsadi *</label>
+                <input className={styles.formInput} type="number" min={1} max={24} {...editForm.register('dailyHoursTarget')} />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Kunlik maosh (UZS)</label>
+                <input className={styles.formInput} type="number" min={0} {...editForm.register('dailySalary')} />
+              </div>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Komissiya foizi (%)</label>
+              <input className={styles.formInput} type="number" min={0} max={100} step="0.01" placeholder="0" {...editForm.register('commissionPct')} />
+            </div>
+
+            <div className={styles.formActions}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => { setEditTarget(null); editForm.reset() }}>
+                Bekor qilish
+              </Button>
+              <Button type="submit" size="sm" loading={updateMut.isPending}>
+                Saqlash →
+              </Button>
+            </div>
+          </form>
+        )}
       </Modal>
 
       {/* Delete confirm modal */}

@@ -147,6 +147,21 @@
   flex-shrink: 0;
 }
 
+/* Edit button */
+.editBtn {
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  font-family: var(--font);
+  transition: all 0.15s;
+}
+.editBtn:hover { background: var(--surface2); color: var(--text); }
+
 /* Delete button */
 .deleteBtn {
   padding: 5px 10px;

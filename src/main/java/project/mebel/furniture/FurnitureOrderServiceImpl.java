@@ -355,6 +355,7 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                             .unitPriceAtTime(m.getUnitPriceAtTime())
                             .totalCost(m.getTotalCost())
                             .notes(m.getNotes())
+                            .givenAt(m.getGivenAt())
                             .build();
                 }).toList();
 

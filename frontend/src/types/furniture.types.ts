@@ -17,6 +17,7 @@ export interface MaterialUsage {
   unitPriceAtTime: number
   totalCost: number
   notes: string | null
+  givenAt: string | null
 }
 
 export interface FurnitureOrderResponse {

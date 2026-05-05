@@ -50,5 +50,6 @@ public class FurnitureOrderResponse {
         private BigDecimal unitPriceAtTime;
         private BigDecimal totalCost;
         private String notes;
+        private LocalDateTime givenAt;
     }
 }

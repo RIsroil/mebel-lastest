@@ -11,7 +11,7 @@ import { warehouseApi } from '@/api/warehouse.api'
 import { adminApi } from '@/api/admin.api'
 import type { FurnitureStatus } from '@/types/furniture.types'
 import { formatNumber } from '@/utils/formatMoney'
-import { formatDate } from '@/utils/formatDate'
+import { formatDate, formatDateTime } from '@/utils/formatDate'
 import Badge from '@/components/ui/Badge'
 import Avatar from '@/components/ui/Avatar'
 import Button from '@/components/ui/Button'
@@ -68,6 +68,7 @@ const OrderDetailPage = () => {
       furnitureApi.orders.changeStatus(id!, { status }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['order', id] }),
   })
+  const changeStatusMutate = changeStatusMutation.mutate
 
   const addMaterialMutation = useMutation({
     mutationFn: (body: MaterialFormData) =>
@@ -150,7 +151,7 @@ const OrderDetailPage = () => {
                     type="button"
                     className={styles.statusOption}
                     onClick={() => {
-                      changeStatusMutation.mutate(s)
+                      changeStatusMutate(s)
                       setShowStatusMenu(false)
                     }}
                   >
@@ -167,7 +168,7 @@ const OrderDetailPage = () => {
       setTitle('')
       setActions(null)
     }
-  }, [order, showStatusMenu, setTitle, setActions, changeStatusMutation])
+  }, [order, showStatusMenu, changeStatusMutate])
 
   if (isLoading) return <p style={{ padding: 24, color: 'var(--text3)' }}>Yuklanmoqda...</p>
   if (!order)    return <p style={{ padding: 24, color: 'var(--red)' }}>Buyurtma topilmadi</p>
@@ -200,6 +201,8 @@ const OrderDetailPage = () => {
                   <th>Miqdor</th>
                   <th>Birlik narx</th>
                   <th>Jami</th>
+                  <th>Vaqt</th>
+                  <th>Izoh</th>
                 </tr>
               </thead>
               <tbody>
@@ -209,11 +212,17 @@ const OrderDetailPage = () => {
                     <td>{m.quantityUsed}</td>
                     <td>{formatNumber(m.unitPriceAtTime)}</td>
                     <td style={{ fontWeight: 700 }}>{formatNumber(m.totalCost)}</td>
+                    <td style={{ fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
+                      {m.givenAt ? formatDateTime(m.givenAt) : '—'}
+                    </td>
+                    <td style={{ fontSize: 12, color: 'var(--text2)', maxWidth: 160 }}>
+                      {m.notes || '—'}
+                    </td>
                   </tr>
                 ))}
                 {order.materialUsages.length === 0 && (
                   <tr>
-                    <td colSpan={4} className={styles.empty}>Material qo'shilmagan</td>
+                    <td colSpan={6} className={styles.empty}>Material qo'shilmagan</td>
                   </tr>
                 )}
               </tbody>
