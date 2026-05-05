@@ -41,9 +41,10 @@ const OrderDetailPage = () => {
   const queryClient  = useQueryClient()
   const { setTitle, setActions } = useTopbar()
 
-  const [showStatusMenu,  setShowStatusMenu]  = useState(false)
-  const [showAddMaterial, setShowAddMaterial] = useState(false)
+  const [showStatusMenu,   setShowStatusMenu]   = useState(false)
+  const [showAddMaterial,  setShowAddMaterial]  = useState(false)
   const [showAssignWorker, setShowAssignWorker] = useState(false)
+  const [assignWorkerData, setAssignWorkerData] = useState<{ workerId: string; commissionPct: string } | null>(null)
   const statusMenuRef = useRef<HTMLDivElement>(null)
 
   const { data: orderResp, isLoading } = useQuery({
@@ -84,11 +85,12 @@ const OrderDetailPage = () => {
   })
 
   const assignWorkerMutation = useMutation({
-    mutationFn: (workerId: string) =>
-      furnitureApi.orders.assignWorker(id!, { workerId }),
+    mutationFn: (body: { workerId: string; commissionPct?: number | null }) =>
+      furnitureApi.orders.assignWorker(id!, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order', id] })
       setShowAssignWorker(false)
+      setAssignWorkerData(null)
     },
   })
 
@@ -102,11 +104,11 @@ const OrderDetailPage = () => {
     resolver: zodResolver(materialSchema) as Resolver<MaterialFormData>,
   })
 
-  const order   = orderResp?.data
-  const items   = itemsResp?.data ?? []
-  const workers = workersResp?.data?.content ?? []
+  const order   = orderResp?.data?.data
+  const items   = itemsResp?.data?.data ?? []
+  const workers = workersResp?.data?.data?.content ?? []
 
-  const assignedIds = new Set(order?.assignedWorkers.map((w) => w.workerId) ?? [])
+  const assignedIds = new Set((order?.assignedWorkers ?? []).map((w) => w.workerId))
   const availableWorkers = workers.filter((w) => !assignedIds.has(w.id))
 
   const profit     = order ? order.salePrice - order.actualMaterialCost : 0
@@ -283,8 +285,15 @@ const OrderDetailPage = () => {
               <div key={w.workerId} className={styles.workerItem}>
                 <Avatar name={w.workerName} role="WORKER" size="sm" />
                 <div style={{ flex: 1 }}>
-                  <div className={styles.workerName}>{w.workerName}</div>
-                  <div className={styles.workerDate}>{formatDate(w.assignedAt)} dan</div>
+                  <div className={styles.workerName}>{w.workerName ?? '—'}</div>
+                  <div className={styles.workerDate}>
+                    {w.assignedAt ? formatDate(w.assignedAt) + ' dan' : ''}
+                    {w.commissionPct != null && w.commissionPct > 0 && (
+                      <span style={{ marginLeft: 8, color: 'var(--accent)', fontSize: 11 }}>
+                        {w.commissionPct}% komissiya
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <Button
                   variant="danger"
@@ -418,11 +427,11 @@ const OrderDetailPage = () => {
         </form>
       </Modal>
 
-      {/* Assign worker modal */}
+      {/* Assign worker — worker tanlash */}
       <Modal
-        isOpen={showAssignWorker}
+        isOpen={showAssignWorker && assignWorkerData === null}
         onClose={() => setShowAssignWorker(false)}
-        title="Ishchi biriktirish"
+        title="Ishchi tanlash"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {availableWorkers.map((w) => (
@@ -438,23 +447,92 @@ const OrderDetailPage = () => {
                 cursor: 'pointer',
                 transition: 'background 0.1s',
               }}
-              onClick={() => assignWorkerMutation.mutate(w.id)}
+              onClick={() => setAssignWorkerData({ workerId: w.id, commissionPct: String(w.commissionPct ?? '') })}
             >
               <Avatar name={w.fullName || w.username} role="WORKER" size="sm" />
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>
                   {w.fullName || w.username}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--text3)' }}>
                   @{w.username}
+                  {w.commissionPct != null && w.commissionPct > 0 && (
+                    <span style={{ marginLeft: 8, color: 'var(--accent)' }}>
+                      Komissiya: {w.commissionPct}%
+                    </span>
+                  )}
                 </div>
               </div>
+              <span style={{ fontSize: 18, color: 'var(--text3)' }}>→</span>
             </div>
           ))}
           {availableWorkers.length === 0 && (
             <p className={styles.empty}>Barcha ishchilar biriktirilgan</p>
           )}
         </div>
+      </Modal>
+
+      {/* Assign worker — komissiya tasdiqlash */}
+      <Modal
+        isOpen={showAssignWorker && assignWorkerData !== null}
+        onClose={() => { setAssignWorkerData(null); setShowAssignWorker(false) }}
+        title="Komissiya sozlamalari"
+      >
+        {assignWorkerData && (
+          <div>
+            {(() => {
+              const w = availableWorkers.find((x) => x.id === assignWorkerData.workerId)
+              return w ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, padding: '10px 12px', background: 'var(--surface2)', borderRadius: 8 }}>
+                  <Avatar name={w.fullName || w.username} role="WORKER" size="sm" />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{w.fullName || w.username}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)' }}>@{w.username}</div>
+                  </div>
+                </div>
+              ) : null
+            })()}
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>
+                Komissiya foizi (%)
+                <span style={{ fontWeight: 400, color: 'var(--text3)', marginLeft: 8 }}>
+                  0 kiritsangiz komissiya hisoblanmaydi
+                </span>
+              </label>
+              <input
+                className={styles.formInput}
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                placeholder="0"
+                value={assignWorkerData.commissionPct}
+                onChange={(e) => setAssignWorkerData({ ...assignWorkerData, commissionPct: e.target.value })}
+              />
+            </div>
+            <div className={styles.formActions}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setAssignWorkerData(null)}
+              >
+                ← Orqaga
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                loading={assignWorkerMutation.isPending}
+                onClick={() => {
+                  const pct = assignWorkerData.commissionPct === '' ? null : Number(assignWorkerData.commissionPct)
+                  assignWorkerMutation.mutate({ workerId: assignWorkerData.workerId, commissionPct: pct })
+                }}
+              >
+                Biriktirish →
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

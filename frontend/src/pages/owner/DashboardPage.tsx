@@ -51,10 +51,10 @@ const DashboardPage = () => {
     queryFn: () => adminApi.users.getAll({ role: 'WORKER', size: 100 }),
   })
 
-  const orders    = ordersResp?.data    ?? []
-  const items     = itemsResp?.data     ?? []
-  const attendance = attendanceResp?.data ?? []
-  const workers   = workersResp?.data?.content ?? []
+  const orders    = ordersResp?.data?.data    ?? []
+  const items     = itemsResp?.data?.data     ?? []
+  const attendance = attendanceResp?.data?.data ?? []
+  const workers   = workersResp?.data?.data?.content ?? []
 
   const activeOrders  = orders.filter((o) => o.status === 'IN_PROGRESS' || o.status === 'DRAFT')
   const warehouseValue = items.reduce((sum, i) => sum + i.totalValue, 0)

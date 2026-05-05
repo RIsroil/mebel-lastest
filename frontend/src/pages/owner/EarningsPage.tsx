@@ -93,8 +93,8 @@ const EarningsPage = () => {
 
   const closeBonus = () => { setShowBonus(false); reset({ bonusDate: today }) }
 
-  const earnings = earningsResp?.data ?? []
-  const workers  = workersResp?.data?.content ?? []
+  const earnings = earningsResp?.data?.data ?? []
+  const workers  = workersResp?.data?.data?.content ?? []
 
   const stats = useMemo(() => {
     const total    = earnings.reduce((s, e) => s + e.totalAmount, 0)

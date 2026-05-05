@@ -50,8 +50,8 @@ const MyEarningsPage = () => {
     return () => { setTitle(''); setActions(null) }
   }, [setTitle, setActions])
 
-  const earnings     = allResp?.data  ?? []
-  const weekEarnings = weekResp?.data ?? []
+  const earnings     = allResp?.data?.data  ?? []
+  const weekEarnings = weekResp?.data?.data ?? []
 
   const stats = useMemo(() => {
     const total  = earnings.reduce((s, e) => s + e.totalAmount, 0)

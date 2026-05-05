@@ -15,6 +15,7 @@ import OrderDetailPage from '@/pages/owner/OrderDetailPage'
 import WarehousePage from '@/pages/owner/WarehousePage'
 import WarehouseDetailPage from '@/pages/owner/WarehouseDetailPage'
 import WorkersPage from '@/pages/owner/WorkersPage'
+import WorkshopsPage from '@/pages/owner/WorkshopsPage'
 import EarningsPage from '@/pages/owner/EarningsPage'
 
 import CheckInPage from '@/pages/worker/CheckInPage'
@@ -53,8 +54,9 @@ export const router = createBrowserRouter([
               { path: '/orders/:id', element: <OrderDetailPage /> },
               { path: '/warehouse', element: <WarehousePage /> },
               { path: '/warehouse/:id', element: <WarehouseDetailPage /> },
-              { path: '/workers', element: <WorkersPage /> },
-              { path: '/earnings', element: <EarningsPage /> },
+              { path: '/workers',   element: <WorkersPage /> },
+              { path: '/workshops', element: <WorkshopsPage /> },
+              { path: '/earnings',  element: <EarningsPage /> },
             ],
           },
 

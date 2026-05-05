@@ -132,7 +132,7 @@ const WarehousePage = () => {
     if (txItemId) txMut.mutate({ id: txItemId, body: data })
   }
 
-  const items    = itemsResp?.data ?? []
+  const items    = itemsResp?.data?.data ?? []
   const filtered = items.filter((i) => {
     if (!search) return true
     const q = search.toLowerCase()

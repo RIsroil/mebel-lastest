@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 import project.mebel.common.entity.MutableAuditEntity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -32,6 +33,9 @@ public class FurnitureAssignmentEntity extends MutableAuditEntity {
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private boolean active = true;
+
+    @Column(name = "commission_pct", precision = 5, scale = 2)
+    private BigDecimal commissionPct;
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;

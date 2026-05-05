@@ -154,10 +154,15 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
         assignmentRepo.findByFurnitureOrderIdAndWorkerIdAndActiveTrue(orderId, worker.getId())
                 .ifPresent(a -> { throw ApiException.badRequest("worker.already.assigned"); });
 
+        BigDecimal commissionPct = request.getCommissionPct() != null
+                ? request.getCommissionPct()
+                : worker.getCommissionPct();
+
         FurnitureAssignmentEntity assignment = FurnitureAssignmentEntity.builder()
                 .furnitureOrderId(orderId)
                 .workerId(worker.getId())
                 .assignedAt(LocalDateTime.now())
+                .commissionPct(commissionPct)
                 .build();
         assignment.setCreatedBy(owner.getId());
         assignmentRepo.save(assignment);
@@ -264,8 +269,9 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
 
         for (FurnitureAssignmentEntity assignment : activeAssignments) {
             userRepo.findById(assignment.getWorkerId()).ifPresent(worker -> {
-                BigDecimal commissionPct = worker.getCommissionPct() != null
-                        ? worker.getCommissionPct() : BigDecimal.ZERO;
+                BigDecimal commissionPct = assignment.getCommissionPct() != null
+                        ? assignment.getCommissionPct()
+                        : (worker.getCommissionPct() != null ? worker.getCommissionPct() : BigDecimal.ZERO);
                 if (commissionPct.compareTo(BigDecimal.ZERO) == 0) return;
 
                 BigDecimal commissionAmount = order.getSalePrice()
@@ -323,7 +329,7 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
         List<FurnitureAssignmentEntity> assignments = assignmentRepo.findAllByFurnitureOrderId(o.getId());
         List<MaterialUsageEntity> usages = usageRepo.findAllByFurnitureOrderId(o.getId());
 
-        List<FurnitureOrderResponse.AssignedWorkerResponse> workers = assignments.stream()
+        List<FurnitureOrderResponse.AssignedWorkerResponse> assignedWorkers = assignments.stream()
                 .map(a -> {
                     String workerName = userRepo.findById(a.getWorkerId())
                             .map(UserEntity::getFullName).orElse(null);
@@ -331,11 +337,13 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                             .assignmentId(a.getId())
                             .workerId(a.getWorkerId())
                             .workerName(workerName)
+                            .assignedAt(a.getAssignedAt())
+                            .commissionPct(a.getCommissionPct())
                             .active(a.isActive())
                             .build();
                 }).toList();
 
-        List<FurnitureOrderResponse.MaterialUsageResponse> materials = usages.stream()
+        List<FurnitureOrderResponse.MaterialUsageResponse> materialUsages = usages.stream()
                 .map(m -> {
                     String itemName = warehouseItemRepo.findById(m.getWarehouseItemId())
                             .map(WarehouseItemEntity::getName).orElse(null);
@@ -346,6 +354,7 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                             .quantityUsed(m.getQuantityUsed())
                             .unitPriceAtTime(m.getUnitPriceAtTime())
                             .totalCost(m.getTotalCost())
+                            .notes(m.getNotes())
                             .build();
                 }).toList();
 
@@ -365,8 +374,8 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                 .completedAt(o.getCompletedAt())
                 .soldAt(o.getSoldAt())
                 .createdAt(o.getCreatedAt())
-                .workers(workers)
-                .materials(materials)
+                .assignedWorkers(assignedWorkers)
+                .materialUsages(materialUsages)
                 .build();
     }
 }

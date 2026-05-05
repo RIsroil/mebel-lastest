@@ -54,7 +54,7 @@ const OrdersPage = () => {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       setShowCreate(false)
-      navigate(`/orders/${res.data.id}`)
+      navigate(`/orders/${res.data.data.id}`)
     },
   })
 
@@ -74,7 +74,7 @@ const OrdersPage = () => {
     }
   }, [setTitle, setActions])
 
-  const orders   = ordersResp?.data ?? []
+  const orders   = ordersResp?.data?.data ?? []
   const filtered = orders.filter((o) => {
     if (activeTab !== 'ALL' && o.status !== activeTab) return false
     if (search) {

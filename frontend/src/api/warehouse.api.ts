@@ -1,4 +1,5 @@
 import api from './axiosInstance'
+import type { ApiResponse } from '@/types/common.types'
 import type {
   WarehouseItemResponse,
   CreateWarehouseItemRequest,
@@ -9,16 +10,16 @@ import type {
 export const warehouseApi = {
   items: {
     getAll: () =>
-      api.get<WarehouseItemResponse[]>('/api/warehouse/items'),
+      api.get<ApiResponse<WarehouseItemResponse[]>>('/api/warehouse/items'),
 
     getById: (id: string) =>
-      api.get<WarehouseItemResponse>(`/api/warehouse/items/${id}`),
+      api.get<ApiResponse<WarehouseItemResponse>>(`/api/warehouse/items/${id}`),
 
     create: (body: CreateWarehouseItemRequest) =>
-      api.post<WarehouseItemResponse>('/api/warehouse/items', body),
+      api.post<ApiResponse<WarehouseItemResponse>>('/api/warehouse/items', body),
 
     update: (id: string, body: CreateWarehouseItemRequest) =>
-      api.put<WarehouseItemResponse>(`/api/warehouse/items/${id}`, body),
+      api.put<ApiResponse<WarehouseItemResponse>>(`/api/warehouse/items/${id}`, body),
 
     remove: (id: string) =>
       api.delete(`/api/warehouse/items/${id}`),
@@ -26,9 +27,9 @@ export const warehouseApi = {
 
   transactions: {
     getByItem: (itemId: string) =>
-      api.get<WarehouseTransactionResponse[]>(`/api/warehouse/items/${itemId}/transactions`),
+      api.get<ApiResponse<WarehouseTransactionResponse[]>>(`/api/warehouse/items/${itemId}/transactions`),
 
     create: (itemId: string, body: CreateTransactionRequest) =>
-      api.post<WarehouseTransactionResponse>(`/api/warehouse/items/${itemId}/transactions`, body),
+      api.post<ApiResponse<WarehouseTransactionResponse>>(`/api/warehouse/items/${itemId}/transactions`, body),
   },
 }

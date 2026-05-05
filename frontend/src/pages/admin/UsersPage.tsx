@@ -189,9 +189,9 @@ const UsersPage = () => {
     blockMut.mutate({ id: blockUser.id, reason: data.reason, blockDays: data.blockDays || undefined })
   }
 
-  const users     = usersResp?.data?.content ?? []
-  const totalPages = usersResp?.data?.totalPages ?? 1
-  const workshops = workshopsResp?.data?.content ?? []
+  const users      = usersResp?.data?.data?.content ?? []
+  const totalPages = usersResp?.data?.data?.totalPages ?? 1
+  const workshops  = workshopsResp?.data?.data?.content ?? []
 
   // Client-side search filter
   const filtered = users.filter((u) => {
@@ -237,7 +237,7 @@ const UsersPage = () => {
           ))}
         </select>
         <span className={styles.hint}>
-          Jami: <strong>{usersResp?.data?.totalElements ?? 0}</strong> ta
+          Jami: <strong>{usersResp?.data?.data?.totalElements ?? 0}</strong> ta
         </span>
       </div>
 

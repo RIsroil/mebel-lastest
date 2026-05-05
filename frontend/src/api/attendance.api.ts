@@ -1,22 +1,23 @@
 import api from './axiosInstance'
+import type { ApiResponse } from '@/types/common.types'
 import type { AttendanceResponse, SubmitHoursRequest, OverrideHoursRequest } from '@/types/attendance.types'
 
 export const attendanceApi = {
   checkIn: () =>
-    api.post<AttendanceResponse>('/api/attendance/check-in'),
+    api.post<ApiResponse<AttendanceResponse>>('/api/attendance/check-in'),
 
   submitHours: (body: SubmitHoursRequest) =>
-    api.post<AttendanceResponse>('/api/attendance/submit-hours', body),
+    api.post<ApiResponse<AttendanceResponse>>('/api/attendance/submit-hours', body),
 
   overrideHours: (id: string, body: OverrideHoursRequest) =>
-    api.patch<AttendanceResponse>(`/api/attendance/${id}/override`, body),
+    api.patch<ApiResponse<AttendanceResponse>>(`/api/attendance/${id}/override`, body),
 
   getMyHistory: (params: { from: string; to: string }) =>
-    api.get<AttendanceResponse[]>('/api/attendance/my', { params }),
+    api.get<ApiResponse<AttendanceResponse[]>>('/api/attendance/my', { params }),
 
   getWorkshopByDate: (date: string) =>
-    api.get<AttendanceResponse[]>('/api/attendance/workshop', { params: { date } }),
+    api.get<ApiResponse<AttendanceResponse[]>>('/api/attendance/workshop', { params: { date } }),
 
   getWorkerHistory: (workerId: string, params: { from: string; to: string }) =>
-    api.get<AttendanceResponse[]>(`/api/attendance/workers/${workerId}`, { params }),
+    api.get<ApiResponse<AttendanceResponse[]>>(`/api/attendance/workers/${workerId}`, { params }),
 }

@@ -57,9 +57,9 @@ const CheckInPage = () => {
     return () => { setTitle(''); setActions(null) }
   }, [setTitle, setActions])
 
-  const todayAttendance = todayResp?.data?.[0] ?? null
-  const history         = historyResp?.data ?? []
-  const allOrders       = ordersResp?.data ?? []
+  const todayAttendance = todayResp?.data?.data?.[0] ?? null
+  const history         = historyResp?.data?.data ?? []
+  const allOrders       = ordersResp?.data?.data ?? []
 
   const myOrders = allOrders.filter(
     (o) =>

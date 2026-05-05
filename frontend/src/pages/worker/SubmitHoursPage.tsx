@@ -61,7 +61,7 @@ const SubmitHoursPage = () => {
     return () => { setTitle(''); setActions(null) }
   }, [setTitle, setActions])
 
-  const records = historyResp?.data ?? []
+  const records = historyResp?.data?.data ?? []
 
   // Tasnif: kiritish kerak bo'lganlar, allaqachon kiritilganlar, muddati o'tganlar
   const pending  = records.filter((r) => !r.hoursLocked && r.hoursSelfReported == null)

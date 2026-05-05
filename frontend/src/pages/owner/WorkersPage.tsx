@@ -90,8 +90,8 @@ const WorkersPage = () => {
     })
   }
 
-  const workers   = workersResp?.data?.content ?? []
-  const workshops = workshopsResp?.data?.content ?? []
+  const workers   = workersResp?.data?.data?.content ?? []
+  const workshops = workshopsResp?.data?.data?.content ?? []
 
   const filtered = workers.filter((w) => {
     if (!search) return true

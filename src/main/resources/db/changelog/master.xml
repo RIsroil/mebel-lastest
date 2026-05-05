@@ -25,5 +25,6 @@
     <include file="changes/018-create-bonuses-table.xml" relativeToChangelogFile="true"/>
     <include file="changes/019-create-indexes.xml" relativeToChangelogFile="true"/>
     <include file="changes/020-alter-table-users.xml" relativeToChangelogFile="true"/>
+    <include file="changes/021-alter-furniture-assignments-add-commission-pct.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

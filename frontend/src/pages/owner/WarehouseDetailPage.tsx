@@ -38,8 +38,8 @@ const WarehouseDetailPage = () => {
     enabled:  !!id,
   })
 
-  const item         = itemResp?.data
-  const transactions = txResp?.data ?? []
+  const item         = itemResp?.data?.data
+  const transactions = txResp?.data?.data ?? []
 
   useEffect(() => {
     setTitle(item?.name ?? 'Ombor')

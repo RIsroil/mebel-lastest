@@ -28,14 +28,16 @@ public class FurnitureOrderResponse {
     private LocalDateTime completedAt;
     private LocalDateTime soldAt;
     private LocalDateTime createdAt;
-    private List<AssignedWorkerResponse> workers;
-    private List<MaterialUsageResponse> materials;
+    private List<AssignedWorkerResponse> assignedWorkers;
+    private List<MaterialUsageResponse> materialUsages;
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
     public static class AssignedWorkerResponse {
         private UUID assignmentId;
         private UUID workerId;
         private String workerName;
+        private LocalDateTime assignedAt;
+        private BigDecimal commissionPct;
         private boolean active;
     }
 
@@ -47,5 +49,6 @@ public class FurnitureOrderResponse {
         private BigDecimal quantityUsed;
         private BigDecimal unitPriceAtTime;
         private BigDecimal totalCost;
+        private String notes;
     }
 }

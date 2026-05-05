@@ -1,9 +1,12 @@
 export type FurnitureStatus = 'DRAFT' | 'IN_PROGRESS' | 'COMPLETED' | 'SOLD' | 'CANCELLED'
 
 export interface AssignedWorker {
+  assignmentId: string
   workerId: string
-  workerName: string
-  assignedAt: string
+  workerName: string | null
+  assignedAt: string | null
+  commissionPct: number | null
+  active: boolean
 }
 
 export interface MaterialUsage {
@@ -54,6 +57,7 @@ export interface ChangeStatusRequest {
 
 export interface AssignWorkerRequest {
   workerId: string
+  commissionPct?: number | null
 }
 
 export interface AddMaterialRequest {

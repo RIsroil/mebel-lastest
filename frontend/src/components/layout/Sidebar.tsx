@@ -23,9 +23,10 @@ interface NavSection {
 const OWNER_NAV: NavSection[] = [
   {
     items: [
-      { to: '/dashboard', icon: '📊', label: 'Dashboard' },
-      { to: '/orders',    icon: '🛋️', label: 'Buyurtmalar' },
-      { to: '/warehouse', icon: '📦', label: 'Ombor' },
+      { to: '/dashboard',  icon: '📊', label: 'Dashboard' },
+      { to: '/orders',     icon: '🛋️', label: 'Buyurtmalar' },
+      { to: '/warehouse',  icon: '📦', label: 'Ombor' },
+      { to: '/workshops',  icon: '🏭', label: 'Korxonalar' },
     ],
   },
   {
