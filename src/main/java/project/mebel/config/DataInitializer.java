@@ -64,10 +64,10 @@ public class DataInitializer implements CommandLineRunner {
         String pwd = passwordEncoder.encode("owner123");
 
         // ── Workshop 1: Toshkent Mebel ──────────────────────────────────────
-        WorkshopEntity ws1 = saveWorkshop("Toshkent Mebel", "Toshkent, Yunusobod", "+998901001001", "Zamonaviy mebel ishlab chiqarish");
-        UserEntity o1 = saveOwner("owner1", pwd, "Bobur Karimov", "+998901001000", ws1.getId());
-        ws1.setOwnerId(o1.getId());
-        workshopRepo.save(ws1);
+        UserEntity o1 = saveOwner("owner1", pwd, "Bobur Karimov", "+998901001000", null);
+        WorkshopEntity ws1 = saveWorkshop("Toshkent Mebel", "Toshkent, Yunusobod", "+998901001001", "Zamonaviy mebel ishlab chiqarish", o1.getId());
+        o1.setWorkshopId(ws1.getId());
+        userRepo.save(o1);
 
         UserEntity w1a = saveWorker("worker1a", pwd, "Ali Xasanov",    "+998901002001", ws1.getId(), PayType.DAILY,   8, 250_000, 5);
         UserEntity w1b = saveWorker("worker1b", pwd, "Sarvar Toshev",  "+998901002002", ws1.getId(), PayType.MONTHLY, 8, 150_000, 0);
@@ -85,10 +85,10 @@ public class DataInitializer implements CommandLineRunner {
         createInProgressOrder(ws1, o1, w1a, w1b, items1, "Kitob javoni", 2_900_000);
 
         // ── Workshop 2: Samarqand Wood ──────────────────────────────────────
-        WorkshopEntity ws2 = saveWorkshop("Samarqand Wood", "Samarqand, Registon ko'chasi 12", "+998936002002", "Antik uslubdagi mebel");
-        UserEntity o2 = saveOwner("owner2", pwd, "Dilnoza Yusupova", "+998936002000", ws2.getId());
-        ws2.setOwnerId(o2.getId());
-        workshopRepo.save(ws2);
+        UserEntity o2 = saveOwner("owner2", pwd, "Dilnoza Yusupova", "+998936002000", null);
+        WorkshopEntity ws2 = saveWorkshop("Samarqand Wood", "Samarqand, Registon ko'chasi 12", "+998936002002", "Antik uslubdagi mebel", o2.getId());
+        o2.setWorkshopId(ws2.getId());
+        userRepo.save(o2);
 
         UserEntity w2a = saveWorker("worker2a", pwd, "Zafar Mirzayev",   "+998936003001", ws2.getId(), PayType.DAILY,   9, 300_000, 8);
         UserEntity w2b = saveWorker("worker2b", pwd, "Kamola Hamidova",  "+998936003002", ws2.getId(), PayType.DAILY,   8, 220_000, 5);
@@ -106,10 +106,10 @@ public class DataInitializer implements CommandLineRunner {
         createInProgressOrder(ws2, o2, w2a, w2b, items2, "Bolalar divanchasi", 3_200_000);
 
         // ── Workshop 3: Farg'ona Craft ──────────────────────────────────────
-        WorkshopEntity ws3 = saveWorkshop("Farg'ona Craft", "Farg'ona, Mustaqillik 5", "+998732003003", "Hunarmandchilik mebellar");
-        UserEntity o3 = saveOwner("owner3", pwd, "Sherzod Nazarov", "+998732003000", ws3.getId());
-        ws3.setOwnerId(o3.getId());
-        workshopRepo.save(ws3);
+        UserEntity o3 = saveOwner("owner3", pwd, "Sherzod Nazarov", "+998732003000", null);
+        WorkshopEntity ws3 = saveWorkshop("Farg'ona Craft", "Farg'ona, Mustaqillik 5", "+998732003003", "Hunarmandchilik mebellar", o3.getId());
+        o3.setWorkshopId(ws3.getId());
+        userRepo.save(o3);
 
         UserEntity w3a = saveWorker("worker3a", pwd, "Murod Qodirov",   "+998732004001", ws3.getId(), PayType.MONTHLY, 8, 180_000, 0);
         UserEntity w3b = saveWorker("worker3b", pwd, "Feruza Saidova",  "+998732004002", ws3.getId(), PayType.DAILY,   8, 200_000, 6);
@@ -133,10 +133,10 @@ public class DataInitializer implements CommandLineRunner {
 
     // ── Helpers ────────────────────────────────────────────────────────────────
 
-    private WorkshopEntity saveWorkshop(String name, String address, String phone, String description) {
+    private WorkshopEntity saveWorkshop(String name, String address, String phone, String description, UUID ownerId) {
         WorkshopEntity ws = WorkshopEntity.builder()
                 .name(name).address(address).phone(phone).description(description)
-                .ownerId(UUID.randomUUID()) // temporary, updated after owner creation
+                .ownerId(ownerId)
                 .build();
         ws.setCreatedAt(LocalDateTime.now().minusDays(60));
         return workshopRepo.save(ws);
@@ -290,6 +290,7 @@ public class DataInitializer implements CommandLineRunner {
                 .qtyAfter(item.getQuantity())
                 .priceBefore(unitPrice).priceAfter(unitPrice)
                 .furnitureOrderId(order.getId())
+                .createdBy(owner.getId())
                 .build();
         tx.setCreatedAt(at);
         txRepo.save(tx);
