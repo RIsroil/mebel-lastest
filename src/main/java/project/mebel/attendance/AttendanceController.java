@@ -29,6 +29,12 @@ public class AttendanceController {
         return ResponseEntity.ok(attendanceService.checkIn(principal));
     }
 
+    @PostMapping("/check-out")
+    @Operation(summary = "Ishdan chiqish (WORKER)")
+    public ResponseEntity<AttendanceResponse> checkOut(Principal principal) {
+        return ResponseEntity.ok(attendanceService.checkOut(principal));
+    }
+
     @PostMapping("/submit-hours")
     @Operation(summary = "Soatlarni yuborish (WORKER)")
     public ResponseEntity<AttendanceResponse> submitHours(@RequestBody SubmitHoursRequest request,

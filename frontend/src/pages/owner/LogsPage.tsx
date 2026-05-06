@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useTopbar } from '@/context/TopbarContext'
 import { logApi } from '@/api/log.api'
-import type { FinancialLogType } from '@/types/log.types'
+import type { FinancialLogType, FinancialLogResponse } from '@/types/log.types'
 import { formatNumber } from '@/utils/formatMoney'
 import { toApiDate } from '@/utils/formatDate'
 import styles from './LogsPage.module.css'
@@ -31,6 +32,27 @@ const firstOfMonth = () => {
 }
 
 const PAGE_SIZE = 30
+
+const NAV_PATH: Partial<Record<FinancialLogType, string>> = {
+  WAREHOUSE_PURCHASE: '/warehouse',
+  MATERIAL_USED:      '/orders',
+  FURNITURE_SOLD:     '/orders',
+}
+
+function LogNavLink({ log }: { log: FinancialLogResponse }) {
+  const navigate = useNavigate()
+  const base = NAV_PATH[log.logType]
+  if (!base || !log.referenceId) return null
+  return (
+    <button
+      type="button"
+      onClick={() => navigate(`${base}/${log.referenceId}`)}
+      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 12, padding: '2px 6px', borderRadius: 4, textDecoration: 'underline' }}
+    >
+      {log.relatedName ?? '→'}
+    </button>
+  )
+}
 
 const LogsPage = () => {
   const { setTitle, setActions } = useTopbar()
@@ -145,15 +167,16 @@ const LogsPage = () => {
               <th>Sana</th>
               <th>Tur</th>
               <th>Izoh</th>
+              <th>Havola</th>
               <th className={styles.amountCol}>Miqdor</th>
             </tr>
           </thead>
           <tbody>
             {logsQuery.isLoading && (
-              <tr><td colSpan={4} className={styles.empty}>Yuklanmoqda...</td></tr>
+              <tr><td colSpan={5} className={styles.empty}>Yuklanmoqda...</td></tr>
             )}
             {!logsQuery.isLoading && logs.length === 0 && (
-              <tr><td colSpan={4} className={styles.empty}>Yozuvlar topilmadi</td></tr>
+              <tr><td colSpan={5} className={styles.empty}>Yozuvlar topilmadi</td></tr>
             )}
             {logs.map(log => (
               <tr key={log.id}>
@@ -164,6 +187,7 @@ const LogsPage = () => {
                   </span>
                 </td>
                 <td className={styles.descCell}>{log.description ?? '—'}</td>
+                <td><LogNavLink log={log} /></td>
                 <td className={`${styles.amountCol} ${log.amount >= 0 ? styles.amountPos : styles.amountNeg}`}>
                   {log.amount >= 0 ? '+' : ''}{formatNumber(log.amount)} so'm
                 </td>

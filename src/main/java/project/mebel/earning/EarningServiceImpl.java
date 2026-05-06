@@ -91,8 +91,8 @@ public class EarningServiceImpl implements EarningService {
             default         -> "Maosh to'landi: " + workerName;
         };
         financialLogService.record(owner.getWorkshopId(), logType,
-                saved.getTotalAmount().negate(), desc, saved.getId(),
-                saved.getEarnDate(), owner.getId());
+                saved.getTotalAmount().negate(), desc, saved.getWorkerId(),
+                workerName, saved.getEarnDate(), owner.getId());
 
         return toResponse(saved, workerName);
     }

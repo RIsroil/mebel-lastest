@@ -136,8 +136,9 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                 if (order.getSalePrice() != null && order.getSalePrice().compareTo(java.math.BigDecimal.ZERO) > 0) {
                     String desc = "Mebel sotildi: " + order.getTitle() + " (#" + order.getOrderNumber() + ")"
                             + (order.getClientName() != null ? " | " + order.getClientName() : "");
+                    String relatedName = order.getTitle() + " (#" + order.getOrderNumber() + ")";
                     financialLogService.record(owner.getWorkshopId(), FinancialLogType.FURNITURE_SOLD,
-                            order.getSalePrice(), desc, order.getId(), LocalDate.now(), owner.getId());
+                            order.getSalePrice(), desc, order.getId(), relatedName, LocalDate.now(), owner.getId());
                 }
             }
             default -> { /* DRAFT or CANCELLED — no extra fields */ }
@@ -263,8 +264,9 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
         String materialDesc = "Xomashyo sarflandi: " + item.getName()
                 + " — " + qty.stripTrailingZeros().toPlainString() + " " + item.getUnitType()
                 + " | Buyurtma: " + order.getTitle() + " (#" + order.getOrderNumber() + ")";
+        String orderRef = order.getTitle() + " (#" + order.getOrderNumber() + ")";
         financialLogService.record(owner.getWorkshopId(), FinancialLogType.MATERIAL_USED,
-                totalCost.negate(), materialDesc, usage.getId(), LocalDate.now(), owner.getId());
+                totalCost.negate(), materialDesc, order.getId(), orderRef, LocalDate.now(), owner.getId());
 
         // Recalculate actual material cost
         BigDecimal newActualCost = usageRepo.sumTotalCostByOrderId(orderId);
@@ -411,12 +413,14 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
 
         List<FurnitureOrderResponse.MaterialUsageResponse> materialUsages = usages.stream()
                 .map(m -> {
-                    String itemName = warehouseItemRepo.findById(m.getWarehouseItemId())
-                            .map(WarehouseItemEntity::getName).orElse(null);
+                    WarehouseItemEntity warehouseItem = warehouseItemRepo.findById(m.getWarehouseItemId()).orElse(null);
+                    String itemName = warehouseItem != null ? warehouseItem.getName() : null;
+                    String unitType = warehouseItem != null ? warehouseItem.getUnitType().name() : null;
                     return FurnitureOrderResponse.MaterialUsageResponse.builder()
                             .id(m.getId())
                             .warehouseItemId(m.getWarehouseItemId())
                             .itemName(itemName)
+                            .unitType(unitType)
                             .quantityUsed(m.getQuantityUsed())
                             .unitPriceAtTime(m.getUnitPriceAtTime())
                             .totalCost(m.getTotalCost())

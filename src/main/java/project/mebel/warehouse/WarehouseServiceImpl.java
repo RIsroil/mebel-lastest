@@ -149,7 +149,7 @@ public class WarehouseServiceImpl implements WarehouseService {
                     + " × " + price.stripTrailingZeros().toPlainString() + " so'm";
             if (req.getSupplierName() != null) desc += " | " + req.getSupplierName();
             financialLogService.record(owner.getWorkshopId(), FinancialLogType.WAREHOUSE_PURCHASE,
-                    totalCost.negate(), desc, tx.getId(), LocalDate.now(), owner.getId());
+                    totalCost.negate(), desc, item.getId(), item.getName(), LocalDate.now(), owner.getId());
         }
 
         return toItemResponse(item);

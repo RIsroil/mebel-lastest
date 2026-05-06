@@ -16,6 +16,7 @@ export interface MaterialUsage {
   id: string
   warehouseItemId: string
   itemName: string
+  unitType: string | null
   quantityUsed: number
   unitPriceAtTime: number
   totalCost: number

@@ -59,6 +59,24 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     @Override
     @Transactional
+    public AttendanceResponse checkOut(Principal principal) {
+        UserEntity worker = requireWorker(principal);
+        LocalDate today = LocalDate.now();
+
+        DailyAttendanceEntity attendance = attendanceRepo.findByUserIdAndWorkDate(worker.getId(), today)
+                .orElseThrow(() -> ApiException.notFound("attendance.not.found"));
+
+        if (attendance.getCheckOutTime() != null) {
+            throw ApiException.badRequest("already.checked.out.today");
+        }
+
+        attendance.setCheckOutTime(LocalDateTime.now());
+        attendance.setUpdatedBy(worker.getId());
+        return toResponse(attendanceRepo.save(attendance), worker.getFullName());
+    }
+
+    @Override
+    @Transactional
     public AttendanceResponse submitHours(SubmitHoursRequest request, Principal principal) {
         UserEntity worker = requireWorker(principal);
         LocalDate today = LocalDate.now();

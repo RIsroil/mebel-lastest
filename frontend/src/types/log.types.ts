@@ -12,6 +12,7 @@ export interface FinancialLogResponse {
   amount: number        // musbat=kirim, manfiy=chiqim
   description: string | null
   referenceId: string | null
+  relatedName: string | null
   logDate: string
   createdAt: string
 }

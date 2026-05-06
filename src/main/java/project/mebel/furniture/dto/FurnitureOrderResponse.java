@@ -52,6 +52,7 @@ public class FurnitureOrderResponse {
         private UUID id;
         private UUID warehouseItemId;
         private String itemName;
+        private String unitType;
         private BigDecimal quantityUsed;
         private BigDecimal unitPriceAtTime;
         private BigDecimal totalCost;

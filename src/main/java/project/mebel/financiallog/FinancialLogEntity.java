@@ -36,6 +36,9 @@ public class FinancialLogEntity extends CreatedAuditEntity {
     @Column(name = "reference_id")
     private UUID referenceId;
 
+    @Column(name = "related_name", columnDefinition = "TEXT")
+    private String relatedName;
+
     @Column(name = "log_date", nullable = false)
     private LocalDate logDate;
 }

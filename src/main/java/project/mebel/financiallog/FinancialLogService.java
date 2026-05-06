@@ -14,7 +14,7 @@ import java.util.UUID;
 public interface FinancialLogService {
 
     void record(UUID workshopId, FinancialLogType type, BigDecimal amount,
-                String description, UUID referenceId, LocalDate logDate, UUID actorId);
+                String description, UUID referenceId, String relatedName, LocalDate logDate, UUID actorId);
 
     Page<FinancialLogResponse> getLogs(LocalDate from, LocalDate to, FinancialLogType type,
                                        Pageable pageable, Principal principal);

@@ -18,6 +18,7 @@ public class FinancialLogResponse {
     private BigDecimal amount;        // musbat=kirim, manfiy=chiqim
     private String description;
     private UUID referenceId;
+    private String relatedName;
     private LocalDate logDate;
     private LocalDateTime createdAt;
 }

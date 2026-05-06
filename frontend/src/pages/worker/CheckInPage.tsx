@@ -51,6 +51,14 @@ const CheckInPage = () => {
     },
   })
 
+  const checkOutMut = useMutation({
+    mutationFn: attendanceApi.checkOut,
+    onSuccess:  () => {
+      queryClient.invalidateQueries({ queryKey: ['attendance-today'] })
+      queryClient.invalidateQueries({ queryKey: ['attendance-history'] })
+    },
+  })
+
   useEffect(() => {
     setTitle("Ishga kirish")
     setActions(null)
@@ -99,6 +107,9 @@ const CheckInPage = () => {
                 <div className={styles.statusTitle}>Bugun kelgansiz</div>
                 <div className={styles.statusSub}>
                   {formatTime(todayAttendance!.checkInTime)} da kirgansiz
+                  {todayAttendance!.checkOutTime && (
+                    <span> · {formatTime(todayAttendance!.checkOutTime)} da chiqqansiz</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -110,6 +121,17 @@ const CheckInPage = () => {
               onClick={() => checkInMut.mutate()}
             >
               Ishga kirish →
+            </Button>
+          )}
+          {alreadyCheckedIn && !todayAttendance!.checkOutTime && (
+            <Button
+              variant="danger"
+              size="sm"
+              style={{ marginTop: 12, width: '100%' }}
+              loading={checkOutMut.isPending}
+              onClick={() => checkOutMut.mutate()}
+            >
+              Ishdan chiqish
             </Button>
           )}
         </div>

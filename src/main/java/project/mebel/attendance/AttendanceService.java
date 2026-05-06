@@ -13,6 +13,8 @@ public interface AttendanceService {
 
     AttendanceResponse checkIn(Principal principal);
 
+    AttendanceResponse checkOut(Principal principal);
+
     AttendanceResponse submitHours(SubmitHoursRequest request, Principal principal);
 
     AttendanceResponse overrideHours(UUID attendanceId, OverrideHoursRequest request, Principal principal);

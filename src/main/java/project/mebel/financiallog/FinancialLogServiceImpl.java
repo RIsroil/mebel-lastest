@@ -29,13 +29,14 @@ public class FinancialLogServiceImpl implements FinancialLogService {
     @Override
     @Transactional
     public void record(UUID workshopId, FinancialLogType type, BigDecimal amount,
-                       String description, UUID referenceId, LocalDate logDate, UUID actorId) {
+                       String description, UUID referenceId, String relatedName, LocalDate logDate, UUID actorId) {
         FinancialLogEntity log = FinancialLogEntity.builder()
                 .workshopId(workshopId)
                 .logType(type)
                 .amount(amount)
                 .description(description)
                 .referenceId(referenceId)
+                .relatedName(relatedName)
                 .logDate(logDate)
                 .build();
         log.setCreatedBy(actorId);
@@ -111,6 +112,7 @@ public class FinancialLogServiceImpl implements FinancialLogService {
                 .amount(e.getAmount())
                 .description(e.getDescription())
                 .referenceId(e.getReferenceId())
+                .relatedName(e.getRelatedName())
                 .logDate(e.getLogDate())
                 .createdAt(e.getCreatedAt())
                 .build();

@@ -6,6 +6,9 @@ export const attendanceApi = {
   checkIn: () =>
     api.post<ApiResponse<AttendanceResponse>>('/api/attendance/check-in'),
 
+  checkOut: () =>
+    api.post<ApiResponse<AttendanceResponse>>('/api/attendance/check-out'),
+
   submitHours: (body: SubmitHoursRequest) =>
     api.post<ApiResponse<AttendanceResponse>>('/api/attendance/submit-hours', body),
 

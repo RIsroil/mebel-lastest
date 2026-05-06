@@ -183,6 +183,21 @@ const OrderDetailPage = () => {
         </Button>
       </div>
 
+      {order.status === 'DRAFT' && (
+        <div style={{ marginBottom: 16, padding: '14px 20px', background: 'var(--surface2)', borderRadius: 10, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text1)' }}>Buyurtma hali boshlanmagan</div>
+            <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>Ishni boshlash uchun quyidagi tugmani bosing</div>
+          </div>
+          <Button
+            onClick={() => changeStatusMutate('IN_PROGRESS')}
+            loading={changeStatusMutation.isPending}
+          >
+            Ishni boshlash →
+          </Button>
+        </div>
+      )}
+
       <div className={styles.detailLayout}>
         {/* ── Left column ── */}
         <div className={styles.leftCol}>
@@ -211,7 +226,7 @@ const OrderDetailPage = () => {
                 {order.materialUsages.map((m) => (
                   <tr key={m.id}>
                     <td>{m.itemName}</td>
-                    <td>{m.quantityUsed}</td>
+                    <td>{m.quantityUsed}{m.unitType ? ` ${m.unitType}` : ''}</td>
                     <td>{formatNumber(m.unitPriceAtTime)}</td>
                     <td style={{ fontWeight: 700 }}>{formatNumber(m.totalCost)}</td>
                     <td style={{ fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
