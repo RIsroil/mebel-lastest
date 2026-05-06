@@ -3,9 +3,11 @@ package project.mebel.warehouse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import project.mebel.common.enums.FinancialLogType;
 import project.mebel.common.enums.TransactionType;
 import project.mebel.common.enums.UserRole;
 import project.mebel.exception.ApiException;
+import project.mebel.financiallog.FinancialLogService;
 import project.mebel.user.UserEntity;
 import project.mebel.utils.Utils;
 import project.mebel.warehouse.dto.*;
@@ -13,6 +15,7 @@ import project.mebel.warehouse.dto.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.Principal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -23,6 +26,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     private final WarehouseItemRepository itemRepo;
     private final WarehouseTransactionRepository txRepo;
+    private final FinancialLogService financialLogService;
     private final Utils utils;
 
     @Override
@@ -138,6 +142,15 @@ public class WarehouseServiceImpl implements WarehouseService {
                 .build();
         tx.setCreatedBy(owner.getId());
         txRepo.save(tx);
+
+        if (req.getTransactionType() == TransactionType.IN) {
+            String desc = "Xomashyo kiritildi: " + item.getName()
+                    + " | " + qty.stripTrailingZeros().toPlainString() + " " + item.getUnitType()
+                    + " × " + price.stripTrailingZeros().toPlainString() + " so'm";
+            if (req.getSupplierName() != null) desc += " | " + req.getSupplierName();
+            financialLogService.record(owner.getWorkshopId(), FinancialLogType.WAREHOUSE_PURCHASE,
+                    totalCost.negate(), desc, tx.getId(), LocalDate.now(), owner.getId());
+        }
 
         return toItemResponse(item);
     }

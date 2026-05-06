@@ -9,6 +9,8 @@ import project.mebel.attendance.DailyAttendanceRepository;
 import project.mebel.common.enums.*;
 import project.mebel.earning.EarningEntity;
 import project.mebel.earning.EarningRepository;
+import project.mebel.financiallog.FinancialLogEntity;
+import project.mebel.financiallog.FinancialLogRepository;
 import project.mebel.furniture.*;
 import project.mebel.user.UserEntity;
 import project.mebel.user.UserRepository;
@@ -38,6 +40,7 @@ public class DataInitializer implements CommandLineRunner {
     private final MaterialUsageRepository usageRepo;
     private final DailyAttendanceRepository attendanceRepo;
     private final EarningRepository earningRepo;
+    private final FinancialLogRepository financialLogRepo;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -129,6 +132,97 @@ public class DataInitializer implements CommandLineRunner {
         seedAttendanceAndEarnings(ws1, o1, List.of(w1a, w1b));
         seedAttendanceAndEarnings(ws2, o2, List.of(w2a, w2b));
         seedAttendanceAndEarnings(ws3, o3, List.of(w3a, w3b));
+
+        // Financial logs
+        // ws1: Toshkent Mebel — 2 ta sotilgan buyurtma, 2 ta worker (w1a DAILY, w1b MONTHLY)
+        seedFinancialLogs(ws1, o1,
+            List.of(
+                // Boshlang'ich xomashyo xaridi (~55 kun oldin)
+                flog(ws1.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -3_600_000, "Yog'och taxta kiritildi: 80 m² × 45 000 so'm", LocalDate.now().minusDays(55), o1.getId()),
+                flog(ws1.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -1_000_000, "Vintlar kiritildi: 500 dona × 2 000 so'm", LocalDate.now().minusDays(55), o1.getId()),
+                flog(ws1.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -1_050_000, "Bo'yoq kiritildi: 30 litr × 35 000 so'm", LocalDate.now().minusDays(54), o1.getId()),
+                flog(ws1.getId(), FinancialLogType.WAREHOUSE_PURCHASE,   -560_000, "Lak kiritildi: 20 litr × 28 000 so'm", LocalDate.now().minusDays(54), o1.getId()),
+                // Restock (~20 kun oldin)
+                flog(ws1.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -2_250_000, "Yog'och taxta restok: 50 m² × 45 000 so'm | Toshkent Yog'och MChJ", LocalDate.now().minusDays(20), o1.getId()),
+                flog(ws1.getId(), FinancialLogType.WAREHOUSE_PURCHASE,   -400_000, "Vintlar restok: 200 dona × 2 000 so'm", LocalDate.now().minusDays(20), o1.getId()),
+                // Mebel sotildi (~32 kun oldin)
+                flog(ws1.getId(), FinancialLogType.FURNITURE_SOLD,    12_800_000, "Mebel sotildi: Yotoq xonasi to'plami | Jasur Aliyev", LocalDate.now().minusDays(32), o1.getId()),
+                // Komissiya to'landi (sotilgandan 2 kun keyin)
+                flog(ws1.getId(), FinancialLogType.COMMISSION_PAID,     -640_000, "Komissiya to'landi: Ali Xasanov (5% × 12 800 000)", LocalDate.now().minusDays(30), o1.getId()),
+                // O'tgan oy maoshi — w1a (DAILY: ~22 ish kuni × 250 000)
+                flog(ws1.getId(), FinancialLogType.WAGE_PAID,         -5_500_000, "Oylik maosh to'landi: Ali Xasanov (22 kun × 250 000)", LocalDate.now().minusDays(35), o1.getId()),
+                // Joriy oy oraliq maosh (~10 kun)
+                flog(ws1.getId(), FinancialLogType.WAGE_PAID,         -2_000_000, "Oraliq maosh: Ali Xasanov (8 kun × 250 000)", LocalDate.now().minusDays(7), o1.getId())
+            )
+        );
+
+        // ws2: Samarqand Wood — 2 ta SOLD buyurtma, 2 ta DAILY worker
+        seedFinancialLogs(ws2, o2,
+            List.of(
+                flog(ws2.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -6_800_000, "Palma yog'ochi kiritildi: 10 m³ × 680 000 so'm | Samarqand Yog'och", LocalDate.now().minusDays(56), o2.getId()),
+                flog(ws2.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -3_600_000, "Mato kiritildi: 200 metr × 18 000 so'm", LocalDate.now().minusDays(56), o2.getId()),
+                flog(ws2.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -1_100_000, "Kauchuk ko'pik kiritildi: 50 kg × 22 000 so'm", LocalDate.now().minusDays(55), o2.getId()),
+                flog(ws2.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -1_050_000, "Ruchka-mixlar kiritildi: 300 dona × 3 500 so'm", LocalDate.now().minusDays(55), o2.getId()),
+                // Restock 15 kun oldin
+                flog(ws2.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -3_400_000, "Palma yog'ochi restok: 5 m³ × 680 000 so'm", LocalDate.now().minusDays(15), o2.getId()),
+                // Birinchi buyurtma sotildi
+                flog(ws2.getId(), FinancialLogType.FURNITURE_SOLD,     3_800_000, "Mebel sotildi: Kreslolar (2 ta) | Malika Rahimova", LocalDate.now().minusDays(32), o2.getId()),
+                flog(ws2.getId(), FinancialLogType.COMMISSION_PAID,     -190_000, "Komissiya to'landi: Kamola Hamidova (5% × 3 800 000)", LocalDate.now().minusDays(30), o2.getId()),
+                // Ikkinchi buyurtma sotildi
+                flog(ws2.getId(), FinancialLogType.FURNITURE_SOLD,    18_500_000, "Mebel sotildi: Mehmonxona garniturai | Eldor Nishonov", LocalDate.now().minusDays(32), o2.getId()),
+                flog(ws2.getId(), FinancialLogType.COMMISSION_PAID,   -1_480_000, "Komissiya to'landi: Zafar Mirzayev (8% × 18 500 000)", LocalDate.now().minusDays(30), o2.getId()),
+                // Maoshlar
+                flog(ws2.getId(), FinancialLogType.WAGE_PAID,         -6_600_000, "Oylik maosh: Zafar Mirzayev (22 kun × 300 000)", LocalDate.now().minusDays(35), o2.getId()),
+                flog(ws2.getId(), FinancialLogType.WAGE_PAID,         -4_840_000, "Oylik maosh: Kamola Hamidova (22 kun × 220 000)", LocalDate.now().minusDays(35), o2.getId()),
+                flog(ws2.getId(), FinancialLogType.WAGE_PAID,         -2_400_000, "Oraliq maosh: Zafar Mirzayev (8 kun × 300 000)", LocalDate.now().minusDays(7), o2.getId()),
+                flog(ws2.getId(), FinancialLogType.WAGE_PAID,         -1_760_000, "Oraliq maosh: Kamola Hamidova (8 kun × 220 000)", LocalDate.now().minusDays(7), o2.getId())
+            )
+        );
+
+        // ws3: Farg'ona Craft — 1 ta SOLD buyurtma
+        seedFinancialLogs(ws3, o3,
+            List.of(
+                flog(ws3.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -7_800_000, "Chinor yog'ochi kiritildi: 15 m³ × 520 000 so'm | Farg'ona Yog'och", LocalDate.now().minusDays(56), o3.getId()),
+                flog(ws3.getId(), FinancialLogType.WAREHOUSE_PURCHASE,   -170_000, "Mixlar kiritildi: 20 kg × 8 500 so'm", LocalDate.now().minusDays(55), o3.getId()),
+                flog(ws3.getId(), FinancialLogType.WAREHOUSE_PURCHASE,   -800_000, "Zangori bo'yoq kiritildi: 25 litr × 32 000 so'm", LocalDate.now().minusDays(55), o3.getId()),
+                flog(ws3.getId(), FinancialLogType.WAREHOUSE_PURCHASE,   -630_000, "Polimer qoplag'ich kiritildi: 15 litr × 42 000 so'm", LocalDate.now().minusDays(54), o3.getId()),
+                // Restock
+                flog(ws3.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -2_600_000, "Chinor yog'ochi restok: 5 m³ × 520 000 so'm", LocalDate.now().minusDays(18), o3.getId()),
+                // Sotildi
+                flog(ws3.getId(), FinancialLogType.FURNITURE_SOLD,     4_100_000, "Mebel sotildi: Idish javoni | Nodira Xoliqova", LocalDate.now().minusDays(32), o3.getId()),
+                flog(ws3.getId(), FinancialLogType.COMMISSION_PAID,     -246_000, "Komissiya to'landi: Feruza Saidova (6% × 4 100 000)", LocalDate.now().minusDays(30), o3.getId()),
+                // Maoshlar (faqat DAILY worker — w3b)
+                flog(ws3.getId(), FinancialLogType.WAGE_PAID,         -4_400_000, "Oylik maosh: Feruza Saidova (22 kun × 200 000)", LocalDate.now().minusDays(35), o3.getId()),
+                flog(ws3.getId(), FinancialLogType.WAGE_PAID,         -1_600_000, "Oraliq maosh: Feruza Saidova (8 kun × 200 000)", LocalDate.now().minusDays(7), o3.getId()),
+                // Bonus
+                flog(ws3.getId(), FinancialLogType.BONUS_PAID,          -200_000, "Bonus: Feruza Saidova — yaxshi ishladi", LocalDate.now().minusDays(12), o3.getId())
+            )
+        );
+
+        // ── Joriy oy (May 1–5) yozuvlari — default filtrda ko'rinishi uchun ──
+        seedFinancialLogs(ws1, o1,
+            List.of(
+                flog(ws1.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -1_800_000, "Yog'och taxta kiritildi: 40 m² × 45 000 so'm | Toshkent Yog'och MChJ", LocalDate.now().minusDays(4), o1.getId()),
+                flog(ws1.getId(), FinancialLogType.MATERIAL_USED,        -675_000, "Xomashyo sarflandi: Yog'och taxta — 15 m² | Buyurtma: Kitob javoni", LocalDate.now().minusDays(3), o1.getId()),
+                flog(ws1.getId(), FinancialLogType.MATERIAL_USED,        -135_000, "Xomashyo sarflandi: Lak — 3 litr | Buyurtma: Kitob javoni", LocalDate.now().minusDays(2), o1.getId()),
+                flog(ws1.getId(), FinancialLogType.FURNITURE_SOLD,     5_800_000, "Mebel sotildi: Oshxona stoli | Hamid Kamolov", LocalDate.now().minusDays(1), o1.getId()),
+                flog(ws1.getId(), FinancialLogType.COMMISSION_PAID,      -290_000, "Komissiya to'landi: Ali Xasanov (5% × 5 800 000)", LocalDate.now(), o1.getId())
+            )
+        );
+        seedFinancialLogs(ws2, o2,
+            List.of(
+                flog(ws2.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -2_040_000, "Mato kiritildi: 120 metr × 17 000 so'm", LocalDate.now().minusDays(4), o2.getId()),
+                flog(ws2.getId(), FinancialLogType.MATERIAL_USED,        -360_000, "Xomashyo sarflandi: Mato — 20 metr | Buyurtma: Bolalar divanchasi", LocalDate.now().minusDays(3), o2.getId()),
+                flog(ws2.getId(), FinancialLogType.MATERIAL_USED,        -440_000, "Xomashyo sarflandi: Kauchuk ko'pik — 20 kg | Buyurtma: Bolalar divanchasi", LocalDate.now().minusDays(2), o2.getId())
+            )
+        );
+        seedFinancialLogs(ws3, o3,
+            List.of(
+                flog(ws3.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -1_040_000, "Bo'yoq kiritildi: 20 litr × 52 000 so'm | Farg'ona Kimyo", LocalDate.now().minusDays(3), o3.getId()),
+                flog(ws3.getId(), FinancialLogType.MATERIAL_USED,        -780_000, "Xomashyo sarflandi: Chinor yog'ochi — 1.5 m³ | Buyurtma: Yotoq xonasi to'plami", LocalDate.now().minusDays(2), o3.getId()),
+                flog(ws3.getId(), FinancialLogType.WAGE_PAID,            -600_000, "Haftalik maosh: Feruza Saidova (3 kun × 200 000)", LocalDate.now().minusDays(1), o3.getId())
+            )
+        );
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
@@ -309,6 +403,24 @@ public class DataInitializer implements CommandLineRunner {
         a.setCreatedBy(ownerId);
         a.setCreatedAt(at);
         assignmentRepo.save(a);
+    }
+
+    private void seedFinancialLogs(WorkshopEntity ws, UserEntity owner, List<FinancialLogEntity> logs) {
+        financialLogRepo.saveAll(logs);
+    }
+
+    private FinancialLogEntity flog(UUID workshopId, FinancialLogType type, long amount,
+                                    String description, LocalDate logDate, UUID actorId) {
+        FinancialLogEntity log = FinancialLogEntity.builder()
+                .workshopId(workshopId)
+                .logType(type)
+                .amount(BigDecimal.valueOf(amount))
+                .description(description)
+                .logDate(logDate)
+                .build();
+        log.setCreatedBy(actorId);
+        log.setCreatedAt(logDate.atTime(10, 0));
+        return log;
     }
 
     private void seedAttendanceAndEarnings(WorkshopEntity ws, UserEntity owner, List<UserEntity> workers) {

@@ -1,0 +1,142 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* O'tgan oy banner */
+.lastMonthBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--color-surface, #1e1e2e);
+  border: 1px solid var(--color-border, #2a2a3d);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+}
+.lastMonthLabel { color: var(--color-text-muted, #888); font-weight: 500; }
+.incomeChip  { background: #16a34a22; color: #4ade80; border-radius: 6px; padding: 2px 10px; font-weight: 600; }
+.expenseChip { background: #dc262622; color: #f87171; border-radius: 6px; padding: 2px 10px; font-weight: 600; }
+.netPositive { color: #4ade80; font-weight: 700; }
+.netNegative { color: #f87171; font-weight: 700; }
+.countChip   { color: var(--color-text-muted, #888); }
+
+/* Filter bar */
+.filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.filterGroup { display: flex; flex-direction: column; gap: 4px; }
+.filterLabel { font-size: 12px; color: var(--color-text-muted, #888); }
+.dateInput, .selectInput {
+  background: var(--color-surface, #1e1e2e);
+  border: 1px solid var(--color-border, #2a2a3d);
+  border-radius: 8px;
+  color: var(--color-text, #e2e8f0);
+  padding: 8px 12px;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+.dateInput:focus, .selectInput:focus {
+  border-color: var(--color-primary, #6366f1);
+}
+
+/* Summary cards */
+.summaryRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.summaryCard {
+  background: var(--color-surface, #1e1e2e);
+  border: 1px solid var(--color-border, #2a2a3d);
+  border-radius: 10px;
+  padding: 14px 16px;
+  text-align: center;
+}
+.summaryVal  { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.summaryLbl  { font-size: 12px; color: var(--color-text-muted, #888); }
+.incomeVal   { color: #4ade80; }
+.expenseVal  { color: #f87171; }
+
+/* Table */
+.tableWrapper {
+  background: var(--color-surface, #1e1e2e);
+  border: 1px solid var(--color-border, #2a2a3d);
+  border-radius: 10px;
+  overflow: auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.table thead tr {
+  background: var(--color-surface-2, #252538);
+}
+.table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-muted, #888);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.table td {
+  padding: 10px 14px;
+  border-top: 1px solid var(--color-border, #2a2a3d);
+  color: var(--color-text, #e2e8f0);
+  vertical-align: middle;
+}
+.table tbody tr:hover { background: var(--color-surface-hover, #252538); }
+
+.dateCell  { white-space: nowrap; color: var(--color-text-muted, #888); font-size: 12px; }
+.descCell  { max-width: 340px; }
+.amountCol { text-align: right; white-space: nowrap; font-weight: 600; }
+.amountPos { color: #4ade80; }
+.amountNeg { color: #f87171; }
+
+.typeBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.typeBadge.income  { background: #16a34a22; color: #4ade80; }
+.typeBadge.expense { background: #dc262622; color: #f87171; }
+
+.empty {
+  text-align: center;
+  padding: 32px !important;
+  color: var(--color-text-muted, #888);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  padding: 8px 0;
+}
+.pageBtn {
+  background: var(--color-surface, #1e1e2e);
+  border: 1px solid var(--color-border, #2a2a3d);
+  color: var(--color-text, #e2e8f0);
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.pageBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+.pageBtn:not(:disabled):hover { border-color: var(--color-primary, #6366f1); }
+.pageInfo { font-size: 13px; color: var(--color-text-muted, #888); }

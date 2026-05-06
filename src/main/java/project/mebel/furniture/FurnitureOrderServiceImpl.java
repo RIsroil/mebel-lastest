@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import project.mebel.attendance.DailyAttendanceRepository;
 import project.mebel.common.enums.EarnType;
+import project.mebel.common.enums.FinancialLogType;
 import project.mebel.common.enums.FurnitureStatus;
 import project.mebel.common.enums.PayType;
 import project.mebel.common.enums.TransactionType;
@@ -12,6 +13,7 @@ import project.mebel.common.enums.UserRole;
 import project.mebel.earning.EarningEntity;
 import project.mebel.earning.EarningRepository;
 import project.mebel.exception.ApiException;
+import project.mebel.financiallog.FinancialLogService;
 import project.mebel.furniture.dto.*;
 import project.mebel.user.UserEntity;
 import project.mebel.user.UserRepository;
@@ -41,6 +43,7 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
     private final EarningRepository earningRepo;
     private final UserRepository userRepo;
     private final DailyAttendanceRepository attendanceRepo;
+    private final FinancialLogService financialLogService;
     private final Utils utils;
 
     @Override
@@ -130,6 +133,12 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
             case SOLD -> {
                 order.setSoldAt(now);
                 generateCommissionEarnings(order, owner);
+                if (order.getSalePrice() != null && order.getSalePrice().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                    String desc = "Mebel sotildi: " + order.getTitle() + " (#" + order.getOrderNumber() + ")"
+                            + (order.getClientName() != null ? " | " + order.getClientName() : "");
+                    financialLogService.record(owner.getWorkshopId(), FinancialLogType.FURNITURE_SOLD,
+                            order.getSalePrice(), desc, order.getId(), LocalDate.now(), owner.getId());
+                }
             }
             default -> { /* DRAFT or CANCELLED — no extra fields */ }
         }
@@ -250,6 +259,12 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                 .build();
         usage.setCreatedBy(owner.getId());
         usageRepo.save(usage);
+
+        String materialDesc = "Xomashyo sarflandi: " + item.getName()
+                + " — " + qty.stripTrailingZeros().toPlainString() + " " + item.getUnitType()
+                + " | Buyurtma: " + order.getTitle() + " (#" + order.getOrderNumber() + ")";
+        financialLogService.record(owner.getWorkshopId(), FinancialLogType.MATERIAL_USED,
+                totalCost.negate(), materialDesc, usage.getId(), LocalDate.now(), owner.getId());
 
         // Recalculate actual material cost
         BigDecimal newActualCost = usageRepo.sumTotalCostByOrderId(orderId);

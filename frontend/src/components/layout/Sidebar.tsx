@@ -36,6 +36,12 @@ const OWNER_NAV: NavSection[] = [
       { to: '/earnings', icon: '💰', label: 'Maosh' },
     ],
   },
+  {
+    sectionLabel: 'Hisobot',
+    items: [
+      { to: '/logs', icon: '📋', label: 'Moliyaviy jurnal' },
+    ],
+  },
 ]
 
 const WORKER_NAV: NavSection[] = [

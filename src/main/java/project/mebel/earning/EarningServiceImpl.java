@@ -4,10 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import project.mebel.common.enums.EarnType;
+import project.mebel.common.enums.FinancialLogType;
 import project.mebel.common.enums.UserRole;
 import project.mebel.earning.dto.BonusRequest;
 import project.mebel.earning.dto.EarningResponse;
 import project.mebel.exception.ApiException;
+import project.mebel.financiallog.FinancialLogService;
 import project.mebel.user.UserEntity;
 import project.mebel.user.UserRepository;
 import project.mebel.utils.Utils;
@@ -25,6 +27,7 @@ public class EarningServiceImpl implements EarningService {
     private final EarningRepository earningRepo;
     private final BonusRepository bonusRepo;
     private final UserRepository userRepo;
+    private final FinancialLogService financialLogService;
     private final Utils utils;
 
     @Override
@@ -75,7 +78,23 @@ public class EarningServiceImpl implements EarningService {
         earning.setUpdatedBy(owner.getId());
 
         String workerName = userRepo.findById(earning.getWorkerId()).map(UserEntity::getFullName).orElse(null);
-        return toResponse(earningRepo.save(earning), workerName);
+        EarningEntity saved = earningRepo.save(earning);
+
+        FinancialLogType logType = switch (saved.getEarnType()) {
+            case COMMISSION -> FinancialLogType.COMMISSION_PAID;
+            case BONUS      -> FinancialLogType.BONUS_PAID;
+            default         -> FinancialLogType.WAGE_PAID;
+        };
+        String desc = switch (saved.getEarnType()) {
+            case COMMISSION -> "Komissiya to'landi: " + workerName;
+            case BONUS      -> "Bonus to'landi: " + workerName;
+            default         -> "Maosh to'landi: " + workerName;
+        };
+        financialLogService.record(owner.getWorkshopId(), logType,
+                saved.getTotalAmount().negate(), desc, saved.getId(),
+                saved.getEarnDate(), owner.getId());
+
+        return toResponse(saved, workerName);
     }
 
     @Override

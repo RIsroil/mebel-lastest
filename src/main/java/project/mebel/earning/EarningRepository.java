@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface EarningRepository extends JpaRepository<EarningEntity, UUID> {

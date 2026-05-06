@@ -10,8 +10,8 @@ import Button from '@/components/ui/Button'
 import styles from './WarehouseDetailPage.module.css'
 
 const UNIT_LABELS: Record<string, string> = {
-  PIECE: 'Dona', KG: 'Kg', METER: 'Metr', LITER: 'Litr',
-  SQUARE_METER: 'M²', CUBIC_METER: 'M³', PACK: 'Paket', SET: "To'plam", OTHER: 'Boshqa',
+  PIECE: 'Dona', KG: 'Kg', GRAM: 'Gramm', LITRE: 'Litr', ML: 'Ml',
+  METER: 'Metr', CM: 'Sm', M2: 'M²', M3: 'M³',
 }
 
 const TX_LABEL: Record<TransactionType, string> = {

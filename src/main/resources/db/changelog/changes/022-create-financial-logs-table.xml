@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="022-create-financial-logs-table" author="Isroil">
+        <createTable tableName="financial_logs">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="workshop_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="log_type" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="DECIMAL(14,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="reference_id" type="UUID"/>
+            <column name="log_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="UUID"/>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="financial_logs" baseColumnNames="workshop_id"
+                constraintName="fk_financial_logs_workshop"
+                referencedTableName="workshops" referencedColumnNames="id"/>
+        <createIndex tableName="financial_logs" indexName="idx_financial_logs_workshop_date">
+            <column name="workshop_id"/>
+            <column name="log_date"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

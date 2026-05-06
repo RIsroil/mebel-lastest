@@ -15,24 +15,24 @@ import { cn } from '@/utils/cn'
 import styles from './WarehousePage.module.css'
 
 const UNIT_LABELS: Record<UnitType, string> = {
-  PIECE:       'Dona',
-  KG:          'Kg',
-  METER:       'Metr',
-  LITER:       'Litr',
-  SQUARE_METER: 'M²',
-  CUBIC_METER: 'M³',
-  PACK:        'Paket',
-  SET:         "To'plam",
-  OTHER:       'Boshqa',
+  PIECE: 'Dona',
+  KG:    'Kg',
+  GRAM:  'Gramm',
+  LITRE: 'Litr',
+  ML:    'Ml',
+  METER: 'Metr',
+  CM:    'Sm',
+  M2:    'M²',
+  M3:    'M³',
 }
-const UNIT_TYPES: UnitType[] = ['PIECE','KG','METER','LITER','SQUARE_METER','CUBIC_METER','PACK','SET','OTHER']
+const UNIT_TYPES: UnitType[] = ['PIECE','KG','GRAM','LITRE','ML','METER','CM','M2','M3']
 const TX_TYPES: TransactionType[] = ['IN','OUT','ADJUSTMENT']
 const TX_LABELS: Record<TransactionType, string> = { IN: 'Kirim', OUT: 'Chiqim', ADJUSTMENT: "Tuzatish" }
 
 const itemSchema = z.object({
   name:              z.string().min(2, 'Kamida 2 ta belgi'),
   description:       z.string().optional(),
-  unitType:          z.enum(['PIECE','KG','METER','LITER','SQUARE_METER','CUBIC_METER','PACK','SET','OTHER']),
+  unitType:          z.enum(['PIECE','KG','GRAM','LITRE','ML','METER','CM','M2','M3']),
   sku:               z.string().optional(),
   minQuantityAlert:  z.coerce.number().min(0).optional(),
 })

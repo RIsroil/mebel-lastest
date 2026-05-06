@@ -180,11 +180,12 @@ public class AttendanceServiceImpl implements AttendanceService {
         BigDecimal target = worker.getDailyHoursTarget();
 
         EarnType earnType;
-        BigDecimal snapshotDailyRate = null;
-        BigDecimal snapshotHourlyRate = null;
+        BigDecimal snapshotDailyRate;
+        BigDecimal snapshotHourlyRate;
         BigDecimal baseAmount;
 
         if (worker.getPayType() == PayType.DAILY) {
+            snapshotHourlyRate = null;
             earnType = EarnType.DAILY_WAGE;
             snapshotDailyRate = worker.getDailySalary();
             // Necha soat ishlagan bo'lsa shuncha ulushi (8 soat=to'liq kun)
@@ -192,6 +193,7 @@ public class AttendanceServiceImpl implements AttendanceService {
                     .multiply(worker.getDailySalary())
                     .setScale(2, RoundingMode.HALF_UP);
         } else {
+            snapshotDailyRate = null;
             // MONTHLY → soatbay hisob
             earnType = EarnType.HOURLY_WAGE;
             snapshotHourlyRate = worker.getHourlyRate() != null ? worker.getHourlyRate() : BigDecimal.ZERO;

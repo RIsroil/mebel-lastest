@@ -1,4 +1,4 @@
-export type UnitType = 'PIECE' | 'KG' | 'METER' | 'LITER' | 'SQUARE_METER' | 'CUBIC_METER' | 'PACK' | 'SET' | 'OTHER'
+export type UnitType = 'PIECE' | 'KG' | 'GRAM' | 'LITRE' | 'ML' | 'METER' | 'CM' | 'M2' | 'M3'
 export type TransactionType = 'IN' | 'OUT' | 'ADJUSTMENT'
 
 export interface WarehouseItemResponse {
