@@ -24,7 +24,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
-@Tag(name = "Admin", description = "Admin boshqaruv paneli (faqat ADMIN roli)")
+@Tag(name = "Admin", description = "Admin boshqaruv paneli (ADMIN va OWNER rollari)")
 public class AdminController {
 
     private final AdminService adminService;
@@ -32,24 +32,24 @@ public class AdminController {
     // ─── USERS ────────────────────────────────────────────────────────────────
 
     @GetMapping("/users")
-    @Operation(summary = "Barcha foydalanuvchilar ro'yxati (pageable). Filter: role, workshopId, active")
+    @Operation(summary = "Foydalanuvchilar ro'yxati. ADMIN – hammani; OWNER – faqat o'z workshopini. Filter: role, workshopId (faqat ADMIN uchun), active")
     public ResponseEntity<Page<AdminUserResponse>> getAllUsers(
             @RequestParam(required = false) UserRole role,
             @RequestParam(required = false) UUID workshopId,
             @RequestParam(required = false) Boolean active,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             Principal principal) {
-        return ResponseEntity.ok(adminService.getAllUsers(role, workshopId, active, pageable));
+        return ResponseEntity.ok(adminService.getAllUsers(role, workshopId, active, pageable, principal));
     }
 
     @GetMapping("/users/{id}")
     @Operation(summary = "Foydalanuvchini ID bo'yicha ko'rish")
     public ResponseEntity<AdminUserResponse> getUserById(@PathVariable UUID id, Principal principal) {
-        return ResponseEntity.ok(adminService.getUserById(id));
+        return ResponseEntity.ok(adminService.getUserById(id, principal));
     }
 
     @PostMapping("/users")
-    @Operation(summary = "Yangi foydalanuvchi yaratish (istalgan rol: ADMIN, OWNER, WORKER)")
+    @Operation(summary = "Yangi foydalanuvchi yaratish. ADMIN – istalgan rol; OWNER – faqat WORKER, o'z workshopiga")
     public ResponseEntity<AdminUserResponse> createUser(@RequestBody AdminCreateUserRequest request,
                                                         Principal principal) {
         return ResponseEntity.status(HttpStatus.CREATED).body(adminService.createUser(request, principal));

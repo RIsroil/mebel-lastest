@@ -18,4 +18,6 @@ public interface EarningRepository extends JpaRepository<EarningEntity, UUID> {
 
     @Query("SELECT COALESCE(SUM(e.totalAmount), 0) FROM EarningEntity e WHERE e.workerId = :workerId AND e.earnDate BETWEEN :from AND :to")
     BigDecimal sumTotalByWorkerAndDateRange(UUID workerId, LocalDate from, LocalDate to);
+
+    Optional<EarningEntity> findByAttendanceId(UUID attendanceId);
 }

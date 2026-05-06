@@ -7,6 +7,9 @@ export interface AssignedWorker {
   assignedAt: string | null
   commissionPct: number | null
   active: boolean
+  daysWorked: number
+  wageCost: number
+  commissionCost: number
 }
 
 export interface MaterialUsage {
@@ -37,6 +40,9 @@ export interface FurnitureOrderResponse {
   clientName: string | null
   clientPhone: string | null
   notes: string | null
+  workerWageCost: number
+  workerCommissionCost: number
+  netProfit: number
   assignedWorkers: AssignedWorker[]
   materialUsages: MaterialUsage[]
 }

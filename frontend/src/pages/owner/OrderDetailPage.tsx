@@ -112,9 +112,11 @@ const OrderDetailPage = () => {
   const assignedIds = new Set((order?.assignedWorkers ?? []).map((w) => w.workerId))
   const availableWorkers = workers.filter((w) => !assignedIds.has(w.id))
 
-  const profit     = order ? order.salePrice - order.actualMaterialCost : 0
-  const costPct    = order && order.salePrice > 0
-    ? Math.round((order.actualMaterialCost / order.salePrice) * 100)
+  const totalCosts = order
+    ? order.actualMaterialCost + order.workerWageCost + order.workerCommissionCost
+    : 0
+  const costPct = order && order.salePrice > 0
+    ? Math.round((totalCosts / order.salePrice) * 100)
     : 0
 
   // Close status menu on outside click
@@ -303,6 +305,17 @@ const OrderDetailPage = () => {
                       </span>
                     )}
                   </div>
+                  <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    {w.daysWorked > 0 && (
+                      <span>{w.daysWorked} kun</span>
+                    )}
+                    {w.wageCost > 0 && (
+                      <span style={{ color: 'var(--red)' }}>maosh: -{formatNumber(w.wageCost)}</span>
+                    )}
+                    {w.commissionCost > 0 && (
+                      <span style={{ color: 'var(--red)' }}>komissiya: -{formatNumber(w.commissionCost)}</span>
+                    )}
+                  </div>
                 </div>
                 <Button
                   variant="danger"
@@ -341,21 +354,44 @@ const OrderDetailPage = () => {
                 -{formatNumber(order.actualMaterialCost)}
               </span>
             </div>
+            {order.workerWageCost > 0 && (
+              <div className={styles.infoRow}>
+                <span className={styles.infoKey}>Ishchi maoshi</span>
+                <span style={{ color: 'var(--red)', fontWeight: 600 }}>
+                  -{formatNumber(order.workerWageCost)}
+                </span>
+              </div>
+            )}
+            {order.workerCommissionCost > 0 && (
+              <div className={styles.infoRow}>
+                <span className={styles.infoKey}>Komissiyalar</span>
+                <span style={{ color: 'var(--red)', fontWeight: 600 }}>
+                  -{formatNumber(order.workerCommissionCost)}
+                </span>
+              </div>
+            )}
             <div className={styles.divider} />
             <div className={styles.infoRow}>
-              <span className={styles.infoKey}>Foyda</span>
-              <span className={cn(styles.infoVal, styles.profitVal)}>
-                {formatNumber(profit)}
+              <span className={styles.infoKey}>Sof foyda</span>
+              <span
+                className={styles.infoVal}
+                style={{
+                  color: order.netProfit >= 0 ? 'var(--green)' : 'var(--red)',
+                  fontWeight: 700,
+                  fontSize: 15,
+                }}
+              >
+                {formatNumber(order.netProfit)}
               </span>
             </div>
             <div className={styles.progressTrack}>
               <div
                 className={styles.progressFill}
-                style={{ width: `${Math.min(100 - costPct, 100)}%` }}
+                style={{ width: `${Math.max(0, Math.min(100 - costPct, 100))}%` }}
               />
             </div>
             <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 4 }}>
-              Material xarajat: {costPct}%
+              Xarajatlar jami: {costPct}% · Foyda: {Math.max(0, 100 - costPct)}%
             </div>
           </div>
         </div>

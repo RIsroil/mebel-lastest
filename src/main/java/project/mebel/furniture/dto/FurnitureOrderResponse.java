@@ -28,6 +28,9 @@ public class FurnitureOrderResponse {
     private LocalDateTime completedAt;
     private LocalDateTime soldAt;
     private LocalDateTime createdAt;
+    private BigDecimal workerWageCost;
+    private BigDecimal workerCommissionCost;
+    private BigDecimal netProfit;
     private List<AssignedWorkerResponse> assignedWorkers;
     private List<MaterialUsageResponse> materialUsages;
 
@@ -39,6 +42,9 @@ public class FurnitureOrderResponse {
         private LocalDateTime assignedAt;
         private BigDecimal commissionPct;
         private boolean active;
+        private Integer daysWorked;
+        private BigDecimal wageCost;
+        private BigDecimal commissionCost;
     }
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor

@@ -7,12 +7,18 @@ import org.springframework.transaction.annotation.Transactional;
 import project.mebel.attendance.dto.AttendanceResponse;
 import project.mebel.attendance.dto.OverrideHoursRequest;
 import project.mebel.attendance.dto.SubmitHoursRequest;
+import project.mebel.common.enums.EarnType;
+import project.mebel.common.enums.PayType;
 import project.mebel.common.enums.UserRole;
+import project.mebel.earning.EarningEntity;
+import project.mebel.earning.EarningRepository;
 import project.mebel.exception.ApiException;
 import project.mebel.user.UserEntity;
 import project.mebel.user.UserRepository;
 import project.mebel.utils.Utils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,6 +30,7 @@ import java.util.UUID;
 public class AttendanceServiceImpl implements AttendanceService {
 
     private final DailyAttendanceRepository attendanceRepo;
+    private final EarningRepository earningRepo;
     private final UserRepository userRepo;
     private final Utils utils;
 
@@ -89,16 +96,23 @@ public class AttendanceServiceImpl implements AttendanceService {
         attendance.setOwnerOverrideHours(request.getHoursWorked());
         attendance.setOwnerOverrideBy(owner.getId());
         attendance.setOwnerOverrideAt(now);
-        // Use override value as effective hoursWorked
         attendance.setHoursWorked(request.getHoursWorked());
         attendance.setHoursLocked(true);
         attendance.setHoursLockedAt(now);
         if (request.getNotes() != null) attendance.setNotes(request.getNotes());
         attendance.setUpdatedBy(owner.getId());
 
-        String workerName = userRepo.findById(attendance.getUserId())
-                .map(UserEntity::getFullName).orElse(null);
-        return toResponse(attendanceRepo.save(attendance), workerName);
+        DailyAttendanceEntity saved = attendanceRepo.save(attendance);
+
+        UserEntity worker = userRepo.findById(saved.getUserId())
+                .orElseThrow(() -> ApiException.notFound("worker.not.found"));
+
+        // Upsert earning: yangi soatlar bilan yaratiladi yoki mavjudi yangilanadi
+        if (saved.getHoursWorked() != null && saved.getHoursWorked().compareTo(BigDecimal.ZERO) > 0) {
+            upsertEarning(saved, worker, owner.getId());
+        }
+
+        return toResponse(saved, worker.getFullName());
     }
 
     @Override
@@ -143,12 +157,83 @@ public class AttendanceServiceImpl implements AttendanceService {
         for (DailyAttendanceEntity attendance : expired) {
             attendance.setHoursLocked(true);
             attendance.setHoursLockedAt(now);
-            // If not submitted, set hours to 0
             if (!attendance.isHoursSelfReported() && attendance.getOwnerOverrideHours() == null) {
-                attendance.setHoursWorked(java.math.BigDecimal.ZERO);
+                // Worker kiritmasdan muddati o'tdi → 0 soat, maosh yo'q
+                attendance.setHoursWorked(BigDecimal.ZERO);
             }
         }
         attendanceRepo.saveAll(expired);
+
+        // Soat > 0 bo'lganlar uchun earning yaratiladi (agar mavjud bo'lmasa)
+        for (DailyAttendanceEntity attendance : expired) {
+            if (attendance.getHoursWorked() != null && attendance.getHoursWorked().compareTo(BigDecimal.ZERO) > 0) {
+                userRepo.findById(attendance.getUserId()).ifPresent(worker ->
+                        upsertEarning(attendance, worker, null));
+            }
+        }
+    }
+
+    // Attendance ga tegishli earning ni yaratadi yoki mavjudini yangilaydi.
+    // createdBy = null bo'lsa scheduler tomonidan chaqirilgan.
+    private void upsertEarning(DailyAttendanceEntity attendance, UserEntity worker, UUID actorId) {
+        BigDecimal hours = attendance.getHoursWorked();
+        BigDecimal target = worker.getDailyHoursTarget();
+
+        EarnType earnType;
+        BigDecimal snapshotDailyRate = null;
+        BigDecimal snapshotHourlyRate = null;
+        BigDecimal baseAmount;
+
+        if (worker.getPayType() == PayType.DAILY) {
+            earnType = EarnType.DAILY_WAGE;
+            snapshotDailyRate = worker.getDailySalary();
+            // Necha soat ishlagan bo'lsa shuncha ulushi (8 soat=to'liq kun)
+            baseAmount = hours.divide(target, 4, RoundingMode.HALF_UP)
+                    .multiply(worker.getDailySalary())
+                    .setScale(2, RoundingMode.HALF_UP);
+        } else {
+            // MONTHLY → soatbay hisob
+            earnType = EarnType.HOURLY_WAGE;
+            snapshotHourlyRate = worker.getHourlyRate() != null ? worker.getHourlyRate() : BigDecimal.ZERO;
+            baseAmount = hours.multiply(snapshotHourlyRate).setScale(2, RoundingMode.HALF_UP);
+        }
+
+        earningRepo.findByAttendanceId(attendance.getId()).ifPresentOrElse(
+                existing -> {
+                    // Mavjud bo'lsa → yangilash (owner override holati)
+                    existing.setHoursWorked(hours);
+                    existing.setDailyRate(snapshotDailyRate);
+                    existing.setHourlyRate(snapshotHourlyRate);
+                    existing.setBaseAmount(baseAmount);
+                    // Komissiya allaqachon to'langan bo'lsa o'zgartirmaymiz
+                    if (!existing.isPaid()) {
+                        existing.setTotalAmount(baseAmount.add(
+                                existing.getCommissionAmount() != null ? existing.getCommissionAmount() : BigDecimal.ZERO));
+                    }
+                    existing.setUpdatedBy(actorId);
+                    earningRepo.save(existing);
+                },
+                () -> {
+                    EarningEntity earning = EarningEntity.builder()
+                            .workerId(worker.getId())
+                            .workshopId(worker.getWorkshopId())
+                            .earnDate(attendance.getWorkDate())
+                            .earnType(earnType)
+                            .attendanceId(attendance.getId())
+                            .hoursWorked(hours)
+                            .hourlyRate(snapshotHourlyRate)
+                            .daysWorked(BigDecimal.ONE)
+                            .dailyRate(snapshotDailyRate)
+                            // Hybrid bo'lsa commissionPct snapshot qilinadi, amount mebel tugatilganida qo'shiladi
+                            .commissionPct(worker.isHybridPay() ? worker.getCommissionPct() : null)
+                            .commissionAmount(null)
+                            .baseAmount(baseAmount)
+                            .totalAmount(baseAmount)
+                            .build();
+                    earning.setCreatedBy(actorId);
+                    earningRepo.save(earning);
+                }
+        );
     }
 
     private UserEntity requireWorker(Principal principal) {

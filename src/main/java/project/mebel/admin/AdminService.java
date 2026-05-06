@@ -15,9 +15,9 @@ import java.util.UUID;
 
 public interface AdminService {
 
-    Page<AdminUserResponse> getAllUsers(UserRole role, UUID workshopId, Boolean active, Pageable pageable);
+    Page<AdminUserResponse> getAllUsers(UserRole role, UUID workshopId, Boolean active, Pageable pageable, Principal principal);
 
-    AdminUserResponse getUserById(UUID id);
+    AdminUserResponse getUserById(UUID id, Principal principal);
 
     AdminUserResponse createUser(AdminCreateUserRequest request, Principal principal);
 

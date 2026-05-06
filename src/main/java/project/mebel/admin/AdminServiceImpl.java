@@ -40,15 +40,36 @@ public class AdminServiceImpl implements AdminService {
         }
     }
 
+    private void requireAdminOrOwner(UserEntity user) {
+        if (user.getRole() != UserRole.ADMIN && user.getRole() != UserRole.OWNER) {
+            throw ApiException.forbidden("access.denied");
+        }
+    }
+
+    private UUID resolveOwnerWorkshopId(UserEntity owner) {
+        return workshopRepository.findAllByOwnerId(owner.getId()).stream()
+                .findFirst()
+                .map(WorkshopEntity::getId)
+                .orElseThrow(() -> ApiException.forbidden("owner.has.no.workshop"));
+    }
+
     @Override
     @Transactional(readOnly = true)
-    public Page<AdminUserResponse> getAllUsers(UserRole role, UUID workshopId, Boolean active, Pageable pageable) {
+    public Page<AdminUserResponse> getAllUsers(UserRole role, UUID workshopId, Boolean active, Pageable pageable, Principal principal) {
+        UserEntity caller = utils.getUserFromPrincipal(principal);
+        requireAdminOrOwner(caller);
+
         Specification<UserEntity> spec = (root, query, cb) -> cb.conjunction();
+        if (caller.getRole() == UserRole.OWNER) {
+            UUID ownerWorkshopId = resolveOwnerWorkshopId(caller);
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("workshopId"), ownerWorkshopId));
+        } else {
+            if (workshopId != null) {
+                spec = spec.and((root, query, cb) -> cb.equal(root.get("workshopId"), workshopId));
+            }
+        }
         if (role != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("role"), role));
-        }
-        if (workshopId != null) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("workshopId"), workshopId));
         }
         if (active != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("active"), active));
@@ -58,9 +79,20 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     @Transactional(readOnly = true)
-    public AdminUserResponse getUserById(UUID id) {
+    public AdminUserResponse getUserById(UUID id, Principal principal) {
+        UserEntity caller = utils.getUserFromPrincipal(principal);
+        requireAdminOrOwner(caller);
+
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("user.not.found"));
+
+        if (caller.getRole() == UserRole.OWNER) {
+            UUID ownerWorkshopId = resolveOwnerWorkshopId(caller);
+            if (!ownerWorkshopId.equals(user.getWorkshopId())) {
+                throw ApiException.forbidden("access.denied");
+            }
+        }
+
         String workshopName = null;
         if (user.getWorkshopId() != null) {
             workshopName = workshopRepository.findById(user.getWorkshopId())
@@ -73,8 +105,18 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional
     public AdminUserResponse createUser(AdminCreateUserRequest request, Principal principal) {
-        UserEntity admin = utils.getUserFromPrincipal(principal);
-        requireAdmin(admin);
+        UserEntity caller = utils.getUserFromPrincipal(principal);
+        requireAdminOrOwner(caller);
+
+        UUID workshopId = request.getWorkshopId();
+        UserRole role = request.getRole() != null ? request.getRole() : UserRole.WORKER;
+
+        if (caller.getRole() == UserRole.OWNER) {
+            if (role == UserRole.ADMIN || role == UserRole.OWNER) {
+                throw ApiException.forbidden("owner.cannot.create.admin.or.owner");
+            }
+            workshopId = resolveOwnerWorkshopId(caller);
+        }
 
         if (userRepository.findByUsernameAndDeletedAtIsNull(request.getUsername()).isPresent()) {
             throw ApiException.conflict("username.already.exists");
@@ -85,8 +127,8 @@ public class AdminServiceImpl implements AdminService {
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
                 .phone(request.getPhone())
-                .role(request.getRole() != null ? request.getRole() : UserRole.WORKER)
-                .workshopId(request.getWorkshopId())
+                .role(role)
+                .workshopId(workshopId)
                 .payType(request.getPayType())
                 .hourlyRate(request.getHourlyRate())
                 .dailyRate(request.getDailyRate())
@@ -97,7 +139,7 @@ public class AdminServiceImpl implements AdminService {
                 .commissionPct(request.getCommissionPct())
                 .hybridPay(request.isHybridPay())
                 .build();
-        user.setCreatedBy(admin.getId());
+        user.setCreatedBy(caller.getId());
 
         UserEntity saved = userRepository.save(user);
 
@@ -113,11 +155,24 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional
     public AdminUserResponse updateUser(UUID id, AdminUserUpdateRequest request, Principal principal) {
-        UserEntity admin = utils.getUserFromPrincipal(principal);
-        requireAdmin(admin);
+        UserEntity caller = utils.getUserFromPrincipal(principal);
+        requireAdminOrOwner(caller);
 
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("user.not.found"));
+
+        if (caller.getRole() == UserRole.OWNER) {
+            UUID ownerWorkshopId = resolveOwnerWorkshopId(caller);
+            if (!ownerWorkshopId.equals(user.getWorkshopId())) {
+                throw ApiException.forbidden("access.denied");
+            }
+            // Owner cannot promote to ADMIN or OWNER
+            if (request.getRole() != null && (request.getRole() == UserRole.ADMIN || request.getRole() == UserRole.OWNER)) {
+                throw ApiException.forbidden("owner.cannot.assign.admin.or.owner.role");
+            }
+            // Owner cannot move user to another workshop
+            request.setWorkshopId(null);
+        }
 
         if (request.getFullName() != null) user.setFullName(request.getFullName());
         if (request.getPhone() != null) user.setPhone(request.getPhone());
@@ -134,7 +189,7 @@ public class AdminServiceImpl implements AdminService {
         if (request.getNewPassword() != null && !request.getNewPassword().isBlank()) {
             user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         }
-        user.setUpdatedBy(admin.getId());
+        user.setUpdatedBy(caller.getId());
 
         UserEntity saved = userRepository.save(user);
 
@@ -150,48 +205,69 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional
     public void deleteUser(UUID id, Principal principal) {
-        UserEntity admin = utils.getUserFromPrincipal(principal);
-        requireAdmin(admin);
+        UserEntity caller = utils.getUserFromPrincipal(principal);
+        requireAdminOrOwner(caller);
 
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("user.not.found"));
 
+        if (caller.getRole() == UserRole.OWNER) {
+            UUID ownerWorkshopId = resolveOwnerWorkshopId(caller);
+            if (!ownerWorkshopId.equals(user.getWorkshopId())) {
+                throw ApiException.forbidden("access.denied");
+            }
+        }
+
         user.setDeletedAt(LocalDateTime.now());
-        user.setDeletedBy(admin.getId());
+        user.setDeletedBy(caller.getId());
         userRepository.save(user);
     }
 
     @Override
     @Transactional
     public void blockUser(UUID id, AdminBlockRequest request, Principal principal) {
-        UserEntity admin = utils.getUserFromPrincipal(principal);
-        requireAdmin(admin);
+        UserEntity caller = utils.getUserFromPrincipal(principal);
+        requireAdminOrOwner(caller);
 
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("user.not.found"));
+
+        if (caller.getRole() == UserRole.OWNER) {
+            UUID ownerWorkshopId = resolveOwnerWorkshopId(caller);
+            if (!ownerWorkshopId.equals(user.getWorkshopId())) {
+                throw ApiException.forbidden("access.denied");
+            }
+        }
 
         int days = (request.getBlockDays() != null && request.getBlockDays() > 0) ? request.getBlockDays() : 1;
         user.setBlocked(true);
         user.setBlockedUntil(LocalDateTime.now().plusDays(days));
         user.setBlockReason(request.getReason());
-        user.setUpdatedBy(admin.getId());
+        user.setUpdatedBy(caller.getId());
         userRepository.save(user);
     }
 
     @Override
     @Transactional
     public void unblockUser(UUID id, Principal principal) {
-        UserEntity admin = utils.getUserFromPrincipal(principal);
-        requireAdmin(admin);
+        UserEntity caller = utils.getUserFromPrincipal(principal);
+        requireAdminOrOwner(caller);
 
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("user.not.found"));
+
+        if (caller.getRole() == UserRole.OWNER) {
+            UUID ownerWorkshopId = resolveOwnerWorkshopId(caller);
+            if (!ownerWorkshopId.equals(user.getWorkshopId())) {
+                throw ApiException.forbidden("access.denied");
+            }
+        }
 
         user.setBlocked(false);
         user.setBlockedUntil(null);
         user.setBlockReason(null);
         user.setFailedLoginCount((short) 0);
-        user.setUpdatedBy(admin.getId());
+        user.setUpdatedBy(caller.getId());
         userRepository.save(user);
     }
 

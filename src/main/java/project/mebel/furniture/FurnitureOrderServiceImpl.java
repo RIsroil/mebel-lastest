@@ -3,8 +3,10 @@ package project.mebel.furniture;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import project.mebel.attendance.DailyAttendanceRepository;
 import project.mebel.common.enums.EarnType;
 import project.mebel.common.enums.FurnitureStatus;
+import project.mebel.common.enums.PayType;
 import project.mebel.common.enums.TransactionType;
 import project.mebel.common.enums.UserRole;
 import project.mebel.earning.EarningEntity;
@@ -38,6 +40,7 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
     private final WarehouseTransactionRepository warehouseTxRepo;
     private final EarningRepository earningRepo;
     private final UserRepository userRepo;
+    private final DailyAttendanceRepository attendanceRepo;
     private final Utils utils;
 
     @Override
@@ -329,10 +332,46 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
         List<FurnitureAssignmentEntity> assignments = assignmentRepo.findAllByFurnitureOrderId(o.getId());
         List<MaterialUsageEntity> usages = usageRepo.findAllByFurnitureOrderId(o.getId());
 
+        BigDecimal totalWageCost       = BigDecimal.ZERO;
+        BigDecimal totalCommissionCost = BigDecimal.ZERO;
+
         List<FurnitureOrderResponse.AssignedWorkerResponse> assignedWorkers = assignments.stream()
                 .map(a -> {
-                    String workerName = userRepo.findById(a.getWorkerId())
-                            .map(UserEntity::getFullName).orElse(null);
+                    UserEntity worker = userRepo.findById(a.getWorkerId()).orElse(null);
+                    String workerName = worker != null ? worker.getFullName() : null;
+
+                    int daysWorked = 0;
+                    BigDecimal wageCost = BigDecimal.ZERO;
+                    BigDecimal commissionCost = BigDecimal.ZERO;
+
+                    if (worker != null) {
+                        LocalDate from = a.getAssignedAt().toLocalDate();
+                        LocalDate to = a.getUnassignedAt() != null ? a.getUnassignedAt().toLocalDate()
+                                : o.getCompletedAt() != null ? o.getCompletedAt().toLocalDate()
+                                : LocalDate.now();
+
+                        daysWorked = attendanceRepo.findAllByUserIdAndWorkDateBetween(worker.getId(), from, to).size();
+
+                        if (worker.getPayType() == PayType.DAILY && worker.getDailySalary() != null) {
+                            wageCost = worker.getDailySalary()
+                                    .multiply(BigDecimal.valueOf(daysWorked))
+                                    .setScale(2, RoundingMode.HALF_UP);
+                        } else if (worker.getPayType() == PayType.MONTHLY && worker.getDailySalary() != null) {
+                            // dailySalary stores monthly salary; daily rate = monthly / 30
+                            wageCost = worker.getDailySalary()
+                                    .divide(BigDecimal.valueOf(30), 2, RoundingMode.HALF_UP)
+                                    .multiply(BigDecimal.valueOf(daysWorked))
+                                    .setScale(2, RoundingMode.HALF_UP);
+                        }
+
+                        if (o.getSalePrice() != null && a.getCommissionPct() != null
+                                && a.getCommissionPct().compareTo(BigDecimal.ZERO) > 0) {
+                            commissionCost = o.getSalePrice()
+                                    .multiply(a.getCommissionPct())
+                                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                        }
+                    }
+
                     return FurnitureOrderResponse.AssignedWorkerResponse.builder()
                             .assignmentId(a.getId())
                             .workerId(a.getWorkerId())
@@ -340,8 +379,20 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                             .assignedAt(a.getAssignedAt())
                             .commissionPct(a.getCommissionPct())
                             .active(a.isActive())
+                            .daysWorked(daysWorked)
+                            .wageCost(wageCost)
+                            .commissionCost(commissionCost)
                             .build();
                 }).toList();
+
+        for (FurnitureOrderResponse.AssignedWorkerResponse w : assignedWorkers) {
+            totalWageCost       = totalWageCost.add(w.getWageCost() != null ? w.getWageCost() : BigDecimal.ZERO);
+            totalCommissionCost = totalCommissionCost.add(w.getCommissionCost() != null ? w.getCommissionCost() : BigDecimal.ZERO);
+        }
+
+        BigDecimal salePrice     = o.getSalePrice() != null ? o.getSalePrice() : BigDecimal.ZERO;
+        BigDecimal materialCost  = o.getActualMaterialCost() != null ? o.getActualMaterialCost() : BigDecimal.ZERO;
+        BigDecimal netProfit     = salePrice.subtract(materialCost).subtract(totalWageCost).subtract(totalCommissionCost);
 
         List<FurnitureOrderResponse.MaterialUsageResponse> materialUsages = usages.stream()
                 .map(m -> {
@@ -368,6 +419,9 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                 .salePrice(o.getSalePrice())
                 .estimatedCost(o.getEstimatedCost())
                 .actualMaterialCost(o.getActualMaterialCost())
+                .workerWageCost(totalWageCost)
+                .workerCommissionCost(totalCommissionCost)
+                .netProfit(netProfit)
                 .clientName(o.getClientName())
                 .clientPhone(o.getClientPhone())
                 .notes(o.getNotes())
