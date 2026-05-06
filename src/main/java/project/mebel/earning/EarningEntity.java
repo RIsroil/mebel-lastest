@@ -39,6 +39,9 @@ public class EarningEntity extends MutableAuditEntity {
     @Column(name = "hours_worked", precision = 4, scale = 2)
     private BigDecimal hoursWorked;
 
+    @Column(name = "hours_target", precision = 4, scale = 2)
+    private BigDecimal hoursTarget;
+
     @Column(name = "hourly_rate", precision = 12, scale = 2)
     private BigDecimal hourlyRate;
 

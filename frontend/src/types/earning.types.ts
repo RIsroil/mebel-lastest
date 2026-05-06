@@ -9,6 +9,7 @@ export interface EarningResponse {
   earnType: EarnType
   attendanceId: string | null
   hoursWorked: number | null
+  hoursTarget: number | null
   hourlyRate: number | null
   daysWorked: number | null
   dailyRate: number | null

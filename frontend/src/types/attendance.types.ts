@@ -6,7 +6,7 @@ export interface AttendanceResponse {
   checkInTime: string
   checkOutTime: string | null
   hoursWorked: number | null
-  hoursSelfReported: number | null
+  hoursSelfReported: boolean
   hoursDeadline: string
   hoursLocked: boolean
   ownerOverrideHours: number | null

@@ -28,5 +28,6 @@
     <include file="changes/021-alter-furniture-assignments-add-commission-pct.xml" relativeToChangelogFile="true"/>
     <include file="changes/022-create-financial-logs-table.xml" relativeToChangelogFile="true"/>
     <include file="changes/023-add-related-name-to-financial-logs.xml" relativeToChangelogFile="true"/>
+    <include file="changes/024-add-hours-target-to-earnings.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

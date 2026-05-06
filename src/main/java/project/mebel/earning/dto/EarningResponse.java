@@ -19,11 +19,15 @@ public class EarningResponse {
     private LocalDate earnDate;
     private EarnType earnType;
     private BigDecimal hoursWorked;
+    private BigDecimal hoursTarget;
+    private BigDecimal dailyRate;
+    private BigDecimal hourlyRate;
     private BigDecimal daysWorked;
     private BigDecimal baseAmount;
     private BigDecimal totalAmount;
     private boolean paid;
     private LocalDateTime paidAt;
+    private UUID attendanceId;
     private UUID furnitureOrderId;
     private BigDecimal commissionAmount;
 }

@@ -30,6 +30,9 @@
   --purple:    #6B46A8;
   --purple-bg: #F0EBFA;
 
+  /* Sidebar (always dark) */
+  --sidebar-bg: #1A1814;
+
   /* Layout */
   --sidebar-w: 220px;
   --topbar-h:  56px;
@@ -45,6 +48,44 @@
   /* Typography */
   --font:         'DM Sans', sans-serif;
   --font-display: 'Playfair Display', serif;
+}
+
+[data-theme="dark"] {
+  /* Background */
+  --bg:       #13110F;
+  --surface:  #1C1A16;
+  --surface2: #232019;
+
+  /* Sidebar stays dark but slightly different */
+  --sidebar-bg: #100F0D;
+
+  /* Border */
+  --border:  #2E2B25;
+  --border2: #3E3A32;
+
+  /* Text */
+  --text:  #F0EDE8;
+  --text2: #9E9890;
+  --text3: #6A6560;
+
+  /* Accent */
+  --accent:    #D4924E;
+  --accent2:   #B87A38;
+  --accent-bg: #2C1E0D;
+
+  /* Semantic colors */
+  --green:     #4EAF7A;
+  --green-bg:  #0D2117;
+  --red:       #E06057;
+  --red-bg:    #2A1110;
+  --blue:      #5B8FD8;
+  --blue-bg:   #10182A;
+  --purple:    #9B72D8;
+  --purple-bg: #1A1228;
+
+  /* Shadow */
+  --shadow:    0 1px 4px rgba(0,0,0,0.35), 0 4px 14px rgba(0,0,0,0.25);
+  --shadow-lg: 0 4px 28px rgba(0,0,0,0.50);
 }
 
 /* Reset */

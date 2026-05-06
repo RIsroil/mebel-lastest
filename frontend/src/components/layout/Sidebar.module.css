@@ -1,6 +1,6 @@
 .sidebar {
   width: var(--sidebar-w);
-  background: var(--text);
+  background: var(--sidebar-bg, #1A1814);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -107,6 +107,28 @@
   margin-top: auto;
   padding: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.themeToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  margin-bottom: 6px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-align: left;
+  font-family: var(--font);
+}
+.themeToggle:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .userRow {

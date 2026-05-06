@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
+import { useTheme } from '@/hooks/useTheme'
 import Avatar from '@/components/ui/Avatar'
 import styles from './Sidebar.module.css'
 import { cn } from '@/utils/cn'
@@ -71,6 +72,7 @@ const ROLE_LABEL: Record<string, string> = {
 const Sidebar = ({ isOpen, onClose }: Props) => {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
+  const { theme, toggle } = useTheme()
 
   if (!user) return null
 
@@ -130,6 +132,15 @@ const Sidebar = ({ isOpen, onClose }: Props) => {
       ))}
 
       <div className={styles.bottom}>
+        <button
+          type="button"
+          className={styles.themeToggle}
+          onClick={toggle}
+          title={theme === 'dark' ? "Yorug' rejimga o'tish" : "Qorong'u rejimga o'tish"}
+        >
+          <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
+          <span>{theme === 'dark' ? "Yorug' rejim" : "Qorong'u rejim"}</span>
+        </button>
         <div className={styles.userRow}>
           <Avatar
             name={user.fullName || user.username}

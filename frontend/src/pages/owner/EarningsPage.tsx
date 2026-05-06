@@ -7,7 +7,8 @@ import { z } from 'zod'
 import { useTopbar } from '@/context/TopbarContext'
 import { earningApi } from '@/api/earning.api'
 import { adminApi } from '@/api/admin.api'
-import type { EarnType } from '@/types/earning.types'
+import { attendanceApi } from '@/api/attendance.api'
+import type { EarnType, EarningResponse } from '@/types/earning.types'
 import { formatNumber } from '@/utils/formatMoney'
 import { formatDate, toApiDate } from '@/utils/formatDate'
 import Badge from '@/components/ui/Badge'
@@ -29,7 +30,6 @@ const EARN_CLASS: Record<EarnType, string> = {
   BONUS:       'earnBonus',
 }
 
-// Default: joriy oy
 const firstOfMonth = (): string => {
   const d = new Date()
   d.setDate(1)
@@ -53,6 +53,10 @@ const EarningsPage = () => {
   const [to, setTo]               = useState(today)
   const [workerId, setWorkerId]   = useState('')
   const [showBonus, setShowBonus] = useState(false)
+
+  // Override hours modal state
+  const [overrideRow, setOverrideRow] = useState<EarningResponse | null>(null)
+  const [overrideHours, setOverrideHours] = useState('')
 
   const { data: workersResp } = useQuery({
     queryKey: ['workers'],
@@ -78,6 +82,16 @@ const EarningsPage = () => {
     onSuccess:  () => { queryClient.invalidateQueries({ queryKey: earningsKey }); closeBonus() },
   })
 
+  const overrideMut = useMutation({
+    mutationFn: ({ attendanceId, hours }: { attendanceId: string; hours: number }) =>
+      attendanceApi.overrideHours(attendanceId, { hoursWorked: hours }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: earningsKey })
+      setOverrideRow(null)
+      setOverrideHours('')
+    },
+  })
+
   const { register, handleSubmit, formState: { errors }, reset } = useForm<BonusForm>({
     resolver:      zodResolver(bonusSchema) as Resolver<BonusForm>,
     defaultValues: { bonusDate: today },
@@ -92,6 +106,18 @@ const EarningsPage = () => {
   }, [setTitle, setActions])
 
   const closeBonus = () => { setShowBonus(false); reset({ bonusDate: today }) }
+
+  const openOverride = (row: EarningResponse) => {
+    setOverrideRow(row)
+    setOverrideHours(row.hoursWorked != null ? String(row.hoursWorked) : '')
+  }
+
+  const submitOverride = () => {
+    if (!overrideRow?.attendanceId) return
+    const h = parseFloat(overrideHours)
+    if (isNaN(h) || h < 0) return
+    overrideMut.mutate({ attendanceId: overrideRow.attendanceId, hours: h })
+  }
 
   const earnings = earningsResp?.data?.data ?? []
   const workers  = workersResp?.data?.data?.content ?? []
@@ -169,14 +195,24 @@ const EarningsPage = () => {
               <th>Ishchi</th>
               <th>Sana</th>
               <th>Tur</th>
-              <th>Asosiy summa</th>
-              <th>Jami</th>
+              <th>Soat</th>
+              <th>To'liq kun</th>
+              <th>Hisoblangan</th>
               <th>Holat</th>
               <th>Amal</th>
             </tr>
           </thead>
           <tbody>
-            {earnings.map((e) => (
+            {earnings.map((e) => {
+              const isOvertime = e.hoursWorked != null && e.hoursTarget != null
+                && e.hoursWorked > e.hoursTarget
+              const overtimeH = isOvertime
+                ? +(e.hoursWorked! - e.hoursTarget!).toFixed(2)
+                : 0
+              const canOverride = (e.earnType === 'DAILY_WAGE' || e.earnType === 'HOURLY_WAGE')
+                && e.attendanceId != null
+
+              return (
               <tr key={e.id}>
                 <td className={styles.workerName}>{e.workerName}</td>
                 <td className={styles.dateCell}>{formatDate(e.earnDate)}</td>
@@ -185,7 +221,40 @@ const EarningsPage = () => {
                     {EARN_LABELS[e.earnType]}
                   </span>
                 </td>
-                <td>{formatNumber(e.baseAmount)}</td>
+                {/* Soat ustuni */}
+                <td className={styles.hoursCell}>
+                  <div className={styles.hoursCellInner}>
+                    {e.hoursWorked != null ? (
+                      <span className={isOvertime ? styles.overtime : undefined}>
+                        {e.hoursWorked}h{e.hoursTarget != null ? `/${e.hoursTarget}h` : ''}
+                        {isOvertime && (
+                          <span className={styles.overtimeBadge} title="Qo'shimcha ish vaqti (to'lovga kirmaydi)">
+                            +{overtimeH}h
+                          </span>
+                        )}
+                      </span>
+                    ) : '—'}
+                    {canOverride && (
+                      <button
+                        type="button"
+                        className={styles.editHoursBtn}
+                        onClick={() => openOverride(e)}
+                        title="Soatni o'zgartirish"
+                      >
+                        ✎
+                      </button>
+                    )}
+                  </div>
+                </td>
+                {/* To'liq kun summasi */}
+                <td className={styles.rateCell}>
+                  {e.earnType === 'DAILY_WAGE' && e.dailyRate != null
+                    ? formatNumber(e.dailyRate)
+                    : e.earnType === 'HOURLY_WAGE' && e.hourlyRate != null && e.hoursTarget != null
+                      ? formatNumber(e.hourlyRate * e.hoursTarget)
+                      : '—'}
+                </td>
+                {/* Hisoblangan */}
                 <td className={styles.totalCell}>{formatNumber(e.totalAmount)}</td>
                 <td>
                   <Badge variant={e.paid ? 'PAID' : 'UNPAID'} />
@@ -206,10 +275,11 @@ const EarningsPage = () => {
                   )}
                 </td>
               </tr>
-            ))}
+              )
+            })}
             {!isLoading && earnings.length === 0 && (
               <tr>
-                <td colSpan={7} className={styles.empty}>
+                <td colSpan={8} className={styles.empty}>
                   Daromad yozuvlari topilmadi
                 </td>
               </tr>
@@ -217,6 +287,57 @@ const EarningsPage = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Override hours modal */}
+      {overrideRow && (
+        <Modal
+          isOpen={!!overrideRow}
+          onClose={() => { setOverrideRow(null); setOverrideHours('') }}
+          title="Ishlangan soatni o'zgartirish"
+        >
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>
+              {overrideRow.workerName} — {formatDate(overrideRow.earnDate)}
+            </label>
+            <div className={styles.overrideInputRow}>
+              <input
+                className={styles.formInput}
+                type="number"
+                min="0"
+                step="0.5"
+                placeholder="8"
+                value={overrideHours}
+                onChange={(e) => setOverrideHours(e.target.value)}
+                autoFocus
+              />
+              <span className={styles.overrideUnit}>soat</span>
+            </div>
+            {overrideRow.hoursTarget != null && (
+              <span className={styles.errText} style={{ color: 'var(--text3)' }}>
+                Ish kuni norma: {overrideRow.hoursTarget}h
+              </span>
+            )}
+          </div>
+          <div className={styles.formActions}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => { setOverrideRow(null); setOverrideHours('') }}
+            >
+              Bekor qilish
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              loading={overrideMut.isPending}
+              onClick={submitOverride}
+            >
+              Saqlash →
+            </Button>
+          </div>
+        </Modal>
+      )}
 
       {/* Bonus modal */}
       <Modal isOpen={showBonus} onClose={closeBonus} title="Bonus berish">

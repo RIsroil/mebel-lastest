@@ -10,18 +10,33 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  background: var(--color-surface, #1e1e2e);
-  border: 1px solid var(--color-border, #2a2a3d);
-  border-radius: 10px;
-  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 18px;
   font-size: 13px;
+  box-shadow: var(--shadow);
 }
-.lastMonthLabel { color: var(--color-text-muted, #888); font-weight: 500; }
-.incomeChip  { background: #16a34a22; color: #4ade80; border-radius: 6px; padding: 2px 10px; font-weight: 600; }
-.expenseChip { background: #dc262622; color: #f87171; border-radius: 6px; padding: 2px 10px; font-weight: 600; }
-.netPositive { color: #4ade80; font-weight: 700; }
-.netNegative { color: #f87171; font-weight: 700; }
-.countChip   { color: var(--color-text-muted, #888); }
+.lastMonthLabel { color: var(--text3); font-weight: 500; }
+.incomeChip  {
+  background: var(--green-bg);
+  color: var(--green);
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-weight: 700;
+  font-size: 12px;
+}
+.expenseChip {
+  background: var(--red-bg);
+  color: var(--red);
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-weight: 700;
+  font-size: 12px;
+}
+.netPositive { color: var(--green); font-weight: 700; }
+.netNegative { color: var(--red);   font-weight: 700; }
+.countChip   { color: var(--text3); font-size: 12px; }
 
 /* Filter bar */
 .filters {
@@ -31,19 +46,21 @@
   align-items: flex-end;
 }
 .filterGroup { display: flex; flex-direction: column; gap: 4px; }
-.filterLabel { font-size: 12px; color: var(--color-text-muted, #888); }
+.filterLabel { font-size: 11px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
 .dateInput, .selectInput {
-  background: var(--color-surface, #1e1e2e);
-  border: 1px solid var(--color-border, #2a2a3d);
-  border-radius: 8px;
-  color: var(--color-text, #e2e8f0);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
   padding: 8px 12px;
   font-size: 13px;
   outline: none;
   cursor: pointer;
+  transition: border-color 0.15s;
+  box-shadow: var(--shadow);
 }
 .dateInput:focus, .selectInput:focus {
-  border-color: var(--color-primary, #6366f1);
+  border-color: var(--accent);
 }
 
 /* Summary cards */
@@ -53,23 +70,25 @@
   gap: 12px;
 }
 .summaryCard {
-  background: var(--color-surface, #1e1e2e);
-  border: 1px solid var(--color-border, #2a2a3d);
-  border-radius: 10px;
-  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
   text-align: center;
+  box-shadow: var(--shadow);
 }
 .summaryVal  { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-.summaryLbl  { font-size: 12px; color: var(--color-text-muted, #888); }
-.incomeVal   { color: #4ade80; }
-.expenseVal  { color: #f87171; }
+.summaryLbl  { font-size: 12px; color: var(--text3); }
+.incomeVal   { color: var(--green); }
+.expenseVal  { color: var(--red); }
 
 /* Table */
 .tableWrapper {
-  background: var(--color-surface, #1e1e2e);
-  border: 1px solid var(--color-border, #2a2a3d);
-  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   overflow: auto;
+  box-shadow: var(--shadow);
 }
 .table {
   width: 100%;
@@ -77,32 +96,33 @@
   font-size: 13px;
 }
 .table thead tr {
-  background: var(--color-surface-2, #252538);
+  background: var(--surface2);
 }
 .table th {
   padding: 10px 14px;
   text-align: left;
   font-weight: 600;
-  color: var(--color-text-muted, #888);
-  font-size: 12px;
+  color: var(--text3);
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   white-space: nowrap;
 }
 .table td {
-  padding: 10px 14px;
-  border-top: 1px solid var(--color-border, #2a2a3d);
-  color: var(--color-text, #e2e8f0);
+  padding: 11px 14px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
   vertical-align: middle;
 }
-.table tbody tr:hover { background: var(--color-surface-hover, #252538); }
+.table tbody tr:hover { background: var(--surface2); }
 
-.dateCell  { white-space: nowrap; color: var(--color-text-muted, #888); font-size: 12px; }
-.descCell  { max-width: 340px; }
-.amountCol { text-align: right; white-space: nowrap; font-weight: 600; }
-.amountPos { color: #4ade80; }
-.amountNeg { color: #f87171; }
+.dateCell  { white-space: nowrap; color: var(--text3); font-size: 12px; }
+.descCell  { max-width: 360px; color: var(--text2); }
+.amountCol { text-align: right; white-space: nowrap; font-weight: 700; }
+.amountPos { color: var(--green); }
+.amountNeg { color: var(--red); }
 
+/* Type badges */
 .typeBadge {
   display: inline-block;
   padding: 3px 10px;
@@ -111,13 +131,13 @@
   font-weight: 600;
   white-space: nowrap;
 }
-.typeBadge.income  { background: #16a34a22; color: #4ade80; }
-.typeBadge.expense { background: #dc262622; color: #f87171; }
+.typeBadge.income  { background: var(--green-bg); color: var(--green); }
+.typeBadge.expense { background: var(--red-bg);   color: var(--red); }
 
 .empty {
   text-align: center;
-  padding: 32px !important;
-  color: var(--color-text-muted, #888);
+  padding: 36px !important;
+  color: var(--text3);
 }
 
 /* Pagination */
@@ -129,14 +149,16 @@
   padding: 8px 0;
 }
 .pageBtn {
-  background: var(--color-surface, #1e1e2e);
-  border: 1px solid var(--color-border, #2a2a3d);
-  color: var(--color-text, #e2e8f0);
-  border-radius: 8px;
-  padding: 6px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: var(--radius-sm);
+  padding: 6px 16px;
   cursor: pointer;
   font-size: 13px;
+  transition: border-color 0.15s, color 0.15s;
+  box-shadow: var(--shadow);
 }
 .pageBtn:disabled { opacity: 0.35; cursor: not-allowed; }
-.pageBtn:not(:disabled):hover { border-color: var(--color-primary, #6366f1); }
-.pageInfo { font-size: 13px; color: var(--color-text-muted, #888); }
+.pageBtn:not(:disabled):hover { border-color: var(--accent); color: var(--accent); }
+.pageInfo { font-size: 13px; color: var(--text3); }

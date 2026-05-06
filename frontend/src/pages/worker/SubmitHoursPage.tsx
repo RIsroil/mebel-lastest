@@ -6,17 +6,21 @@ import { toApiDate, formatDate, formatTime } from '@/utils/formatDate'
 import Button from '@/components/ui/Button'
 import styles from './SubmitHoursPage.module.css'
 
-// Deadline countdown: ms → "X kun Y soat Z daqiqa" yoki "O'tdi"
-const formatCountdown = (deadlineStr: string): { text: string; urgent: boolean; expired: boolean } => {
-  const diff = new Date(deadlineStr).getTime() - Date.now()
-  if (diff <= 0) return { text: "Muddati o'tdi", urgent: false, expired: true }
-  const days  = Math.floor(diff / (1000 * 60 * 60 * 24))
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  const mins  = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-  const text  = days > 0
-    ? `${days} kun ${hours} soat ${mins} daqiqa`
-    : `${hours} soat ${mins} daqiqa`
-  return { text, urgent: diff < 24 * 60 * 60 * 1000, expired: false }
+// Calculates elapsed time from checkIn to now, capped at maxMinutes
+function calcElapsed(checkInStr: string): { hours: number; minutes: number; totalMinutes: number } {
+  const checkIn = new Date(checkInStr)
+  const now = new Date()
+  const diffMs = now.getTime() - checkIn.getTime()
+  const totalMinutes = Math.max(0, Math.floor(diffMs / 60000))
+  return {
+    hours: Math.floor(totalMinutes / 60),
+    minutes: totalMinutes % 60,
+    totalMinutes,
+  }
+}
+
+function formatHM(h: number, m: number) {
+  return `${h} soat${m > 0 ? ` ${m} daqiqa` : ''}`
 }
 
 const SubmitHoursPage = () => {
@@ -26,18 +30,24 @@ const SubmitHoursPage = () => {
   const today        = toApiDate(new Date())
   const sevenDaysAgo = toApiDate(new Date(Date.now() - 6 * 24 * 60 * 60 * 1000))
 
-  // Active form state: which record is being edited
-  const [activeId, setActiveId]   = useState<string | null>(null)
-  const [hours, setHours]         = useState('')
-  const [notes, setNotes]         = useState('')
-  const [hoursError, setHoursError] = useState('')
-
-  // Live countdown ticker
-  const [tick, setTick] = useState(0)
+  // Tick every minute to keep current time and max hours live
+  const [, setTick] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60_000)
     return () => clearInterval(id)
   }, [])
+
+  // Hour / minute steppers
+  const [h, setH] = useState(0)
+  const [m, setM] = useState(0)
+  const [notes, setNotes] = useState('')
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    setTitle('Soat kiritish')
+    setActions(null)
+    return () => { setTitle(''); setActions(null) }
+  }, [setTitle, setActions])
 
   const { data: historyResp, isLoading } = useQuery({
     queryKey: ['attendance-history', sevenDaysAgo, today],
@@ -49,187 +59,251 @@ const SubmitHoursPage = () => {
       attendanceApi.submitHours({ hoursWorked, notes: notesText }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attendance-history'] })
-      setActiveId(null)
-      setHours('')
-      setNotes('')
+      queryClient.invalidateQueries({ queryKey: ['attendance-today'] })
     },
   })
 
-  useEffect(() => {
-    setTitle('Soat kiritish')
-    setActions(null)
-    return () => { setTitle(''); setActions(null) }
-  }, [setTitle, setActions])
+  const records   = historyResp?.data?.data ?? []
+  const todayRec  = records.find((r) => r.workDate === today) ?? null
+  const history   = records.filter((r) => r.workDate !== today)
 
-  const records = historyResp?.data?.data ?? []
+  const elapsed   = todayRec?.checkInTime ? calcElapsed(todayRec.checkInTime) : null
+  const maxH      = elapsed?.hours ?? 0
+  const maxM      = elapsed?.minutes ?? 0
 
-  // Tasnif: kiritish kerak bo'lganlar, allaqachon kiritilganlar, muddati o'tganlar
-  const pending  = records.filter((r) => !r.hoursLocked && r.hoursSelfReported == null)
-  const done     = records.filter((r) => r.hoursSelfReported != null || r.ownerOverrideHours != null)
-  const expired  = records.filter((r) => r.hoursLocked && r.hoursSelfReported == null && r.ownerOverrideHours == null)
+  const enteredMinutes = h * 60 + m
+  const exceedsMax     = elapsed != null && enteredMinutes > elapsed.totalMinutes
+  const enteredDecimal = h + m / 60
 
-  const handleSubmit = () => {
-    const h = parseFloat(hours)
-    if (!hours || isNaN(h) || h <= 0 || h > 24) {
-      setHoursError('0 dan katta, 24 dan kichik son kiriting')
-      return
-    }
-    setHoursError('')
-    submitMut.mutate({ hoursWorked: h, notesText: notes || undefined })
+  const stepH = (delta: number) => {
+    const next = Math.max(0, Math.min(23, h + delta))
+    setH(next)
+    setError('')
+  }
+  const stepM = (delta: number) => {
+    let nm = m + delta
+    if (nm < 0) { nm = 50; setH((prev) => Math.max(0, prev - 1)) }
+    else if (nm >= 60) { nm = 0; setH((prev) => Math.min(23, prev + 1)) }
+    else setM(nm)
+    setError('')
   }
 
-  // tick ishlatilmagan bo'lsa lint xato bermasligi uchun
-  void tick
+  const handleSubmit = () => {
+    if (enteredMinutes === 0) { setError("Vaqt kiritilmagan — 0 bo'lishi mumkin emas"); return }
+    if (exceedsMax) { setError("Kirish vaqtingizdan ko'p soat kirita olmaysiz"); return }
+    setError('')
+    submitMut.mutate({ hoursWorked: parseFloat(enteredDecimal.toFixed(2)), notesText: notes || undefined })
+  }
+
+  const alreadySubmitted = todayRec && (todayRec.hoursSelfReported || todayRec.ownerOverrideHours != null)
+  const hoursLocked      = todayRec?.hoursLocked
 
   return (
     <div className={styles.page}>
-      {/* Summary */}
-      <div className={styles.summaryRow}>
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryNum}>{pending.length}</span>
-          <span className={styles.summaryLabel}>Kiritish kerak</span>
-        </div>
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryNum} style={{ color: 'var(--green)' }}>{done.length}</span>
-          <span className={styles.summaryLabel}>Kiritilgan</span>
-        </div>
-        <div className={styles.summaryCard}>
-          <span className={styles.summaryNum} style={{ color: 'var(--red)' }}>{expired.length}</span>
-          <span className={styles.summaryLabel}>Muddati o'tgan</span>
-        </div>
-      </div>
+    <div className={styles.layout}>
+    <div className={styles.leftCol}>
 
-      {/* Pending records */}
-      {pending.length > 0 && (
-        <div className={styles.section}>
-          <div className={styles.sectionTitle}>Soat kiritish kerak</div>
-          <div className={styles.recordList}>
-            {pending.map((a) => {
-              const cd = formatCountdown(a.hoursDeadline)
-              const isOpen = activeId === a.id
-              return (
-                <div key={a.id} className={`${styles.recordCard} ${cd.urgent ? styles.urgentCard : ''}`}>
-                  <div className={styles.recordHeader} onClick={() => setActiveId(isOpen ? null : a.id)}>
-                    <div className={styles.recordInfo}>
-                      <span className={styles.recordDate}>{formatDate(a.workDate)}</span>
-                      <span className={styles.recordCheckIn}>Kirish: {formatTime(a.checkInTime)}</span>
-                    </div>
-                    <div className={styles.deadlineBox}>
-                      <span className={styles.deadlineLabel}>Muddatigacha:</span>
-                      <span className={`${styles.deadlineValue} ${cd.urgent ? styles.deadlineUrgent : ''}`}>
-                        {cd.text}
-                      </span>
-                    </div>
-                    <button type="button" className={styles.toggleBtn}>
-                      {isOpen ? '▲' : '▼'}
-                    </button>
-                  </div>
-
-                  {isOpen && (
-                    <div className={styles.form}>
-                      <div className={styles.formRow}>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Ish soati *</label>
-                          <input
-                            className={styles.formInput}
-                            type="number"
-                            min={0.5}
-                            max={24}
-                            step={0.5}
-                            placeholder="8"
-                            value={hours}
-                            onChange={(e) => { setHours(e.target.value); setHoursError('') }}
-                          />
-                          {hoursError && <span className={styles.errText}>{hoursError}</span>}
-                        </div>
-                        <div className={styles.formGroup}>
-                          <label className={styles.formLabel}>Izoh (ixtiyoriy)</label>
-                          <input
-                            className={styles.formInput}
-                            placeholder="Qo'shimcha ma'lumot"
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className={styles.formActions}>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { setActiveId(null); setHours(''); setNotes('') }}
-                        >
-                          Bekor qilish
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          loading={submitMut.isPending}
-                          onClick={() => handleSubmit()}
-                        >
-                          Saqlash →
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+      {/* ─── TODAY'S SHIFT CARD ─── */}
+      {!isLoading && todayRec && (
+        <div className={styles.shiftCard}>
+          <div className={styles.shiftHeader}>
+            <span className={styles.shiftTitle}>Bugungi smenangiz</span>
+            {hoursLocked
+              ? <span className={styles.badgeLocked}>● Yakunlangan</span>
+              : alreadySubmitted
+                ? <span className={styles.badgeDone}>● Topshirilgan</span>
+                : <span className={styles.badgeActive}>● Faol</span>
+            }
+          </div>
+          <div className={styles.shiftStats}>
+            <div className={styles.shiftStat}>
+              <span className={styles.shiftStatLabel}>Kelish vaqti</span>
+              <span className={styles.shiftStatVal}>{formatTime(todayRec.checkInTime)}</span>
+            </div>
+            <div className={styles.shiftStat}>
+              <span className={styles.shiftStatLabel}>Hozirgi vaqt</span>
+              <span className={`${styles.shiftStatVal} ${styles.shiftStatCurrent}`}>
+                {new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false })}
+              </span>
+            </div>
+            <div className={styles.shiftStat}>
+              <span className={styles.shiftStatLabel}>Mumkin max</span>
+              <span className={`${styles.shiftStatVal} ${styles.shiftStatMax}`}>
+                {elapsed ? `${maxH}:${String(maxM).padStart(2, '0')}` : '—'}
+              </span>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Kiritilgan yozuvlar */}
-      {(done.length > 0 || expired.length > 0) && (
-        <div className={styles.section}>
-          <div className={styles.sectionTitle}>Tarixi</div>
-          <div className={styles.tableCard}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Sana</th>
-                  <th>Kirish</th>
-                  <th>Ish soati</th>
-                  <th>Izoh</th>
-                  <th>Holat</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...done, ...expired].map((a) => {
-                  const hours = a.ownerOverrideHours ?? a.hoursSelfReported
-                  const isExpired = a.hoursLocked && hours == null
-                  return (
-                    <tr key={a.id}>
-                      <td>{formatDate(a.workDate)}</td>
-                      <td>{formatTime(a.checkInTime)}</td>
-                      <td className={styles.hoursCell}>
-                        {hours != null
-                          ? <span className={styles.hoursOk}>{hours} soat</span>
-                          : <span className={styles.hoursExpired}>—</span>}
-                        {a.ownerOverrideHours != null && (
-                          <span className={styles.overrideMark}> (Admin)</span>
-                        )}
-                      </td>
-                      <td className={styles.notesCell}>{a.notes ?? '—'}</td>
-                      <td>
-                        {isExpired
-                          ? <span className={styles.expiredBadge}>Muddati o'tdi</span>
-                          : <span className={styles.doneBadge}>Yakunlangan</span>}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+      {/* ─── NOT CHECKED IN ─── */}
+      {!isLoading && !todayRec && (
+        <div className={styles.infoBox}>
+          <span className={styles.infoIcon}>ℹ</span>
+          <span>Bugun hali ishga kirmagansiz. Avval <strong>Kirish / Chiqish</strong> sahifasida ishga kiring.</span>
+        </div>
+      )}
+
+      {/* ─── MAX HOURS INFO ─── */}
+      {todayRec && !alreadySubmitted && !hoursLocked && elapsed && (
+        <div className={styles.warnBox}>
+          <span className={styles.warnIcon}>⚠</span>
+          <span>
+            {formatTime(todayRec.checkInTime)} da keldingiz. Siz maksimal{' '}
+            <strong>{formatHM(maxH, maxM)}</strong> kirita olasiz.
+          </span>
+        </div>
+      )}
+
+      {/* ─── ALREADY SUBMITTED ─── */}
+      {alreadySubmitted && (
+        <div className={styles.successBox}>
+          <span className={styles.successIcon}>✓</span>
+          <span>
+            Soat muvaffaqiyatli topshirildi:{' '}
+            <strong>
+              {todayRec.ownerOverrideHours ?? todayRec.hoursWorked} soat
+            </strong>
+            {todayRec.ownerOverrideHours != null && (
+              <span className={styles.overrideMark}> (Admin tomonidan tuzatilgan)</span>
+            )}
+          </span>
+        </div>
+      )}
+
+      {/* ─── INPUT CARD ─── */}
+      {todayRec && !alreadySubmitted && !hoursLocked && (
+        <div className={styles.inputCard}>
+          <div className={styles.inputCardTitle}>⏱ Ishlagan vaqtingizni kiriting</div>
+
+          <div className={styles.stepperRow}>
+            {/* Hours */}
+            <div className={styles.stepperGroup}>
+              <span className={styles.stepperLabel}>Soat</span>
+              <div className={styles.stepper}>
+                <button type="button" className={styles.stepBtn} onClick={() => stepH(-1)}>−</button>
+                <span className={styles.stepVal}>{h}</span>
+                <button type="button" className={styles.stepBtn} onClick={() => stepH(1)}>+</button>
+              </div>
+            </div>
+
+            <div className={styles.stepperSep}>:</div>
+
+            {/* Minutes */}
+            <div className={styles.stepperGroup}>
+              <span className={styles.stepperLabel}>Daqiqa</span>
+              <div className={styles.stepper}>
+                <button type="button" className={styles.stepBtn} onClick={() => stepM(-10)}>−</button>
+                <span className={styles.stepVal}>{String(m).padStart(2, '0')}</span>
+                <button type="button" className={styles.stepBtn} onClick={() => stepM(10)}>+</button>
+              </div>
+            </div>
           </div>
+
+          {/* Preview */}
+          <div className={`${styles.preview} ${exceedsMax ? styles.previewError : ''}`}>
+            <div className={styles.previewLabel}>Kiritilgan vaqt</div>
+            <div className={styles.previewTime}>{h}:{String(m).padStart(2, '0')}</div>
+            <div className={styles.previewDecimal}>≈ {enteredDecimal.toFixed(1)} soat</div>
+          </div>
+
+          {/* Notes */}
+          <div className={styles.notesGroup}>
+            <label className={styles.notesLabel}>Izoh (ixtiyoriy)</label>
+            <textarea
+              className={styles.notesInput}
+              rows={2}
+              placeholder="Tushlikda 30 daqiqa tanaffus..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+
+          {/* Deadline */}
+          {todayRec.hoursDeadline && (
+            <div className={styles.deadlineInfo}>
+              <span className={styles.deadlineIcon}>ℹ</span>
+              <span>
+                Muhlat:{' '}
+                <strong>{formatDate(todayRec.hoursDeadline)}</strong> gacha o'zgartirish mumkin
+              </span>
+            </div>
+          )}
+
+          {error && <div className={styles.errText}>{error}</div>}
+
+          <Button
+            style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}
+            loading={submitMut.isPending}
+            onClick={handleSubmit}
+          >
+            ✓ Soatni Yuborish
+          </Button>
+        </div>
+      )}
+
+    </div>{/* leftCol */}
+
+    {/* ─── RIGHT COLUMN: HISTORY ─── */}
+    <div className={styles.rightCol}>
+      <div className={styles.sectionTitle}>So'nggi 7 kun tarixi</div>
+
+      {!isLoading && history.length === 0 && (
+        <div className={styles.noData}>
+          Tarix yo'q
+        </div>
+      )}
+
+      {history.length > 0 && (
+        <div className={styles.tableCard}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Sana</th>
+                <th>Kirish</th>
+                <th>Soat</th>
+                <th>Holat</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((a) => {
+                const hrs = a.ownerOverrideHours ?? a.hoursWorked
+                const isExpired = a.hoursLocked && hrs == null
+                return (
+                  <tr key={a.id}>
+                    <td>{formatDate(a.workDate)}</td>
+                    <td>{formatTime(a.checkInTime)}</td>
+                    <td className={styles.hoursCell}>
+                      {hrs != null
+                        ? <span className={styles.hoursOk}>{hrs} soat</span>
+                        : <span className={styles.hoursNone}>—</span>}
+                      {a.ownerOverrideHours != null && (
+                        <span className={styles.overrideTag}>Admin</span>
+                      )}
+                    </td>
+                    <td>
+                      {isExpired
+                        ? <span className={styles.expiredBadge}>O'tdi</span>
+                        : hrs != null
+                          ? <span className={styles.doneBadge}>✓</span>
+                          : <span className={styles.pendingBadge}>Kutmoqda</span>}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
       {!isLoading && records.length === 0 && (
         <div className={styles.noData}>
-          So'nggi 7 kunda davomat yozuvlari yo'q. Avval ishga kiring.
+          Davomat yozuvlari yo'q. Avval ishga kiring.
         </div>
       )}
+    </div>{/* rightCol */}
+
+    </div>{/* layout */}
     </div>
   )
 }

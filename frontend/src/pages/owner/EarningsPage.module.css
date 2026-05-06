@@ -93,6 +93,63 @@
 .dateCell   { color: var(--text2) !important; font-size: 12px !important; }
 .totalCell  { font-weight: 700; }
 
+/* Hours column */
+.hoursCell  { font-variant-numeric: tabular-nums; font-size: 13px; white-space: nowrap; }
+
+.hoursCellInner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.editHoursBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.table tbody tr:hover .editHoursBtn { opacity: 1; }
+.editHoursBtn:hover { color: var(--accent); background: var(--accent-bg); }
+
+.overrideInputRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.overrideInputRow .formInput { flex: 1; }
+.overrideUnit {
+  font-size: 13px;
+  color: var(--text2);
+  white-space: nowrap;
+}
+
+.overtime   { color: var(--accent); font-weight: 600; }
+.overtimeBadge {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--accent-bg);
+  color: var(--accent);
+  cursor: help;
+}
+
+/* Rate column */
+.rateCell { color: var(--text2); font-size: 13px; }
+
 /* Earn type badge */
 .earnBadge {
   display: inline-flex;

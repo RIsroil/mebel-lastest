@@ -98,7 +98,13 @@ public class AttendanceServiceImpl implements AttendanceService {
         if (request.getNotes() != null) attendance.setNotes(request.getNotes());
         attendance.setUpdatedBy(worker.getId());
 
-        return toResponse(attendanceRepo.save(attendance), worker.getFullName());
+        DailyAttendanceEntity saved = attendanceRepo.save(attendance);
+
+        if (saved.getHoursWorked() != null && saved.getHoursWorked().compareTo(BigDecimal.ZERO) > 0) {
+            upsertEarning(saved, worker, worker.getId());
+        }
+
+        return toResponse(saved, worker.getFullName());
     }
 
     @Override
@@ -206,8 +212,10 @@ public class AttendanceServiceImpl implements AttendanceService {
             snapshotHourlyRate = null;
             earnType = EarnType.DAILY_WAGE;
             snapshotDailyRate = worker.getDailySalary();
-            // Necha soat ishlagan bo'lsa shuncha ulushi (8 soat=to'liq kun)
-            baseAmount = hours.divide(target, 4, RoundingMode.HALF_UP)
+            // Necha soat ishlagan bo'lsa shuncha ulushi (target soat=to'liq kun).
+            // Ortiqcha soat (hours > target) ko'rsatiladi lekin to'lovga qo'shilmaydi.
+            BigDecimal billableHours = hours.min(target);
+            baseAmount = billableHours.divide(target, 4, RoundingMode.HALF_UP)
                     .multiply(worker.getDailySalary())
                     .setScale(2, RoundingMode.HALF_UP);
         } else {
@@ -222,6 +230,7 @@ public class AttendanceServiceImpl implements AttendanceService {
                 existing -> {
                     // Mavjud bo'lsa → yangilash (owner override holati)
                     existing.setHoursWorked(hours);
+                    existing.setHoursTarget(target);
                     existing.setDailyRate(snapshotDailyRate);
                     existing.setHourlyRate(snapshotHourlyRate);
                     existing.setBaseAmount(baseAmount);
@@ -241,6 +250,7 @@ public class AttendanceServiceImpl implements AttendanceService {
                             .earnType(earnType)
                             .attendanceId(attendance.getId())
                             .hoursWorked(hours)
+                            .hoursTarget(target)
                             .hourlyRate(snapshotHourlyRate)
                             .daysWorked(BigDecimal.ONE)
                             .dailyRate(snapshotDailyRate)

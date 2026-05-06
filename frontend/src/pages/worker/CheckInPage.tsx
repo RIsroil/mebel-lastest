@@ -162,7 +162,7 @@ const CheckInPage = () => {
         <div className={styles.tableHeader}>
           <span className={styles.tableTitle}>So'nggi 7 kun davomati</span>
           <span className={styles.txCount}>
-            {history.filter((h) => h.hoursWorked != null || h.hoursSelfReported != null).length} ta
+            {history.filter((h) => h.hoursWorked != null || h.hoursSelfReported).length} ta
             soat kiritilgan
           </span>
         </div>
@@ -184,7 +184,7 @@ const CheckInPage = () => {
               </tr>
             ) : (
               history.map((a) => {
-                const hours = a.ownerOverrideHours ?? a.hoursSelfReported ?? a.hoursWorked
+                const hours = a.ownerOverrideHours ?? a.hoursWorked
                 return (
                   <tr key={a.id}>
                     <td>{formatDate(a.workDate)}</td>
