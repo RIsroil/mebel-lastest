@@ -22,4 +22,7 @@ export const authApi = {
     api.delete<ApiResponse<null>>(`/api/auth/id`, {
       params: { id: workerId },
     }),
+
+  me: () =>
+    api.get<ApiResponse<UserProfile>>('/api/auth/me'),
 }

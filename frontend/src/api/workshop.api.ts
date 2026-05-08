@@ -1,6 +1,6 @@
 import api from './axiosInstance'
 import type { ApiResponse, PageResponse, PageParams } from '@/types/common.types'
-import type { WorkshopResponse, CreateWorkshopRequest } from '@/types/workshop.types'
+import type { AttendanceMode, WorkshopResponse, CreateWorkshopRequest } from '@/types/workshop.types'
 
 export const workshopApi = {
   getAll: (params?: PageParams) =>
@@ -17,4 +17,9 @@ export const workshopApi = {
 
   remove: (id: string) =>
     api.delete(`/api/workshops/${id}`),
+
+  updateAttendanceMode: (id: string, mode: AttendanceMode) =>
+    api.patch<ApiResponse<WorkshopResponse>>(`/api/workshops/${id}/attendance-mode`, null, {
+      params: { mode },
+    }),
 }

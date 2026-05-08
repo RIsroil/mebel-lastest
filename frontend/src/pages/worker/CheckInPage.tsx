@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useTopbar } from '@/context/TopbarContext'
 import { attendanceApi } from '@/api/attendance.api'
 import { furnitureApi } from '@/api/furniture.api'
@@ -13,6 +14,13 @@ const CheckInPage = () => {
   const { setTitle, setActions } = useTopbar()
   const queryClient = useQueryClient()
   const user = useAuthStore((s) => s.user)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (user?.workshopAttendanceMode === 'MANUAL_MODE') {
+      navigate('/weekly-attendance', { replace: true })
+    }
+  }, [user?.workshopAttendanceMode, navigate])
 
   const [now, setNow] = useState(new Date())
 

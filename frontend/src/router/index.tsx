@@ -22,6 +22,7 @@ import LogsPage from '@/pages/owner/LogsPage'
 import CheckInPage from '@/pages/worker/CheckInPage'
 import SubmitHoursPage from '@/pages/worker/SubmitHoursPage'
 import MyEarningsPage from '@/pages/worker/MyEarningsPage'
+import WeeklyAttendancePage from '@/pages/worker/WeeklyAttendancePage'
 
 import UsersPage from '@/pages/admin/UsersPage'
 
@@ -66,9 +67,10 @@ export const router = createBrowserRouter([
           {
             element: <RoleRoute allowed={['WORKER']} />,
             children: [
-              { path: '/check-in', element: <CheckInPage /> },
-              { path: '/submit-hours', element: <SubmitHoursPage /> },
-              { path: '/my-earnings', element: <MyEarningsPage /> },
+              { path: '/check-in',          element: <CheckInPage /> },
+              { path: '/submit-hours',       element: <SubmitHoursPage /> },
+              { path: '/my-earnings',        element: <MyEarningsPage /> },
+              { path: '/weekly-attendance',  element: <WeeklyAttendancePage /> },
             ],
           },
 

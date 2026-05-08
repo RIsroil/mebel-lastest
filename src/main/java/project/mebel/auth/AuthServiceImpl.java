@@ -171,6 +171,13 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponseStructure<UserResponse>> getMe(Principal principal) {
+        UserEntity user = utils.getUserFromPrincipal(principal);
+        return responseHelper.success("user.profile", toResponse(user));
+    }
+
+    @Override
     public ResponseEntity<ApiResponseStructure<UserTokenResponse>> refreshToken(String refreshToken) {
         String username = jwtService.extractUsername(refreshToken);
         UserEntity user = userRepository.findByUsername(username);
@@ -183,14 +190,17 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private UserResponse toResponse(UserEntity u) {
-        WorkshopEntity workshopEntity = workshopRepository.findById(u.getWorkshopId()).orElseThrow(() -> ApiException.notFound("workshop.not.found"));
+        WorkshopEntity ws = u.getWorkshopId() != null
+                ? workshopRepository.findById(u.getWorkshopId()).orElse(null)
+                : null;
         return UserResponse.builder()
                 .id(u.getId())
                 .username(u.getUsername())
                 .fullName(u.getFullName())
                 .role(u.getRole())
                 .workshopId(u.getWorkshopId())
-                .workshopName(workshopEntity.getName())
+                .workshopName(ws != null ? ws.getName() : null)
+                .workshopAttendanceMode(ws != null ? ws.getAttendanceMode() : null)
                 .payType(u.getPayType())
                 .dailyHoursTarget(u.getDailyHoursTarget())
                 .dailySalary(u.getDailySalary())

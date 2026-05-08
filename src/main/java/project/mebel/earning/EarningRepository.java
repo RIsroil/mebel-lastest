@@ -21,4 +21,6 @@ public interface EarningRepository extends JpaRepository<EarningEntity, UUID> {
     BigDecimal sumTotalByWorkerAndDateRange(UUID workerId, LocalDate from, LocalDate to);
 
     Optional<EarningEntity> findByAttendanceId(UUID attendanceId);
+
+    List<EarningEntity> findAllByAttendanceIdIn(List<UUID> attendanceIds);
 }

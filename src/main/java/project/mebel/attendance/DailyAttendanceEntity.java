@@ -69,4 +69,8 @@ public class DailyAttendanceEntity extends MutableAuditEntity {
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    @Column(name = "is_manual_entry", nullable = false)
+    @Builder.Default
+    private boolean manualEntry = false;
 }

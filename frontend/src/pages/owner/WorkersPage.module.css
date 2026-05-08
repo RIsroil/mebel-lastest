@@ -272,3 +272,155 @@
   line-height: 1.5;
   margin-bottom: 8px;
 }
+
+/* Attendance button */
+.attendanceBtn {
+  padding: 5px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.attendanceBtn:hover {
+  background: var(--surface3);
+  color: var(--text1);
+}
+
+/* Nav button in modals */
+.navBtn {
+  padding: 6px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text1);
+  font-size: 12px;
+  cursor: pointer;
+}
+.navBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Weekly attendance table in modal */
+.weeklyTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 500px;
+  font-size: 13px;
+}
+
+.weeklyTable th {
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  white-space: nowrap;
+}
+
+.weeklyTable td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--text1);
+}
+
+.weeklyTable tr:last-child td {
+  border-bottom: none;
+}
+
+.weekDayLabel {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.weekDayDate {
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.monoCell {
+  font-family: monospace;
+  font-size: 14px;
+}
+
+.hoursOk {
+  font-weight: 600;
+  color: #22c55e;
+}
+
+.hoursShort {
+  color: var(--text2);
+}
+
+.target {
+  color: var(--text3);
+  font-size: 12px;
+}
+
+.dash {
+  color: var(--text3);
+}
+
+.bonusBadge {
+  display: inline-block;
+  padding: 2px 7px;
+  background: rgba(251,191,36,0.15);
+  color: #d97706;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.lockedRow td {
+  background: var(--surface2);
+  color: var(--text3);
+}
+
+/* Week navigation row inside attendance modal */
+.weekNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.weekNavLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Loading state inside modal */
+.loadingCell {
+  text-align: center;
+  padding: 32px;
+  color: var(--text3);
+  font-size: 13px;
+}
+
+/* Row with no attendance data */
+.emptyRow td {
+  color: var(--text3);
+  font-style: italic;
+}
+
+/* Arrow between check-in and check-out times */
+.arrow {
+  color: var(--text3);
+  font-size: 12px;
+  margin: 0 2px;
+}
+
+/* Earned pay amount */
+.payAmount {
+  font-weight: 600;
+  color: var(--text);
+}

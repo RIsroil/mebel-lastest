@@ -14,6 +14,10 @@ export const formatTime = (iso: string): string => {
 export const formatDateTime = (iso: string): string =>
   `${formatDate(iso)}, ${formatTime(iso)}`
 
-/** new Date() → "2025-01-15" (API uchun) */
-export const toApiDate = (date: Date): string =>
-  date.toISOString().split('T')[0]
+/** new Date() → "2025-01-15" (API uchun) — local vaqt, UTC emas */
+export const toApiDate = (date: Date): string => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}

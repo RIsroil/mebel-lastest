@@ -10,6 +10,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import project.mebel.common.enums.AttendanceMode;
 import project.mebel.workshop.dto.WorkshopRequest;
 import project.mebel.workshop.dto.WorkshopResponse;
 
@@ -58,5 +59,14 @@ public class WorkshopController {
     public ResponseEntity<Void> delete(@PathVariable UUID id, Principal principal) {
         workshopService.delete(id, principal);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/attendance-mode")
+    @Operation(summary = "Davomat turini o'zgartirish (OWNER)")
+    public ResponseEntity<WorkshopResponse> updateAttendanceMode(
+            @PathVariable UUID id,
+            @RequestParam AttendanceMode mode,
+            Principal principal) {
+        return ResponseEntity.ok(workshopService.updateAttendanceMode(id, mode, principal));
     }
 }

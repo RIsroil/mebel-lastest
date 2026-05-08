@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import project.mebel.common.entity.SoftDeleteEntity;
+import project.mebel.common.enums.AttendanceMode;
 
 import java.util.UUID;
 
@@ -34,4 +35,9 @@ public class WorkshopEntity extends SoftDeleteEntity {
 
     @Column(name = "owner_id", nullable = false)
     private UUID ownerId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "attendance_mode", nullable = false, length = 20)
+    @Builder.Default
+    private AttendanceMode attendanceMode = AttendanceMode.BUTTON_MODE;
 }

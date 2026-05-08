@@ -1,3 +1,5 @@
+export type { AttendanceMode } from './auth.types'
+
 export interface WorkshopResponse {
   id: string
   name: string
@@ -6,6 +8,7 @@ export interface WorkshopResponse {
   description: string | null
   active: boolean
   ownerId: string
+  attendanceMode: AttendanceMode
   createdAt: string
 }
 

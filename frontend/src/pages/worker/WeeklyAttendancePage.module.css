@@ -1,0 +1,215 @@
+.page {
+  padding: 0 0 40px;
+}
+
+.weekNav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.navBtn {
+  padding: 8px 18px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text1);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.navBtn:hover:not(:disabled) {
+  background: var(--surface3);
+}
+
+.navBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.weekLabel {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text1);
+  min-width: 160px;
+  text-align: center;
+}
+
+.tableCard {
+  background: var(--surface1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.loading {
+  padding: 40px;
+  text-align: center;
+  color: var(--text3);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+}
+
+.table th {
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  font-size: 13px;
+  color: var(--text1);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.todayRow td {
+  background: rgba(var(--accent-rgb, 99, 102, 241), 0.06);
+}
+
+.futureRow td {
+  opacity: 0.45;
+}
+
+.lockedRow td {
+  background: var(--surface2);
+}
+
+.dayCell {
+  min-width: 110px;
+}
+
+.dayLabel {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.dayDate {
+  display: block;
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.timeInput {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface2);
+  color: var(--text1);
+  font-size: 14px;
+  font-family: monospace;
+  width: 90px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.timeInput:focus {
+  border-color: var(--accent);
+}
+
+.timeDisplay {
+  font-family: monospace;
+  font-size: 14px;
+  color: var(--text2);
+}
+
+.hoursCell {
+  white-space: nowrap;
+}
+
+.hoursOk {
+  font-weight: 600;
+  color: #22c55e;
+}
+
+.hoursShort {
+  font-weight: 600;
+  color: var(--text2);
+}
+
+.target {
+  color: var(--text3);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.dash {
+  color: var(--text3);
+}
+
+.payCell {
+  white-space: nowrap;
+}
+
+.payAmount {
+  font-weight: 600;
+  color: var(--text1);
+}
+
+.dailySalary {
+  color: var(--text3);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.bonusBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(251, 191, 36, 0.15);
+  color: #d97706;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.saveBtn {
+  padding: 6px 14px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.saveBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.saveBtn:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.lockedBadge {
+  display: inline-block;
+  padding: 3px 8px;
+  background: var(--surface3);
+  color: var(--text3);
+  border-radius: 6px;
+  font-size: 11px;
+}

@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import project.mebel.common.enums.AttendanceMode;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -20,5 +21,6 @@ public class WorkshopResponse {
     private String description;
     private boolean active;
     private UUID ownerId;
+    private AttendanceMode attendanceMode;
     private LocalDateTime createdAt;
 }

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useTopbar } from '@/context/TopbarContext'
 import { attendanceApi } from '@/api/attendance.api'
+import { useAuthStore } from '@/store/auth.store'
 import { toApiDate, formatDate, formatTime } from '@/utils/formatDate'
 import Button from '@/components/ui/Button'
 import styles from './SubmitHoursPage.module.css'
@@ -26,6 +28,14 @@ function formatHM(h: number, m: number) {
 const SubmitHoursPage = () => {
   const { setTitle, setActions } = useTopbar()
   const queryClient = useQueryClient()
+  const user = useAuthStore((s) => s.user)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (user?.workshopAttendanceMode === 'MANUAL_MODE') {
+      navigate('/weekly-attendance', { replace: true })
+    }
+  }, [user?.workshopAttendanceMode, navigate])
 
   const today        = toApiDate(new Date())
   const sevenDaysAgo = toApiDate(new Date(Date.now() - 6 * 24 * 60 * 60 * 1000))

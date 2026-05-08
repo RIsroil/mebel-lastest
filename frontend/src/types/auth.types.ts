@@ -1,5 +1,6 @@
 export type UserRole = 'OWNER' | 'WORKER' | 'ADMIN'
 export type PayType  = 'DAILY' | 'MONTHLY'
+export type AttendanceMode = 'BUTTON_MODE' | 'MANUAL_MODE'
 
 export interface TokenPair {
   accessToken: string
@@ -33,6 +34,7 @@ export interface UserProfile {
   role: UserRole
   workshopId: string | null
   workshopName: string | null
+  workshopAttendanceMode: AttendanceMode | null
   payType: PayType | null
   dailyHoursTarget: number | null
   dailySalary: number | null

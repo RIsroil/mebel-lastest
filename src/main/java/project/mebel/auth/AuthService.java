@@ -24,4 +24,6 @@ public interface AuthService {
 
     ResponseEntity<ApiResponseStructure<UserTokenResponse>> refreshToken(String refreshToken);
 
+    ResponseEntity<ApiResponseStructure<UserResponse>> getMe(Principal principal);
+
 }

@@ -45,12 +45,21 @@ const OWNER_NAV: NavSection[] = [
   },
 ]
 
-const WORKER_NAV: NavSection[] = [
+const WORKER_NAV_BUTTON: NavSection[] = [
   {
     items: [
       { to: '/check-in',     icon: '📅', label: 'Kirish / Chiqish' },
       { to: '/submit-hours', icon: '⏱️', label: 'Soatlarni topshirish' },
       { to: '/my-earnings',  icon: '💰', label: 'Mening maoshim' },
+    ],
+  },
+]
+
+const WORKER_NAV_MANUAL: NavSection[] = [
+  {
+    items: [
+      { to: '/weekly-attendance', icon: '📋', label: 'Haftalik davomat' },
+      { to: '/my-earnings',       icon: '💰', label: 'Mening maoshim' },
     ],
   },
 ]
@@ -76,9 +85,14 @@ const Sidebar = ({ isOpen, onClose }: Props) => {
 
   if (!user) return null
 
+  const workerNav =
+    user.workshopAttendanceMode === 'MANUAL_MODE'
+      ? WORKER_NAV_MANUAL
+      : WORKER_NAV_BUTTON
+
   const navSections =
     user.role === 'OWNER'  ? OWNER_NAV  :
-    user.role === 'WORKER' ? WORKER_NAV :
+    user.role === 'WORKER' ? workerNav  :
     ADMIN_NAV
 
   const handleLogout = () => {

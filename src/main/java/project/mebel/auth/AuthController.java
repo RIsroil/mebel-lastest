@@ -57,4 +57,10 @@ public class AuthController {
     public ResponseEntity<ApiResponseStructure<UserTokenResponse>> refresh(@RequestBody String refreshToken) {
         return authService.refreshToken(refreshToken);
     }
+
+    @GetMapping("/me")
+    @Operation(summary = "Joriy foydalanuvchi profili (har doim yangi workshop modeli bilan)")
+    public ResponseEntity<ApiResponseStructure<UserResponse>> me(Principal principal) {
+        return authService.getMe(principal);
+    }
 }

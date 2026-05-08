@@ -6,7 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTopbar } from '@/context/TopbarContext'
 import { workshopApi } from '@/api/workshop.api'
-import type { WorkshopResponse } from '@/types/workshop.types'
+import { useAuthStore } from '@/store/auth.store'
+import type { AttendanceMode, WorkshopResponse } from '@/types/workshop.types'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import { cn } from '@/utils/cn'
@@ -23,6 +24,8 @@ type FormData = z.infer<typeof schema>
 const WorkshopsPage = () => {
   const { setTitle, setActions } = useTopbar()
   const queryClient = useQueryClient()
+  const setUser = useAuthStore((s) => s.setUser)
+  const currentUser = useAuthStore((s) => s.user)
 
   const [showCreate, setShowCreate] = useState(false)
   const [showEdit, setShowEdit]     = useState(false)
@@ -49,6 +52,18 @@ const WorkshopsPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workshops'] })
       setShowEdit(false)
+    },
+  })
+
+  const attendanceModeMut = useMutation({
+    mutationFn: ({ id, mode }: { id: string; mode: AttendanceMode }) =>
+      workshopApi.updateAttendanceMode(id, mode),
+    onSuccess: (_, { mode }) => {
+      queryClient.invalidateQueries({ queryKey: ['workshops'] })
+      // Owner o'z workshopining attendanceMode'ini ko'rishida sidebar ham yangilansin
+      if (currentUser) {
+        setUser({ ...currentUser, workshopAttendanceMode: mode })
+      }
     },
   })
 
@@ -139,6 +154,42 @@ const WorkshopsPage = () => {
           <DetailRow icon="📞" label="Telefon"  value={workshop.phone} />
           <DetailRow icon="📝" label="Tavsif"   value={workshop.description} />
           <DetailRow icon="📅" label="Yaratilgan" value={formatDate(workshop.createdAt)} />
+        </div>
+
+        <div className={styles.divider} />
+
+        {/* Attendance mode toggle */}
+        <div className={styles.attendanceSection}>
+          <div className={styles.attendanceLabel}>Davomat turi</div>
+          <div className={styles.attendanceModeGroup}>
+            <button
+              type="button"
+              className={cn(
+                styles.modeBtn,
+                (workshop.attendanceMode ?? 'BUTTON_MODE') === 'BUTTON_MODE' && styles.modeBtnActive
+              )}
+              disabled={attendanceModeMut.isPending}
+              onClick={() => attendanceModeMut.mutate({ id: workshop.id, mode: 'BUTTON_MODE' })}
+            >
+              1-tur: Tugma orqali
+            </button>
+            <button
+              type="button"
+              className={cn(
+                styles.modeBtn,
+                workshop.attendanceMode === 'MANUAL_MODE' && styles.modeBtnActive
+              )}
+              disabled={attendanceModeMut.isPending}
+              onClick={() => attendanceModeMut.mutate({ id: workshop.id, mode: 'MANUAL_MODE' })}
+            >
+              2-tur: Qo'lda kiritish
+            </button>
+          </div>
+          <p className={styles.modeHint}>
+            {workshop.attendanceMode === 'MANUAL_MODE'
+              ? 'Ishchilar haftalik davomat jadvalida vaqtlarini qo\'lda kiritadilar.'
+              : 'Ishchilar tugma bosish orqali kirish/chiqishni qayd etadilar.'}
+          </p>
         </div>
       </div>
 

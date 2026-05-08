@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import project.mebel.common.enums.AttendanceMode;
 import project.mebel.common.enums.UserRole;
 import project.mebel.exception.ApiException;
 import project.mebel.user.UserEntity;
@@ -112,6 +113,16 @@ public class WorkshopServiceImpl implements WorkshopService {
         throw ApiException.forbidden("access.denied");
     }
 
+    @Override
+    @Transactional
+    public WorkshopResponse updateAttendanceMode(UUID id, AttendanceMode mode, Principal principal) {
+        UserEntity user = utils.getUserFromPrincipal(principal);
+        WorkshopEntity workshop = findAndAuthorize(id, user);
+        workshop.setAttendanceMode(mode);
+        workshop.setUpdatedBy(user.getId());
+        return toResponse(workshopRepository.save(workshop));
+    }
+
     private void requireOwner(UserEntity user) {
         if (user.getRole() != UserRole.OWNER) {
             throw ApiException.forbidden("access.denied");
@@ -127,6 +138,7 @@ public class WorkshopServiceImpl implements WorkshopService {
                 .description(w.getDescription())
                 .active(w.isActive())
                 .ownerId(w.getOwnerId())
+                .attendanceMode(w.getAttendanceMode())
                 .createdAt(w.getCreatedAt())
                 .build();
     }

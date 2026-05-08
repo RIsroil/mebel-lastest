@@ -5,8 +5,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import project.mebel.attendance.dto.AttendanceResponse;
+import project.mebel.attendance.dto.ManualEntryRequest;
 import project.mebel.attendance.dto.OverrideHoursRequest;
 import project.mebel.attendance.dto.SubmitHoursRequest;
+import project.mebel.attendance.dto.WeeklyDayResponse;
 import project.mebel.common.enums.EarnType;
 import project.mebel.common.enums.PayType;
 import project.mebel.common.enums.UserRole;
@@ -20,10 +22,17 @@ import project.mebel.utils.Utils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.Principal;
+import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +44,10 @@ public class AttendanceServiceImpl implements AttendanceService {
     private final Utils utils;
 
     private static final int SUBMIT_DEADLINE_DAYS = 3;
+
+    private static final String[] DAY_LABELS_UZ = {
+        "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba", "Yakshanba"
+    };
 
     @Override
     @Transactional
@@ -168,6 +181,182 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         return attendanceRepo.findAllByUserIdAndWorkDateBetween(workerId, from, to)
                 .stream().map(a -> toResponse(a, worker.getFullName())).toList();
+    }
+
+    @Override
+    @Transactional
+    public WeeklyDayResponse upsertManualEntry(ManualEntryRequest request, Principal principal) {
+        UserEntity worker = requireWorker(principal);
+        LocalDate date = request.getDate();
+        LocalDate today = LocalDate.now();
+
+        if (date.isAfter(today)) {
+            throw ApiException.badRequest("cannot.enter.future.date");
+        }
+        if (request.getCheckOutTime().isBefore(request.getCheckInTime())) {
+            throw ApiException.badRequest("checkout.before.checkin");
+        }
+
+        LocalDateTime checkInDt  = date.atTime(request.getCheckInTime());
+        LocalDateTime checkOutDt = date.atTime(request.getCheckOutTime());
+
+        long minutes = Duration.between(request.getCheckInTime(), request.getCheckOutTime()).toMinutes();
+        BigDecimal hoursWorked = BigDecimal.valueOf(minutes)
+                .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+
+        DailyAttendanceEntity attendance = attendanceRepo.findByUserIdAndWorkDate(worker.getId(), date)
+                .orElse(null);
+
+        if (attendance == null) {
+            attendance = DailyAttendanceEntity.builder()
+                    .userId(worker.getId())
+                    .workshopId(worker.getWorkshopId())
+                    .workDate(date)
+                    .checkInTime(checkInDt)
+                    .checkOutTime(checkOutDt)
+                    .hoursWorked(hoursWorked)
+                    .hoursSelfReported(true)
+                    .hoursSubmittedAt(LocalDateTime.now())
+                    .hoursDeadline(date.plusDays(1).atStartOfDay())
+                    .hoursLocked(true)
+                    .hoursLockedAt(LocalDateTime.now())
+                    .manualEntry(true)
+                    .notes(request.getNotes())
+                    .build();
+            attendance.setCreatedBy(worker.getId());
+        } else {
+            if (!attendance.isManualEntry()) {
+                throw ApiException.badRequest("attendance.not.manual.entry");
+            }
+            attendance.setCheckInTime(checkInDt);
+            attendance.setCheckOutTime(checkOutDt);
+            attendance.setHoursWorked(hoursWorked);
+            attendance.setHoursSubmittedAt(LocalDateTime.now());
+            if (request.getNotes() != null) attendance.setNotes(request.getNotes());
+            attendance.setUpdatedBy(worker.getId());
+        }
+
+        DailyAttendanceEntity saved = attendanceRepo.save(attendance);
+
+        if (hoursWorked.compareTo(BigDecimal.ZERO) > 0) {
+            upsertEarning(saved, worker, worker.getId());
+        }
+
+        EarningEntity earning = earningRepo.findByAttendanceId(saved.getId()).orElse(null);
+        return toWeeklyDay(saved, worker, today, earning);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WeeklyDayResponse> getMyWeeklyAttendance(LocalDate weekStart, Principal principal) {
+        UserEntity worker = requireWorker(principal);
+        return buildWeeklyResponse(weekStart, worker.getId(), worker);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WeeklyDayResponse> getWorkerWeeklyAttendance(UUID workerId, LocalDate weekStart, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        UserEntity worker = userRepo.findById(workerId)
+                .filter(u -> owner.getWorkshopId().equals(u.getWorkshopId()))
+                .orElseThrow(() -> ApiException.notFound("worker.not.found"));
+        return buildWeeklyResponse(weekStart, workerId, worker);
+    }
+
+    private List<WeeklyDayResponse> buildWeeklyResponse(LocalDate weekStart, UUID userId, UserEntity worker) {
+        LocalDate monday = weekStart.with(DayOfWeek.MONDAY);
+        LocalDate today  = LocalDate.now();
+
+        LocalDate sunday = monday.plusDays(6);
+        List<DailyAttendanceEntity> records = attendanceRepo
+                .findAllByUserIdAndWorkDateBetween(userId, monday, sunday);
+
+        Map<LocalDate, DailyAttendanceEntity> recordMap = records.stream()
+                .collect(Collectors.toMap(DailyAttendanceEntity::getWorkDate, Function.identity()));
+
+        // Bir marta batch load — N+1 so'rovdan qochish va earning ma'lumotlarini sinxronlashtirish
+        List<UUID> attendanceIds = records.stream()
+                .map(DailyAttendanceEntity::getId).toList();
+        Map<UUID, EarningEntity> earningMap = earningRepo
+                .findAllByAttendanceIdIn(attendanceIds).stream()
+                .collect(Collectors.toMap(EarningEntity::getAttendanceId, Function.identity()));
+
+        List<WeeklyDayResponse> result = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            LocalDate day = monday.plusDays(i);
+            DailyAttendanceEntity rec = recordMap.get(day);
+            if (rec != null) {
+                EarningEntity earning = earningMap.get(rec.getId());
+                result.add(toWeeklyDay(rec, worker, today, earning));
+            } else {
+                result.add(emptyWeeklyDay(day, worker, today));
+            }
+        }
+        return result;
+    }
+
+    // earning mavjud bo'lsa u "haqiqiy manba": owner override va scheduler snapshot ini aks ettiradi.
+    // earning yo'q bo'lsa attendance entitydan hisoblaydi.
+    private WeeklyDayResponse toWeeklyDay(DailyAttendanceEntity a, UserEntity worker, LocalDate today, EarningEntity earning) {
+        BigDecimal target = worker.getDailyHoursTarget();
+        BigDecimal hours;
+        BigDecimal pay;
+
+        if (earning != null) {
+            hours = earning.getHoursWorked();
+            pay   = earning.getBaseAmount();
+        } else {
+            hours = a.getHoursWorked();
+            pay   = hours != null ? calcPayAmount(hours, worker) : null;
+        }
+
+        BigDecimal bonus = (hours != null && target != null && hours.compareTo(target) > 0)
+                ? hours.subtract(target).setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        return WeeklyDayResponse.builder()
+                .date(a.getWorkDate())
+                .dayLabel(dayLabel(a.getWorkDate()))
+                .attendanceId(a.getId())
+                .checkInTime(a.getCheckInTime() != null ? a.getCheckInTime().toLocalTime() : null)
+                .checkOutTime(a.getCheckOutTime() != null ? a.getCheckOutTime().toLocalTime() : null)
+                .hoursWorked(hours)
+                .hoursLocked(a.isHoursLocked())
+                .manualEntry(a.isManualEntry())
+                .notes(a.getNotes())
+                .hoursTarget(target)
+                .dailySalary(worker.getDailySalary())
+                .dailyPayAmount(pay)
+                .bonusHours(bonus)
+                .editable(!a.getWorkDate().isAfter(today))
+                .build();
+    }
+
+    private WeeklyDayResponse emptyWeeklyDay(LocalDate day, UserEntity worker, LocalDate today) {
+        return WeeklyDayResponse.builder()
+                .date(day)
+                .dayLabel(dayLabel(day))
+                .hoursTarget(worker.getDailyHoursTarget())
+                .dailySalary(worker.getDailySalary())
+                .editable(!day.isAfter(today))
+                .build();
+    }
+
+    private BigDecimal calcPayAmount(BigDecimal hours, UserEntity worker) {
+        BigDecimal target = worker.getDailyHoursTarget();
+        if (worker.getPayType() == PayType.DAILY) {
+            BigDecimal billable = hours.min(target);
+            return billable.divide(target, 4, RoundingMode.HALF_UP)
+                    .multiply(worker.getDailySalary() != null ? worker.getDailySalary() : BigDecimal.ZERO)
+                    .setScale(2, RoundingMode.HALF_UP);
+        } else {
+            BigDecimal rate = worker.getHourlyRate() != null ? worker.getHourlyRate() : BigDecimal.ZERO;
+            return hours.multiply(rate).setScale(2, RoundingMode.HALF_UP);
+        }
+    }
+
+    private String dayLabel(LocalDate date) {
+        return DAY_LABELS_UZ[date.getDayOfWeek().getValue() - 1];
     }
 
     @Override

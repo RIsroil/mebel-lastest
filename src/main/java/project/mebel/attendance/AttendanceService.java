@@ -1,8 +1,10 @@
 package project.mebel.attendance;
 
 import project.mebel.attendance.dto.AttendanceResponse;
+import project.mebel.attendance.dto.ManualEntryRequest;
 import project.mebel.attendance.dto.OverrideHoursRequest;
 import project.mebel.attendance.dto.SubmitHoursRequest;
+import project.mebel.attendance.dto.WeeklyDayResponse;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -24,6 +26,12 @@ public interface AttendanceService {
     List<AttendanceResponse> getWorkshopAttendance(LocalDate date, Principal principal);
 
     List<AttendanceResponse> getWorkerAttendance(UUID workerId, LocalDate from, LocalDate to, Principal principal);
+
+    WeeklyDayResponse upsertManualEntry(ManualEntryRequest request, Principal principal);
+
+    List<WeeklyDayResponse> getMyWeeklyAttendance(LocalDate weekStart, Principal principal);
+
+    List<WeeklyDayResponse> getWorkerWeeklyAttendance(UUID workerId, LocalDate weekStart, Principal principal);
 
     void lockExpiredAttendance();
 }

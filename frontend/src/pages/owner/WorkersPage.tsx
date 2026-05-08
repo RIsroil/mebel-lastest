@@ -8,14 +8,40 @@ import { useTopbar } from '@/context/TopbarContext'
 import { authApi } from '@/api/auth.api'
 import { adminApi } from '@/api/admin.api'
 import { workshopApi } from '@/api/workshop.api'
+import { attendanceApi } from '@/api/attendance.api'
 import type { AdminUserResponse } from '@/types/admin.types'
 import type { PayType } from '@/types/auth.types'
+import type { WeeklyDayResponse } from '@/types/attendance.types'
 import { formatNumber } from '@/utils/formatMoney'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Avatar from '@/components/ui/Avatar'
 import { cn } from '@/utils/cn'
 import styles from './WorkersPage.module.css'
+
+function getMondayOf(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay() || 7
+  if (day !== 1) d.setDate(d.getDate() - (day - 1))
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+// UTC emas, lokal vaqt asosida YYYY-MM-DD
+function toLocalDate(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function weekLabel(monday: Date): string {
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  const fmt = (d: Date) =>
+    `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`
+  return `${fmt(monday)} – ${fmt(sunday)}`
+}
 
 const PAY_LABELS: Record<PayType, string> = {
   DAILY:   'Kunlik',
@@ -48,8 +74,10 @@ const WorkersPage = () => {
 
   const [search, setSearch]         = useState('')
   const [showCreate, setShowCreate] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<AdminUserResponse | null>(null)
-  const [editTarget, setEditTarget]     = useState<AdminUserResponse | null>(null)
+  const [deleteTarget, setDeleteTarget]     = useState<AdminUserResponse | null>(null)
+  const [editTarget, setEditTarget]         = useState<AdminUserResponse | null>(null)
+  const [attendanceWorker, setAttendanceWorker] = useState<AdminUserResponse | null>(null)
+  const [attendanceMonday, setAttendanceMonday] = useState(() => getMondayOf(new Date()))
 
   const { data: workersResp, isLoading } = useQuery({
     queryKey: ['workers'],
@@ -103,6 +131,19 @@ const WorkersPage = () => {
   }, [setTitle, setActions])
 
   const handleClose = () => { setShowCreate(false); reset() }
+
+  const attendanceMondayStr = toLocalDate(attendanceMonday)
+  const { data: weeklyResp, isLoading: weeklyLoading } = useQuery({
+    queryKey: ['worker-weekly', attendanceWorker?.id, attendanceMondayStr],
+    queryFn: () => attendanceApi.getWorkerWeekly(attendanceWorker!.id, attendanceMondayStr),
+    enabled: !!attendanceWorker,
+  })
+  const weeklyDays: WeeklyDayResponse[] = weeklyResp?.data?.data ?? []
+
+  const openAttendance = (worker: AdminUserResponse) => {
+    setAttendanceWorker(worker)
+    setAttendanceMonday(getMondayOf(new Date()))
+  }
 
   const openEdit = (worker: AdminUserResponse) => {
     editForm.reset({
@@ -213,6 +254,13 @@ const WorkersPage = () => {
                 </td>
                 <td>
                   <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      type="button"
+                      className={styles.attendanceBtn}
+                      onClick={() => openAttendance(worker)}
+                    >
+                      Davomat
+                    </button>
                     <button
                       type="button"
                       className={styles.editBtn}
@@ -397,6 +445,150 @@ const WorkersPage = () => {
               </Button>
             </div>
           </form>
+        )}
+      </Modal>
+
+      {/* Worker weekly attendance modal */}
+      <Modal
+        isOpen={!!attendanceWorker}
+        onClose={() => setAttendanceWorker(null)}
+        title={attendanceWorker ? `${attendanceWorker.fullName || attendanceWorker.username} — Haftalik davomat` : ''}
+        maxWidth={740}
+      >
+        {attendanceWorker && (
+          <div>
+            {/* Hafta navigatsiyasi */}
+            <div className={styles.weekNav}>
+              <button
+                type="button"
+                className={styles.navBtn}
+                onClick={() => {
+                  const d = new Date(attendanceMonday)
+                  d.setDate(d.getDate() - 7)
+                  setAttendanceMonday(d)
+                }}
+              >
+                ← Oldingi
+              </button>
+              <span className={styles.weekNavLabel}>{weekLabel(attendanceMonday)}</span>
+              <button
+                type="button"
+                className={styles.navBtn}
+                disabled={toLocalDate(getMondayOf(new Date())) === attendanceMondayStr}
+                onClick={() => {
+                  const d = new Date(attendanceMonday)
+                  d.setDate(d.getDate() + 7)
+                  if (toLocalDate(d) <= toLocalDate(getMondayOf(new Date()))) {
+                    setAttendanceMonday(d)
+                  }
+                }}
+              >
+                Keyingi →
+              </button>
+            </div>
+
+            {weeklyLoading ? (
+              <div className={styles.loadingCell}>Yuklanmoqda...</div>
+            ) : (
+              <table className={styles.weeklyTable}>
+                <thead>
+                  <tr>
+                    <th>Kun</th>
+                    <th>Kelish → Ketish</th>
+                    <th>Ishlagan / Norma</th>
+                    <th>Hisoblangan / Kunlik</th>
+                    <th>Qo'shimcha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {weeklyDays.map((day) => {
+                    const hasData    = day.hoursWorked != null
+                    const normaOk    = hasData && day.hoursWorked! >= (day.hoursTarget ?? 8)
+                    const hasBonus   = day.bonusHours != null && day.bonusHours > 0
+
+                    return (
+                      <tr
+                        key={day.date}
+                        className={
+                          !hasData
+                            ? styles.emptyRow
+                            : day.hoursLocked
+                            ? styles.lockedRow
+                            : undefined
+                        }
+                      >
+                        {/* Kun */}
+                        <td>
+                          <div className={styles.weekDayLabel}>{day.dayLabel}</div>
+                          <div className={styles.weekDayDate}>
+                            {day.date.slice(5).replace('-', '/')}
+                          </div>
+                        </td>
+
+                        {/* Kelish → Ketish */}
+                        <td className={styles.monoCell}>
+                          {hasData ? (
+                            <span>
+                              {day.checkInTime  ? day.checkInTime.slice(0, 5)  : '--:--'}
+                              <span className={styles.arrow}> → </span>
+                              {day.checkOutTime ? day.checkOutTime.slice(0, 5) : '--:--'}
+                            </span>
+                          ) : (
+                            <span className={styles.dash}>Kelmagan</span>
+                          )}
+                        </td>
+
+                        {/* Ishlagan / Norma */}
+                        <td>
+                          {hasData ? (
+                            <>
+                              <span className={normaOk ? styles.hoursOk : styles.hoursShort}>
+                                {day.hoursWorked}h
+                              </span>
+                              <span className={styles.target}> / {day.hoursTarget ?? 8}h</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className={styles.dash}>—</span>
+                              <span className={styles.target}> / {day.hoursTarget ?? 8}h</span>
+                            </>
+                          )}
+                        </td>
+
+                        {/* Hisoblangan / Kunlik */}
+                        <td>
+                          {day.dailyPayAmount != null ? (
+                            <>
+                              <span className={styles.payAmount}>{formatNumber(day.dailyPayAmount)}</span>
+                              {day.dailySalary != null && (
+                                <span className={styles.target}> / {formatNumber(day.dailySalary)}</span>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <span className={styles.dash}>—</span>
+                              {day.dailySalary != null && (
+                                <span className={styles.target}> / {formatNumber(day.dailySalary)}</span>
+                              )}
+                            </>
+                          )}
+                        </td>
+
+                        {/* Bonus */}
+                        <td>
+                          {hasBonus ? (
+                            <span className={styles.bonusBadge}>+{day.bonusHours}h qo'shimcha</span>
+                          ) : (
+                            <span className={styles.dash}>—</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
         )}
       </Modal>
 

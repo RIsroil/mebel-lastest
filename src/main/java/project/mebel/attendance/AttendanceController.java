@@ -7,8 +7,10 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import project.mebel.attendance.dto.AttendanceResponse;
+import project.mebel.attendance.dto.ManualEntryRequest;
 import project.mebel.attendance.dto.OverrideHoursRequest;
 import project.mebel.attendance.dto.SubmitHoursRequest;
+import project.mebel.attendance.dto.WeeklyDayResponse;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -76,5 +78,32 @@ public class AttendanceController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             Principal principal) {
         return ResponseEntity.ok(attendanceService.getWorkerAttendance(workerId, from, to, principal));
+    }
+
+    @PostMapping("/manual-entry")
+    @Operation(summary = "Qo'lda kirish/chiqish vaqtini kiritish (WORKER)")
+    public ResponseEntity<WeeklyDayResponse> upsertManualEntry(
+            @RequestBody ManualEntryRequest request,
+            Principal principal) {
+        return ResponseEntity.ok(attendanceService.upsertManualEntry(request, principal));
+    }
+
+    @GetMapping("/weekly")
+    @Operation(summary = "Haftalik davomat ko'rinishi (WORKER)")
+    public ResponseEntity<List<WeeklyDayResponse>> getMyWeeklyAttendance(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart,
+            Principal principal) {
+        LocalDate start = weekStart != null ? weekStart : LocalDate.now();
+        return ResponseEntity.ok(attendanceService.getMyWeeklyAttendance(start, principal));
+    }
+
+    @GetMapping("/workers/{workerId}/weekly")
+    @Operation(summary = "Ishchining haftalik davomati (OWNER)")
+    public ResponseEntity<List<WeeklyDayResponse>> getWorkerWeeklyAttendance(
+            @PathVariable UUID workerId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate weekStart,
+            Principal principal) {
+        LocalDate start = weekStart != null ? weekStart : LocalDate.now();
+        return ResponseEntity.ok(attendanceService.getWorkerWeeklyAttendance(workerId, start, principal));
     }
 }
