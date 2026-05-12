@@ -1,8 +1,10 @@
 package project.mebel.furniture;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import project.mebel.attendance.DailyAttendanceRepository;
 import project.mebel.common.enums.EarnType;
 import project.mebel.common.enums.FinancialLogType;
@@ -35,16 +37,24 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FurnitureOrderServiceImpl implements FurnitureOrderService {
 
+    @Value("${app.base-url}")
+    private String appBaseUrl;
+
     private final FurnitureOrderRepository orderRepo;
     private final FurnitureAssignmentRepository assignmentRepo;
     private final MaterialUsageRepository usageRepo;
+    private final FurnitureImageRepository imageRepo;
     private final WarehouseItemRepository warehouseItemRepo;
     private final WarehouseTransactionRepository warehouseTxRepo;
     private final EarningRepository earningRepo;
     private final UserRepository userRepo;
     private final DailyAttendanceRepository attendanceRepo;
     private final FinancialLogService financialLogService;
+    private final project.mebel.minio.MinioStorageService minioStorageService;
     private final Utils utils;
+
+    private static final int MAX_IMAGES_PER_ORDER = 3;
+    private static final String IMAGE_API_PATH = "/api/furniture/orders/%s/images/%s/raw";
 
     @Override
     @Transactional
@@ -317,6 +327,98 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
         }
     }
 
+    @Override
+    @Transactional
+    public FurnitureOrderResponse togglePin(UUID orderId, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        FurnitureOrderEntity order = findOrder(orderId, owner.getWorkshopId());
+        order.setPinned(!order.isPinned());
+        order.setUpdatedBy(owner.getId());
+        return toResponse(orderRepo.save(order));
+    }
+
+    @Override
+    @Transactional
+    public FurnitureOrderResponse uploadImage(UUID orderId, MultipartFile file, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        FurnitureOrderEntity order = findOrder(orderId, owner.getWorkshopId());
+
+        if (order.getStatus() == FurnitureStatus.CANCELLED) {
+            throw ApiException.badRequest("order.already.closed");
+        }
+
+        long existingCount = imageRepo.countByFurnitureOrderId(orderId);
+        if (existingCount >= MAX_IMAGES_PER_ORDER) {
+            throw ApiException.badRequest("order.image.limit.reached");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw ApiException.badRequest("invalid.image.type");
+        }
+
+        project.mebel.minio.MinioStorageService.StoredFurnitureImage stored =
+                minioStorageService.saveFurnitureImage(orderId, file);
+
+        boolean isPrimary = existingCount == 0;
+        FurnitureImageEntity image = FurnitureImageEntity.builder()
+                .furnitureOrderId(orderId)
+                .minioBucket(stored.minioBucket())
+                .minioObjectKey(stored.minioObjectKey())
+                .originalFilename(file.getOriginalFilename() != null ? file.getOriginalFilename() : "image")
+                .mimeType(contentType)
+                .fileSizeBytes(file.getSize())
+                .sortOrder((short) existingCount)
+                .primary(isPrimary)
+                .storedPath(stored.storedPath())
+                .build();
+        image.setCreatedBy(owner.getId());
+        imageRepo.save(image);
+
+        return toResponse(order);
+    }
+
+    @Override
+    @Transactional
+    public FurnitureOrderResponse deleteImage(UUID orderId, UUID imageId, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        FurnitureOrderEntity order = findOrder(orderId, owner.getWorkshopId());
+
+        FurnitureImageEntity image = imageRepo.findById(imageId)
+                .filter(img -> img.getFurnitureOrderId().equals(orderId))
+                .orElseThrow(() -> ApiException.notFound("image.not.found"));
+
+        minioStorageService.deleteFurnitureStoredFile(
+                image.getStoredPath(), image.getMinioBucket(), image.getMinioObjectKey());
+
+        boolean wasPrimary = image.isPrimary();
+        image.setDeletedAt(LocalDateTime.now());
+        image.setDeletedBy(owner.getId());
+        imageRepo.save(image);
+
+        if (wasPrimary) {
+            imageRepo.findAllByFurnitureOrderId(orderId).stream()
+                    .findFirst()
+                    .ifPresent(first -> {
+                        first.setPrimary(true);
+                        imageRepo.save(first);
+                    });
+        }
+
+        return toResponse(order);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] serveImage(UUID orderId, UUID imageId) {
+        FurnitureImageEntity image = imageRepo.findById(imageId)
+                .filter(img -> img.getFurnitureOrderId().equals(orderId))
+                .orElseThrow(() -> ApiException.notFound("image.not.found"));
+
+        return minioStorageService.getFurnitureImageBytes(
+                image.getStoredPath(), image.getMinioBucket(), image.getMinioObjectKey());
+    }
+
     private void validateStatusTransition(FurnitureStatus current, FurnitureStatus next) {
         boolean valid = switch (current) {
             case DRAFT -> next == FurnitureStatus.IN_PROGRESS || next == FurnitureStatus.CANCELLED;
@@ -348,6 +450,7 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
     private FurnitureOrderResponse toResponse(FurnitureOrderEntity o) {
         List<FurnitureAssignmentEntity> assignments = assignmentRepo.findAllByFurnitureOrderId(o.getId());
         List<MaterialUsageEntity> usages = usageRepo.findAllByFurnitureOrderId(o.getId());
+        List<FurnitureImageEntity> imageEntities = imageRepo.findAllByFurnitureOrderId(o.getId());
 
         BigDecimal totalWageCost       = BigDecimal.ZERO;
         BigDecimal totalCommissionCost = BigDecimal.ZERO;
@@ -429,12 +532,23 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                             .build();
                 }).toList();
 
+        List<FurnitureOrderResponse.ImageInfo> images = imageEntities.stream()
+                .map(img -> FurnitureOrderResponse.ImageInfo.builder()
+                        .id(img.getId())
+                        .url(appBaseUrl + String.format(IMAGE_API_PATH, o.getId(), img.getId()))
+                        .originalFilename(img.getOriginalFilename())
+                        .primary(img.isPrimary())
+                        .sortOrder(img.getSortOrder())
+                        .build())
+                .toList();
+
         return FurnitureOrderResponse.builder()
                 .id(o.getId())
                 .orderNumber(o.getOrderNumber())
                 .title(o.getTitle())
                 .description(o.getDescription())
                 .status(o.getStatus())
+                .pinned(o.isPinned())
                 .salePrice(o.getSalePrice())
                 .estimatedCost(o.getEstimatedCost())
                 .actualMaterialCost(o.getActualMaterialCost())
@@ -450,6 +564,7 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                 .createdAt(o.getCreatedAt())
                 .assignedWorkers(assignedWorkers)
                 .materialUsages(materialUsages)
+                .images(images)
                 .build();
     }
 }

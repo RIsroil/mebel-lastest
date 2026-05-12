@@ -47,4 +47,7 @@ public class FurnitureImageEntity extends SoftDeleteEntity {
     @Column(name = "is_primary", nullable = false)
     @Builder.Default
     private boolean primary = false;
+
+    @Column(name = "stored_path", length = 1000)
+    private String storedPath;
 }

@@ -15,13 +15,16 @@ import Modal from '@/components/ui/Modal'
 import { cn } from '@/utils/cn'
 import styles from './OrdersPage.module.css'
 
-const STATUS_TABS: Array<{ value: FurnitureStatus | 'ALL'; label: string }> = [
+type TabValue = FurnitureStatus | 'ALL' | 'PINNED'
+
+const STATUS_TABS: Array<{ value: TabValue; label: string }> = [
   { value: 'ALL',         label: 'Barchasi' },
   { value: 'DRAFT',       label: 'Draft' },
   { value: 'IN_PROGRESS', label: 'Jarayonda' },
   { value: 'COMPLETED',   label: 'Tayyor' },
   { value: 'SOLD',        label: 'Sotilgan' },
   { value: 'CANCELLED',   label: 'Bekor' },
+  { value: 'PINNED',      label: '📌 Pinlangan' },
 ]
 
 const schema = z.object({
@@ -40,7 +43,7 @@ const OrdersPage = () => {
   const navigate    = useNavigate()
   const queryClient = useQueryClient()
 
-  const [activeTab, setActiveTab]   = useState<FurnitureStatus | 'ALL'>('ALL')
+  const [activeTab, setActiveTab]   = useState<TabValue>('ALL')
   const [search, setSearch]         = useState('')
   const [showCreate, setShowCreate] = useState(false)
 
@@ -56,6 +59,11 @@ const OrdersPage = () => {
       setShowCreate(false)
       navigate(`/orders/${res.data.data.id}`)
     },
+  })
+
+  const togglePinMutation = useMutation({
+    mutationFn: (id: string) => furnitureApi.orders.togglePin(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['orders'] }),
   })
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<FormData>({
@@ -76,7 +84,8 @@ const OrdersPage = () => {
 
   const orders   = ordersResp?.data?.data ?? []
   const filtered = orders.filter((o) => {
-    if (activeTab !== 'ALL' && o.status !== activeTab) return false
+    if (activeTab === 'PINNED' && !o.pinned) return false
+    if (activeTab !== 'ALL' && activeTab !== 'PINNED' && o.status !== activeTab) return false
     if (search) {
       const q = search.toLowerCase()
       return (
@@ -137,22 +146,41 @@ const OrdersPage = () => {
               <th>Status</th>
               <th>Narx</th>
               <th>Material xarajat</th>
+              <th style={{ width: 80, textAlign: 'center' }}>Pin</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((order) => (
               <tr key={order.id} onClick={() => navigate(`/orders/${order.id}`)}>
                 <td className={styles.orderNum}>{order.orderNumber}</td>
-                <td>{order.title}</td>
+                <td>
+                  {order.pinned && (
+                    <span style={{ marginRight: 6, fontSize: 12 }}>📌</span>
+                  )}
+                  {order.title}
+                </td>
                 <td>{order.clientName ?? '—'}</td>
                 <td><Badge variant={order.status} /></td>
                 <td className={styles.price}>{formatNumber(order.salePrice)}</td>
                 <td>{formatNumber(order.actualMaterialCost)}</td>
+                <td
+                  style={{ textAlign: 'center' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    className={cn(styles.pinBtn, order.pinned && styles.pinBtnActive)}
+                    onClick={() => togglePinMutation.mutate(order.id)}
+                    title={order.pinned ? 'Pindan chiqarish' : 'Pin qilish'}
+                  >
+                    {order.pinned ? 'Unpin' : 'Pin'}
+                  </button>
+                </td>
               </tr>
             ))}
             {!isLoading && filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className={styles.empty}>Buyurtmalar topilmadi</td>
+                <td colSpan={7} className={styles.empty}>Buyurtmalar topilmadi</td>
               </tr>
             )}
           </tbody>

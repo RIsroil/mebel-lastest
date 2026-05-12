@@ -1,8 +1,10 @@
 package project.mebel.minio;
 
+import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -11,6 +13,7 @@ import project.mebel.exception.ApiException;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -33,6 +36,9 @@ public class MinioStorageService {
 
     @Value("${minio.bucket.generic-images}")
     private String genericImagesBucket;
+
+    @Value("${minio.bucket.furniture-images}")
+    private String furnitureImagesBucket;
 
     private final String desktopBasePath = System.getProperty("user.home") +
             File.separator + "Desktop" + File.separator + "RestaurantStorage";
@@ -92,6 +98,77 @@ public class MinioStorageService {
                 log.error("Local save failed: {}", e.getMessage());
                 throw ApiException.internalServerError("File saving error: " + e.getMessage());
             }
+        }
+    }
+
+    public record StoredFurnitureImage(String storedPath, String minioBucket, String minioObjectKey) {}
+
+    public StoredFurnitureImage saveFurnitureImage(UUID orderId, MultipartFile file) {
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
+        String objectKey = orderId + "/" + UUID.randomUUID() + extension;
+
+        if ("minio".equalsIgnoreCase(storageMode)) {
+            try {
+                minioClient.putObject(PutObjectArgs.builder()
+                        .bucket(furnitureImagesBucket)
+                        .object(objectKey)
+                        .stream(file.getInputStream(), file.getSize(), -1)
+                        .contentType(file.getContentType())
+                        .build());
+                log.info("Furniture image uploaded to MinIO: {}/{}", furnitureImagesBucket, objectKey);
+                return new StoredFurnitureImage(null, furnitureImagesBucket, objectKey);
+            } catch (Exception e) {
+                log.error("MinIO furniture image upload failed: {}", e.getMessage());
+                throw ApiException.internalServerError("File saving error: " + e.getMessage());
+            }
+        } else {
+            String folderPath = desktopBasePath + File.separator + furnitureImagesBucket + File.separator + orderId;
+            File folder = new File(folderPath);
+            if (!folder.exists()) folder.mkdirs();
+            String fileName = UUID.randomUUID() + extension;
+            Path targetPath = new File(folder, fileName).toPath();
+            try {
+                Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+                log.info("Furniture image saved locally: {}", targetPath);
+                return new StoredFurnitureImage(targetPath.toString(), furnitureImagesBucket, objectKey);
+            } catch (IOException e) {
+                log.error("Local furniture image save failed: {}", e.getMessage());
+                throw ApiException.internalServerError("File saving error: " + e.getMessage());
+            }
+        }
+    }
+
+    public byte[] getFurnitureImageBytes(String storedPath, String minioBucket, String minioObjectKey) {
+        try {
+            if ("minio".equalsIgnoreCase(storageMode)) {
+                try (InputStream is = minioClient.getObject(
+                        GetObjectArgs.builder().bucket(minioBucket).object(minioObjectKey).build())) {
+                    return is.readAllBytes();
+                }
+            } else {
+                return Files.readAllBytes(Path.of(storedPath));
+            }
+        } catch (Exception e) {
+            log.error("Failed to read furniture image: {}", e.getMessage());
+            throw ApiException.notFound("image.not.found");
+        }
+    }
+
+    public void deleteFurnitureStoredFile(String storedPath, String minioBucket, String minioObjectKey) {
+        try {
+            if ("minio".equalsIgnoreCase(storageMode)) {
+                minioClient.removeObject(RemoveObjectArgs.builder()
+                        .bucket(minioBucket).object(minioObjectKey).build());
+            } else if (storedPath != null) {
+                File f = new File(storedPath);
+                if (f.exists()) f.delete();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to delete furniture image file: {}", e.getMessage());
         }
     }
 

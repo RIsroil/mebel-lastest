@@ -45,7 +45,9 @@ const OrderDetailPage = () => {
   const [showAddMaterial,  setShowAddMaterial]  = useState(false)
   const [showAssignWorker, setShowAssignWorker] = useState(false)
   const [assignWorkerData, setAssignWorkerData] = useState<{ workerId: string; commissionPct: string } | null>(null)
-  const statusMenuRef = useRef<HTMLDivElement>(null)
+  const [lightboxUrl,      setLightboxUrl]      = useState<string | null>(null)
+  const statusMenuRef  = useRef<HTMLDivElement>(null)
+  const imageInputRef  = useRef<HTMLInputElement>(null)
 
   const { data: orderResp, isLoading } = useQuery({
     queryKey: ['order', id],
@@ -98,6 +100,16 @@ const OrderDetailPage = () => {
   const removeWorkerMutation = useMutation({
     mutationFn: (workerId: string) =>
       furnitureApi.orders.removeWorker(id!, workerId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['order', id] }),
+  })
+
+  const uploadImageMutation = useMutation({
+    mutationFn: (file: File) => furnitureApi.orders.uploadImage(id!, file),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['order', id] }),
+  })
+
+  const deleteImageMutation = useMutation({
+    mutationFn: (imageId: string) => furnitureApi.orders.deleteImage(id!, imageId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['order', id] }),
   })
 
@@ -252,6 +264,59 @@ const OrderDetailPage = () => {
                 </span>
               </div>
             )}
+          </div>
+
+          {/* Images section */}
+          <div className={styles.tableCard}>
+            <div className={styles.tableHeader}>
+              <span className={styles.tableTitle}>📸 Tayyor mahsulot rasmlari</span>
+              {(order.images ?? []).length < 3 && order.status !== 'CANCELLED' && (
+                <>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) uploadImageMutation.mutate(file)
+                      e.target.value = ''
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    loading={uploadImageMutation.isPending}
+                    onClick={() => imageInputRef.current?.click()}
+                  >
+                    + Rasm yuklash ({(order.images ?? []).length}/3)
+                  </Button>
+                </>
+              )}
+            </div>
+            <div className={styles.imageGrid}>
+              {(order.images ?? []).length === 0 ? (
+                <p className={styles.empty}>Rasm yuklanmagan</p>
+              ) : (
+                (order.images ?? []).map((img) => (
+                  <div key={img.id} className={styles.imageItem}>
+                    <img
+                      src={img.url}
+                      alt={img.originalFilename}
+                      className={styles.imageThumbnail}
+                      onClick={() => setLightboxUrl(img.url)}
+                    />
+                    <button
+                      type="button"
+                      className={styles.imageDelete}
+                      onClick={() => deleteImageMutation.mutate(img.id)}
+                      title="O'chirish"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
@@ -531,6 +596,21 @@ const OrderDetailPage = () => {
           )}
         </div>
       </Modal>
+
+      {/* Image lightbox */}
+      {lightboxUrl && (
+        <div
+          className={styles.lightboxOverlay}
+          onClick={() => setLightboxUrl(null)}
+        >
+          <img
+            src={lightboxUrl}
+            className={styles.lightboxImage}
+            alt="rasm"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
 
       {/* Assign worker — komissiya tasdiqlash */}
       <Modal

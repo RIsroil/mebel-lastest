@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Environment files (server secrets) ###
+#.env.server
+.env.local
+.env.production.local

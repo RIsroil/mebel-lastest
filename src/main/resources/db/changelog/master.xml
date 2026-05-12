@@ -30,5 +30,7 @@
     <include file="changes/023-add-related-name-to-financial-logs.xml" relativeToChangelogFile="true"/>
     <include file="changes/024-add-hours-target-to-earnings.xml" relativeToChangelogFile="true"/>
     <include file="changes/025-add-attendance-mode-and-manual-entry.xml" relativeToChangelogFile="true"/>
+    <include file="changes/026-add-stored-path-to-furniture-images.xml" relativeToChangelogFile="true"/>
+    <include file="changes/027-add-pinned-to-furniture-orders.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

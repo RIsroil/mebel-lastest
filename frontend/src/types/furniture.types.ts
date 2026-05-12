@@ -24,6 +24,14 @@ export interface MaterialUsage {
   givenAt: string | null
 }
 
+export interface OrderImage {
+  id: string
+  url: string
+  originalFilename: string
+  primary: boolean
+  sortOrder: number
+}
+
 export interface FurnitureOrderResponse {
   id: string
   workshopId: string
@@ -41,11 +49,13 @@ export interface FurnitureOrderResponse {
   clientName: string | null
   clientPhone: string | null
   notes: string | null
+  pinned: boolean
   workerWageCost: number
   workerCommissionCost: number
   netProfit: number
   assignedWorkers: AssignedWorker[]
   materialUsages: MaterialUsage[]
+  images: OrderImage[]
 }
 
 export interface CreateOrderRequest {

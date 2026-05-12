@@ -1,5 +1,6 @@
 package project.mebel.furniture;
 
+import org.springframework.web.multipart.MultipartFile;
 import project.mebel.furniture.dto.*;
 
 import java.security.Principal;
@@ -25,4 +26,12 @@ public interface FurnitureOrderService {
     FurnitureOrderResponse unassignWorker(UUID orderId, UUID workerId, Principal principal);
 
     FurnitureOrderResponse addMaterialUsage(UUID orderId, MaterialUsageRequest request, Principal principal);
+
+    FurnitureOrderResponse togglePin(UUID orderId, Principal principal);
+
+    FurnitureOrderResponse uploadImage(UUID orderId, MultipartFile file, Principal principal);
+
+    FurnitureOrderResponse deleteImage(UUID orderId, UUID imageId, Principal principal);
+
+    byte[] serveImage(UUID orderId, UUID imageId);
 }

@@ -31,8 +31,10 @@ public class FurnitureOrderResponse {
     private BigDecimal workerWageCost;
     private BigDecimal workerCommissionCost;
     private BigDecimal netProfit;
+    private boolean pinned;
     private List<AssignedWorkerResponse> assignedWorkers;
     private List<MaterialUsageResponse> materialUsages;
+    private List<ImageInfo> images;
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
     public static class AssignedWorkerResponse {
@@ -58,5 +60,14 @@ public class FurnitureOrderResponse {
         private BigDecimal totalCost;
         private String notes;
         private LocalDateTime givenAt;
+    }
+
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class ImageInfo {
+        private UUID id;
+        private String url;
+        private String originalFilename;
+        private boolean primary;
+        private short sortOrder;
     }
 }

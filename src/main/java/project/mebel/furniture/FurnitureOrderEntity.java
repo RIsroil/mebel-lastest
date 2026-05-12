@@ -65,4 +65,8 @@ public class FurnitureOrderEntity extends SoftDeleteEntity {
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    @Column(name = "pinned", nullable = false)
+    @Builder.Default
+    private boolean pinned = false;
 }

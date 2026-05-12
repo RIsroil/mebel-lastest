@@ -39,6 +39,20 @@ export const furnitureApi = {
 
     addMaterial: (id: string, body: AddMaterialRequest) =>
       api.post<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}/materials`, body),
+
+    uploadImage: (id: string, file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return api.post<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}/images`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+    },
+
+    deleteImage: (id: string, imageId: string) =>
+      api.delete<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}/images/${imageId}`),
+
+    togglePin: (id: string) =>
+      api.patch<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}/pin`),
   },
 
   templates: {
