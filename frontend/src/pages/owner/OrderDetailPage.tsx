@@ -16,7 +16,6 @@ import Badge from '@/components/ui/Badge'
 import Avatar from '@/components/ui/Avatar'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
-import { cn } from '@/utils/cn'
 import styles from './OrderDetailPage.module.css'
 
 const NEXT_STATUSES: Record<FurnitureStatus, FurnitureStatus[]> = {

@@ -1,4 +1,5 @@
-export type { AttendanceMode } from './auth.types'
+import type { AttendanceMode } from './auth.types'
+export type { AttendanceMode }
 
 export interface WorkshopResponse {
   id: string
