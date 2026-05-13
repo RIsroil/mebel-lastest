@@ -195,11 +195,21 @@
     width: 100%;
   }
 
-  .tableCard { overflow-x: auto; }
-
   .formRow { grid-template-columns: 1fr !important; }
 
   .weeklyTable { min-width: 480px; }
+
+  /* Username, Seh, To'lov turi, Kunlik soat ustunlarini yashir */
+  .table th:nth-child(2),
+  .table td:nth-child(2),
+  .table th:nth-child(3),
+  .table td:nth-child(3),
+  .table th:nth-child(4),
+  .table td:nth-child(4),
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
+    display: none;
+  }
 }
 
 /* Form styles */

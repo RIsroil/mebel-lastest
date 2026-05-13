@@ -172,9 +172,22 @@
 .pageBtnActive { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 @media (max-width: 768px) {
-  .tableCard { overflow-x: auto; }
   .formRow { grid-template-columns: 1fr !important; }
   .hint { margin-left: 0; width: 100%; }
+
+  /* Username, Seh, To'lov, Maosh/kun, Qo'shilgan ustunlarini yashir */
+  .table th:nth-child(2),
+  .table td:nth-child(2),
+  .table th:nth-child(4),
+  .table td:nth-child(4),
+  .table th:nth-child(5),
+  .table td:nth-child(5),
+  .table th:nth-child(6),
+  .table td:nth-child(6),
+  .table th:nth-child(8),
+  .table td:nth-child(8) {
+    display: none;
+  }
 }
 
 /* Form styles */

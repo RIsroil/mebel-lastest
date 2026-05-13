@@ -185,9 +185,19 @@
     width: 100%;
   }
 
-  .tableCard { overflow-x: auto; }
-
   .formRow { grid-template-columns: 1fr !important; }
+
+  /* SKU, Birlik, O'rt. narx, Umumiy qiymat ustunlarini yashir */
+  .table th:nth-child(2),
+  .table td:nth-child(2),
+  .table th:nth-child(3),
+  .table td:nth-child(3),
+  .table th:nth-child(5),
+  .table td:nth-child(5),
+  .table th:nth-child(6),
+  .table td:nth-child(6) {
+    display: none;
+  }
 }
 
 /* Form inside modal */

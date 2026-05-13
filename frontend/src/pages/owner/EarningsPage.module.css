@@ -11,8 +11,6 @@
     gap: 10px;
   }
 
-  .tableCard { overflow-x: auto; }
-
   .formRow { grid-template-columns: 1fr !important; }
 
   .filters { gap: 10px; }
@@ -21,6 +19,16 @@
   .filterDate { min-width: 0; width: 100%; }
 
   .countHint { margin-left: 0; width: 100%; }
+
+  /* Tur, Soat, To'liq kun ustunlarini yashir */
+  .table th:nth-child(3),
+  .table td:nth-child(3),
+  .table th:nth-child(4),
+  .table td:nth-child(4),
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
+    display: none;
+  }
 }
 
 /* Filters */
