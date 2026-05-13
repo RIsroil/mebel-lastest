@@ -14,7 +14,9 @@
       "Bash(Select-Object Name)",
       "Bash(grep -E \"\\\\.\\(java|tsx?|jsx?\\)$\")",
       "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
-      "Bash(mvn compile *)"
+      "Bash(mvn compile *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }
