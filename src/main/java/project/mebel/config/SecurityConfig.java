@@ -65,10 +65,12 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
         config.setAllowedOrigins(List.of(
-                "http://localhost:4200",   // Angular
-                "http://localhost:5173",   // Vite dev server
-                "http://localhost:5174",   // Vite backup port
-                "http://localhost:3000"    // Create React App (agar kerak bo'lsa)
+                "http://localhost:4200",
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://localhost:3000",
+                "https://m-house.uz",
+                "https://www.m-house.uz"
         ));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
