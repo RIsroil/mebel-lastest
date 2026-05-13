@@ -140,6 +140,16 @@
   color: var(--text3);
 }
 
+@media (max-width: 768px) {
+  .lastMonthBar { gap: 8px; padding: 10px 14px; font-size: 12px; }
+
+  .tableWrapper { overflow-x: auto; }
+
+  .filters { gap: 8px; }
+
+  .dateInput, .selectInput { width: 100%; }
+}
+
 /* Pagination */
 .pagination {
   display: flex;

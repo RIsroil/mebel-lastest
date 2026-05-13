@@ -4,6 +4,21 @@
   gap: 16px;
 }
 
+@media (max-width: 768px) {
+  .detailLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .tableCard { overflow-x: auto; }
+
+  .imageItem {
+    width: 110px;
+    height: 110px;
+  }
+
+  .formRow { grid-template-columns: 1fr; }
+}
+
 .leftCol { display: flex; flex-direction: column; gap: 16px; }
 .rightCol { display: flex; flex-direction: column; gap: 16px; }
 

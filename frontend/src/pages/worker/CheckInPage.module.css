@@ -6,6 +6,16 @@
   gap: 16px;
 }
 
+@media (max-width: 768px) {
+  .topGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .clockTime { font-size: 48px; }
+
+  .tableCard { overflow-x: auto; }
+}
+
 /* Clock card */
 .clockCard {
   background: var(--text);

@@ -11,6 +11,22 @@
   gap: 16px;
 }
 
+@media (max-width: 768px) {
+  .statGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .mainGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .tableCard {
+    overflow-x: auto;
+  }
+}
+
 /* Table card */
 .tableCard {
   background: var(--surface);

@@ -130,6 +130,33 @@
   margin-top: 20px;
 }
 
+@media (max-width: 768px) {
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .searchInput {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab { flex-shrink: 0; }
+
+  .tableCard { overflow-x: auto; }
+
+  .formRow { grid-template-columns: 1fr; }
+}
+
 /* Pin button */
 .pinBtn {
   padding: 4px 10px;

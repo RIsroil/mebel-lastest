@@ -178,3 +178,19 @@
   color: var(--text3);
   font-size: 13px;
 }
+
+@media (max-width: 768px) {
+  .headerMain {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .headerStats {
+    margin-left: 0;
+    gap: 16px;
+  }
+
+  .stat { align-items: flex-start; }
+
+  .tableCard { overflow-x: auto; }
+}

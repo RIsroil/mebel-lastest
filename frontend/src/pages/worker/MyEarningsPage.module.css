@@ -5,6 +5,15 @@
   margin-bottom: 16px;
 }
 
+@media (max-width: 768px) {
+  .statGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .tableCard { overflow-x: auto; }
+}
+
 /* Bar chart */
 .chartCard {
   background: var(--surface);

@@ -184,6 +184,24 @@
   font-size: 13px;
 }
 
+@media (max-width: 768px) {
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .searchInput {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .tableCard { overflow-x: auto; }
+
+  .formRow { grid-template-columns: 1fr !important; }
+
+  .weeklyTable { min-width: 480px; }
+}
+
 /* Form styles */
 .formRow {
   display: grid;
