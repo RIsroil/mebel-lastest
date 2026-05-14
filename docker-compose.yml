@@ -39,6 +39,8 @@ services:
     image: ${BACKEND_IMAGE:-ghcr.io/risroil/mebel-backend:latest}
     container_name: mebel_backend
     restart: always
+    ports:
+      - "127.0.0.1:9060:9060"
     depends_on:
       postgres:
         condition: service_healthy
