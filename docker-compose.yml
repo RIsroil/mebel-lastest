@@ -60,17 +60,6 @@ services:
     networks:
       - mebel_net
 
-  frontend:
-    image: ${FRONTEND_IMAGE:-ghcr.io/risroil/mebel-frontend:latest}
-    container_name: mebel_frontend
-    restart: always
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-    networks:
-      - mebel_net
-
 networks:
   mebel_net:
     driver: bridge
