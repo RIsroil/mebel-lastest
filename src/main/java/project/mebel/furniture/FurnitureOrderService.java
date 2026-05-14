@@ -33,5 +33,7 @@ public interface FurnitureOrderService {
 
     FurnitureOrderResponse deleteImage(UUID orderId, UUID imageId, Principal principal);
 
-    byte[] serveImage(UUID orderId, UUID imageId);
+    record ImageData(byte[] bytes, String mimeType) {}
+
+    ImageData serveImage(UUID orderId, UUID imageId);
 }

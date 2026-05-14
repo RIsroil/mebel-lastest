@@ -41,6 +41,11 @@ public class GlobalResponseAdvice implements ResponseBodyAdvice<Object> {
             return body;
         }
 
+        // Raw binary responses (images, files) — wrap qilmasdan qaytarish
+        if (body instanceof byte[]) {
+            return body;
+        }
+
         String messageKey = ResponseContext.getMessage();
         String message = (messageKey != null)
                 ? messageService.getMessage(messageKey)

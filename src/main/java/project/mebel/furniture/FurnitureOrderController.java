@@ -115,10 +115,10 @@ public class FurnitureOrderController {
     @Operation(summary = "Buyurtma rasmini ko'rish (auth shart emas)")
     public ResponseEntity<byte[]> serveImage(@PathVariable UUID id,
                                              @PathVariable UUID imageId) {
-        byte[] bytes = orderService.serveImage(id, imageId);
+        FurnitureOrderService.ImageData imageData = orderService.serveImage(id, imageId);
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.IMAGE_JPEG);
-        headers.setContentLength(bytes.length);
-        return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
+        headers.setContentType(MediaType.parseMediaType(imageData.mimeType()));
+        headers.setContentLength(imageData.bytes().length);
+        return new ResponseEntity<>(imageData.bytes(), headers, HttpStatus.OK);
     }
 }

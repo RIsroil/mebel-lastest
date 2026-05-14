@@ -410,13 +410,15 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public byte[] serveImage(UUID orderId, UUID imageId) {
+    public FurnitureOrderService.ImageData serveImage(UUID orderId, UUID imageId) {
         FurnitureImageEntity image = imageRepo.findById(imageId)
                 .filter(img -> img.getFurnitureOrderId().equals(orderId))
                 .orElseThrow(() -> ApiException.notFound("image.not.found"));
 
-        return minioStorageService.getFurnitureImageBytes(
+        byte[] bytes = minioStorageService.getFurnitureImageBytes(
                 image.getStoredPath(), image.getMinioBucket(), image.getMinioObjectKey());
+        String mimeType = image.getMimeType() != null ? image.getMimeType() : "image/jpeg";
+        return new FurnitureOrderService.ImageData(bytes, mimeType);
     }
 
     private void validateStatusTransition(FurnitureStatus current, FurnitureStatus next) {
