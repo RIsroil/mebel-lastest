@@ -9,7 +9,8 @@ interface Props {
 /** Faqat ruxsat etilgan rollar uchun guard */
 const RoleRoute = ({ allowed }: Props) => {
   const role = useAuthStore((s) => s.user?.role)
-  return role && allowed.includes(role) ? <Outlet /> : <Navigate to="/unauthorized" replace />
+  if (!role) return <Navigate to="/login" replace />
+  return allowed.includes(role) ? <Outlet /> : <Navigate to="/login" replace />
 }
 
 export default RoleRoute

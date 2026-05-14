@@ -5,24 +5,26 @@
 .weekNav {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
 .navBtn {
-  padding: 8px 18px;
+  padding: 8px 16px;
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 8px;
-  color: var(--text1);
+  color: var(--text);
   font-size: 13px;
   cursor: pointer;
+  font-family: var(--font);
   transition: background 0.15s;
 }
 
 .navBtn:hover:not(:disabled) {
-  background: var(--surface3);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .navBtn:disabled {
@@ -33,16 +35,18 @@
 .weekLabel {
   font-weight: 600;
   font-size: 15px;
-  color: var(--text1);
-  min-width: 160px;
+  color: var(--text);
+  flex: 1;
   text-align: center;
 }
 
 .tableCard {
-  background: var(--surface1);
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .loading {
@@ -54,11 +58,11 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 700px;
+  min-width: 560px;
 }
 
 .table th {
-  padding: 12px 14px;
+  padding: 10px 12px;
   text-align: left;
   font-size: 11px;
   font-weight: 600;
@@ -71,19 +75,23 @@
 }
 
 .table td {
-  padding: 12px 14px;
+  padding: 11px 12px;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
   font-size: 13px;
-  color: var(--text1);
+  color: var(--text);
 }
 
 .table tr:last-child td {
   border-bottom: none;
 }
 
+.table tbody tr:hover td {
+  background: var(--surface2);
+}
+
 .todayRow td {
-  background: rgba(var(--accent-rgb, 99, 102, 241), 0.06);
+  background: rgba(193, 127, 62, 0.04);
 }
 
 .futureRow td {
@@ -95,7 +103,7 @@
 }
 
 .dayCell {
-  min-width: 110px;
+  min-width: 100px;
 }
 
 .dayLabel {
@@ -116,10 +124,10 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--surface2);
-  color: var(--text1);
+  color: var(--text);
   font-size: 14px;
   font-family: monospace;
-  width: 90px;
+  width: 88px;
   outline: none;
   transition: border-color 0.15s;
 }
@@ -140,7 +148,7 @@
 
 .hoursOk {
   font-weight: 600;
-  color: #22c55e;
+  color: var(--green);
 }
 
 .hoursShort {
@@ -164,7 +172,7 @@
 
 .payAmount {
   font-weight: 600;
-  color: var(--text1);
+  color: var(--text);
 }
 
 .dailySalary {
@@ -184,7 +192,7 @@
 }
 
 .saveBtn {
-  padding: 6px 14px;
+  padding: 6px 12px;
   background: var(--accent);
   color: #fff;
   border: none;
@@ -192,6 +200,7 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  font-family: var(--font);
   transition: opacity 0.15s;
   white-space: nowrap;
 }
@@ -208,8 +217,9 @@
 .lockedBadge {
   display: inline-block;
   padding: 3px 8px;
-  background: var(--surface3);
+  background: var(--surface2);
   color: var(--text3);
   border-radius: 6px;
   font-size: 11px;
+  border: 1px solid var(--border);
 }

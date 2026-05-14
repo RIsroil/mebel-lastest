@@ -130,6 +130,9 @@
   margin-top: 20px;
 }
 
+/* Mobile card layout */
+.mobileCards { display: none; }
+
 @media (max-width: 768px) {
   .toolbar {
     flex-wrap: wrap;
@@ -154,20 +157,81 @@
 
   .formRow { grid-template-columns: 1fr; }
 
-  .tableCard {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
+  /* Jadval o'rniga kartalar */
+  .tableCard { display: none; }
+  .mobileCards { display: flex; flex-direction: column; gap: 8px; }
+}
 
-  /* Mijoz, Material xarajat, Pin ustunlarini yashir */
-  .table th:nth-child(3),
-  .table td:nth-child(3),
-  .table th:nth-child(6),
-  .table td:nth-child(6),
-  .table th:nth-child(7),
-  .table td:nth-child(7) {
-    display: none;
-  }
+.orderCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.orderCard:active { box-shadow: none; }
+
+.orderCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.orderCardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+
+.orderCardNum {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(193,127,62,0.08);
+  border-radius: 6px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.orderCardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.orderCardPrice {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.orderCardPinBtn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.orderCardPinBtn:active { opacity: 0.7; }
+.orderCardPinBtnActive {
+  border-color: var(--accent);
+  background: rgba(193,127,62,0.1);
+  color: var(--accent);
 }
 
 /* Pin button */

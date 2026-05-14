@@ -136,6 +136,7 @@ const OrdersPage = () => {
         </div>
       </div>
 
+      {/* Desktop jadval */}
       <div className={styles.tableCard}>
         <table className={styles.table}>
           <thead>
@@ -185,6 +186,41 @@ const OrdersPage = () => {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile kartalar */}
+      <div className={styles.mobileCards}>
+        {!isLoading && filtered.length === 0 && (
+          <div className={styles.empty} style={{ textAlign: 'center', padding: 48, color: 'var(--text3)', fontSize: 13 }}>
+            Buyurtmalar topilmadi
+          </div>
+        )}
+        {filtered.map((order) => (
+          <div
+            key={order.id}
+            className={styles.orderCard}
+            onClick={() => navigate(`/orders/${order.id}`)}
+          >
+            <div className={styles.orderCardTop}>
+              <span className={styles.orderCardTitle}>
+                {order.pinned && <span style={{ marginRight: 6 }}>📌</span>}
+                {order.title}
+              </span>
+              <span className={styles.orderCardNum}>{order.orderNumber}</span>
+            </div>
+            <div className={styles.orderCardBottom}>
+              <Badge variant={order.status} />
+              <span className={styles.orderCardPrice}>{formatNumber(order.salePrice)} so'm</span>
+              <button
+                type="button"
+                className={cn(styles.orderCardPinBtn, order.pinned && styles.orderCardPinBtnActive)}
+                onClick={(e) => { e.stopPropagation(); togglePinMutation.mutate(order.id) }}
+              >
+                {order.pinned ? '📌 Unpin' : 'Pin'}
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       <Modal isOpen={showCreate} onClose={handleClose} title="Yangi buyurtma">

@@ -23,14 +23,24 @@
 
   .countHint { margin-left: 0; width: 100%; }
 
-  /* Tur, Soat, To'liq kun ustunlarini yashir */
+  .tableCard { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Tur, Soat, To'liq kun, To'lov turi ustunlarini yashir */
   .table th:nth-child(3),
   .table td:nth-child(3),
   .table th:nth-child(4),
   .table td:nth-child(4),
   .table th:nth-child(5),
-  .table td:nth-child(5) {
+  .table td:nth-child(5),
+  .table th:nth-child(6),
+  .table td:nth-child(6) {
     display: none;
+  }
+
+  .table thead th,
+  .table tbody td {
+    padding: 10px 10px;
+    font-size: 12px;
   }
 }
 

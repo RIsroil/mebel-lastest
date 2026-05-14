@@ -203,6 +203,12 @@
   .table td:nth-child(6) {
     display: none;
   }
+
+  .table thead th,
+  .table tbody td {
+    padding: 10px 10px;
+    font-size: 12px;
+  }
 }
 
 /* Form inside modal */

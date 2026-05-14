@@ -88,6 +88,13 @@ api.interceptors.response.use(
       }
     }
 
+    // 403 — foydalanuvchi bloklanganmi yoki sessiya yaroqsiz
+    if (error.response?.status === 403 && !isAuthOnlyPath(original.url)) {
+      useAuthStore.getState().logout()
+      window.location.href = '/login'
+      return Promise.reject(error)
+    }
+
     return Promise.reject(error)
   }
 )

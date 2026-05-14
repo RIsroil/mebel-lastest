@@ -52,5 +52,14 @@
 
 @media (max-width: 768px) {
   .hamburger { display: flex; }
-  .topbar { padding: 0 16px; }
+  .topbar { padding: 0 12px; gap: 10px; }
+  .title {
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1;
+  }
+  .right { flex-shrink: 0; }
 }

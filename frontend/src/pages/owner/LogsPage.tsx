@@ -186,7 +186,11 @@ const LogsPage = () => {
                     {TYPE_LABEL[log.logType]}
                   </span>
                 </td>
-                <td className={styles.descCell}>{log.description ?? '—'}</td>
+                <td className={styles.descCell}>
+                  <span className={styles.descText} title={log.description ?? ''}>
+                    {log.description ?? '—'}
+                  </span>
+                </td>
                 <td><LogNavLink log={log} /></td>
                 <td className={`${styles.amountCol} ${log.amount >= 0 ? styles.amountPos : styles.amountNeg}`}>
                   {log.amount >= 0 ? '+' : ''}{formatNumber(log.amount)} so'm

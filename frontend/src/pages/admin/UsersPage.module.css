@@ -176,6 +176,7 @@
   .hint { margin-left: 0; width: 100%; }
 
   .searchInput { max-width: 100%; min-width: 0; width: 100%; }
+  .filterSelect { width: 100%; }
 
   .tableCard {
     overflow-x: auto;
@@ -194,6 +195,12 @@
   .table th:nth-child(8),
   .table td:nth-child(8) {
     display: none;
+  }
+
+  .table thead th,
+  .table tbody td {
+    padding: 10px 10px;
+    font-size: 12px;
   }
 }
 
