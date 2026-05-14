@@ -391,6 +391,13 @@
   cursor: not-allowed;
 }
 
+/* Weekly attendance table scroll wrapper */
+.weeklyTableWrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -4px;
+}
+
 /* Weekly attendance table in modal */
 .weeklyTable {
   width: 100%;

@@ -95,20 +95,32 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
+html {
   height: 100%;
   overflow-x: hidden;
+  max-width: 100%;
 }
 
-img, video, svg, canvas { max-width: 100%; }
-
 body {
+  height: 100%;
+  overflow-x: hidden;
+  max-width: 100%;
+  position: relative; /* iOS Safari: overflow-x:hidden ishlashi uchun */
+  overscroll-behavior-x: none;
   font-family: var(--font);
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+#root {
+  height: 100%;
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+img, video, svg, canvas { max-width: 100%; }
 
 /* Scrollbar */
 ::-webkit-scrollbar        { width: 6px; height: 6px; }

@@ -553,6 +553,7 @@ const WorkersPage = () => {
             {weeklyLoading ? (
               <div className={styles.loadingCell}>Yuklanmoqda...</div>
             ) : (
+              <div className={styles.weeklyTableWrap}>
               <table className={styles.weeklyTable}>
                 <thead>
                   <tr>
@@ -650,6 +651,7 @@ const WorkersPage = () => {
                   })}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         )}
