@@ -254,27 +254,30 @@ const WorkersPage = () => {
                       : <span className={styles.inactiveBadge}>Nofaol</span>}
                 </td>
                 <td>
-                  <div style={{ display: 'flex', gap: 6 }}>
+                  <div style={{ display: 'flex', gap: 5 }}>
                     <button
                       type="button"
-                      className={styles.attendanceBtn}
+                      className={styles.calBtn}
+                      title="Davomat"
                       onClick={() => openAttendance(worker)}
                     >
-                      Davomat
+                      📅
                     </button>
                     <button
                       type="button"
-                      className={styles.editBtn}
+                      className={styles.iconBtn}
+                      title="Tahrirlash"
                       onClick={() => openEdit(worker)}
                     >
-                      Tahrirlash
+                      ✎
                     </button>
                     <button
                       type="button"
-                      className={styles.deleteBtn}
+                      className={styles.trashBtn}
+                      title="O'chirish"
                       onClick={() => setDeleteTarget(worker)}
                     >
-                      O'chirish
+                      🗑
                     </button>
                   </div>
                 </td>
@@ -329,24 +332,27 @@ const WorkersPage = () => {
             <div className={styles.workerCardActions}>
               <button
                 type="button"
-                className={styles.attendanceBtn}
+                className={styles.calBtn}
+                title="Davomat"
                 onClick={() => openAttendance(worker)}
               >
-                📅 Davomat
+                📅
               </button>
               <button
                 type="button"
-                className={styles.editBtn}
+                className={styles.iconBtn}
+                title="Tahrirlash"
                 onClick={() => openEdit(worker)}
               >
-                Tahrirlash
+                ✎
               </button>
               <button
                 type="button"
-                className={styles.deleteBtn}
+                className={styles.trashBtn}
+                title="O'chirish"
                 onClick={() => setDeleteTarget(worker)}
               >
-                O'chirish
+                🗑
               </button>
             </div>
           </div>

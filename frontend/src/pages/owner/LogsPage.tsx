@@ -212,18 +212,22 @@ const LogsPage = () => {
         {logs.map(log => (
           <div key={log.id} className={styles.logCard}>
             <div className={styles.logCardTop}>
-              <span className={`${styles.typeBadge} ${styles[TYPE_CLASS[log.logType]]}`}>
-                {TYPE_LABEL[log.logType]}
-              </span>
+              <div className={styles.logCardMeta}>
+                <span className={styles.logCardDate}>{log.logDate}</span>
+                <span className={`${styles.typeBadge} ${styles[TYPE_CLASS[log.logType]]}`}>
+                  {TYPE_LABEL[log.logType]}
+                </span>
+              </div>
               <span className={`${styles.logCardAmount} ${log.amount >= 0 ? styles.amountPos : styles.amountNeg}`}>
-                {log.amount >= 0 ? '+' : ''}{formatNumber(log.amount)}
+                {log.amount >= 0 ? '+' : ''}{formatNumber(log.amount)} so'm
               </span>
             </div>
             <div className={styles.logCardDesc}>{log.description ?? '—'}</div>
-            <div className={styles.logCardBottom}>
-              <span className={styles.dateCell}>{log.logDate}</span>
-              <LogNavLink log={log} />
-            </div>
+            {log.referenceId && (
+              <div className={styles.logCardBottom}>
+                <LogNavLink log={log} />
+              </div>
+            )}
           </div>
         ))}
       </div>

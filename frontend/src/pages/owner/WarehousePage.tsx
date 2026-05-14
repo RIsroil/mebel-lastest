@@ -203,17 +203,27 @@ const WarehousePage = () => {
                   <div className={styles.actions}>
                     <button
                       type="button"
-                      className={styles.actionBtn}
+                      className={styles.txPlusBtn}
+                      title="Kirim (IN)"
                       onClick={() => { setTxItemId(item.id); txForm.reset({ transactionType: 'IN', unitPrice: 0 }) }}
                     >
-                      Tranzaksiya
+                      +
                     </button>
                     <button
                       type="button"
-                      className={cn(styles.actionBtn, styles.editBtn)}
+                      className={styles.txMinusBtn}
+                      title="Chiqim (OUT)"
+                      onClick={() => { setTxItemId(item.id); txForm.reset({ transactionType: 'OUT', unitPrice: 0 }) }}
+                    >
+                      −
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.iconBtn}
+                      title="Tahrirlash"
                       onClick={() => openEdit(item)}
                     >
-                      Tahrir
+                      ✎
                     </button>
                     <button
                       type="button"
@@ -267,17 +277,27 @@ const WarehousePage = () => {
             <div className={styles.itemCardActions} onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
-                className={styles.actionBtn}
+                className={styles.txPlusBtn}
+                title="Kirim (IN)"
                 onClick={() => { setTxItemId(item.id); txForm.reset({ transactionType: 'IN', unitPrice: 0 }) }}
               >
-                + Tranzaksiya
+                +
               </button>
               <button
                 type="button"
-                className={cn(styles.actionBtn, styles.editBtn)}
+                className={styles.txMinusBtn}
+                title="Chiqim (OUT)"
+                onClick={() => { setTxItemId(item.id); txForm.reset({ transactionType: 'OUT', unitPrice: 0 }) }}
+              >
+                −
+              </button>
+              <button
+                type="button"
+                className={styles.iconBtn}
+                title="Tahrirlash"
                 onClick={() => openEdit(item)}
               >
-                Tahrir
+                ✎
               </button>
             </div>
           </div>

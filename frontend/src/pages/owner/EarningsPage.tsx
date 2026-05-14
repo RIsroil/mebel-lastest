@@ -11,7 +11,6 @@ import { attendanceApi } from '@/api/attendance.api'
 import type { EarnType, EarningResponse } from '@/types/earning.types'
 import { formatNumber } from '@/utils/formatMoney'
 import { formatDate, toApiDate } from '@/utils/formatDate'
-import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import StatCard from '@/components/ui/StatCard'
@@ -187,6 +186,69 @@ const EarningsPage = () => {
         </span>
       </div>
 
+      {/* Mobile kartalar */}
+      <div className={styles.mobileCards}>
+        {!isLoading && earnings.length === 0 && (
+          <div className={styles.empty}>Daromad yozuvlari topilmadi</div>
+        )}
+        {earnings.map((e) => {
+          const canOverride = (e.earnType === 'DAILY_WAGE' || e.earnType === 'HOURLY_WAGE')
+            && e.attendanceId != null
+          return (
+            <div key={e.id} className={styles.earnCard}>
+              <div className={styles.earnCardTop}>
+                <div className={styles.earnCardLeft}>
+                  <span className={styles.earnCardName}>{e.workerName}</span>
+                  <span className={styles.earnCardDate}>{formatDate(e.earnDate)}</span>
+                </div>
+                <span className={`${styles.earnBadge} ${styles[EARN_CLASS[e.earnType]]}`}>
+                  {EARN_LABELS[e.earnType]}
+                </span>
+              </div>
+              <div className={styles.earnCardMid}>
+                <div className={styles.earnCardHours}>
+                  {e.hoursWorked != null
+                    ? `${e.hoursWorked}h${e.hoursTarget != null ? ` / ${e.hoursTarget}h` : ''}`
+                    : '—'}
+                  {canOverride && (
+                    <button
+                      type="button"
+                      className={styles.editHoursBtn}
+                      style={{ opacity: 1 }}
+                      onClick={() => openOverride(e)}
+                      title="Soatni o'zgartirish"
+                    >
+                      ✎
+                    </button>
+                  )}
+                </div>
+                <span className={styles.earnCardTotal}>{formatNumber(e.totalAmount)} so'm</span>
+              </div>
+              <div className={styles.earnCardBottom}>
+                <div className={styles.earnCardStatus}>
+                  {e.paid
+                    ? <span className={styles.paidIcon}>✓</span>
+                    : <span className={styles.unpaidIcon}>✗</span>}
+                  {e.paid && e.paidAt && (
+                    <span className={styles.paidDate}>{formatDate(e.paidAt)}</span>
+                  )}
+                </div>
+                {!e.paid && (
+                  <button
+                    type="button"
+                    className={styles.payBtn}
+                    disabled={payMut.isPending}
+                    onClick={() => payMut.mutate(e.id)}
+                  >
+                    ✓ To'lash
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
       {/* Table */}
       <div className={styles.tableCard}>
         <table className={styles.table}>
@@ -257,7 +319,10 @@ const EarningsPage = () => {
                 {/* Hisoblangan */}
                 <td className={styles.totalCell}>{formatNumber(e.totalAmount)}</td>
                 <td>
-                  <Badge variant={e.paid ? 'PAID' : 'UNPAID'} />
+                  {e.paid
+                    ? <span className={styles.paidIcon}>✓</span>
+                    : <span className={styles.unpaidIcon}>✗</span>
+                  }
                 </td>
                 <td>
                   {!e.paid && (
@@ -267,7 +332,7 @@ const EarningsPage = () => {
                       disabled={payMut.isPending}
                       onClick={() => payMut.mutate(e.id)}
                     >
-                      To'landi ✓
+                      ✓ To'lash
                     </button>
                   )}
                   {e.paid && e.paidAt && (

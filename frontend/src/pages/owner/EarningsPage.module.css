@@ -23,25 +23,8 @@
 
   .countHint { margin-left: 0; width: 100%; }
 
-  .tableCard { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-  /* Tur, Soat, To'liq kun, To'lov turi ustunlarini yashir */
-  .table th:nth-child(3),
-  .table td:nth-child(3),
-  .table th:nth-child(4),
-  .table td:nth-child(4),
-  .table th:nth-child(5),
-  .table td:nth-child(5),
-  .table th:nth-child(6),
-  .table td:nth-child(6) {
-    display: none;
-  }
-
-  .table thead th,
-  .table tbody td {
-    padding: 10px 10px;
-    font-size: 12px;
-  }
+  .tableCard { display: none; }
+  .mobileCards { display: flex; flex-direction: column; gap: 10px; }
 }
 
 /* Filters */
@@ -110,7 +93,7 @@
 .table { width: 100%; border-collapse: collapse; }
 
 .table thead th {
-  padding: 10px 14px;
+  padding: 8px 10px;
   text-align: left;
   font-size: 11px;
   font-weight: 600;
@@ -123,7 +106,7 @@
 }
 
 .table tbody td {
-  padding: 11px 14px;
+  padding: 9px 10px;
   font-size: 13px;
   color: var(--text);
   border-bottom: 1px solid var(--border);
@@ -207,18 +190,49 @@
 .earnComm    { background: var(--accent-bg); color: var(--accent); }
 .earnBonus   { background: var(--green-bg);  color: var(--green); }
 
-/* Pay button */
-.payBtn {
-  padding: 5px 11px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 6px;
-  cursor: pointer;
-  border: 1px solid var(--green);
+/* Paid / Unpaid icons */
+.paidIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
   background: var(--green-bg);
   color: var(--green);
-  font-family: var(--font);
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.unpaidIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--red-bg);
+  color: var(--red);
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Pay button */
+.payBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1.5px solid var(--green);
+  background: var(--green-bg);
+  color: var(--green);
   transition: all 0.15s;
+  font-family: var(--font);
   white-space: nowrap;
 }
 .payBtn:hover:not(:disabled) { background: var(--green); color: #fff; }
@@ -296,4 +310,83 @@
   gap: 10px;
   justify-content: flex-end;
   margin-top: 20px;
+}
+
+/* Mobile card layout */
+.mobileCards { display: none; }
+
+.earnCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.earnCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.earnCardLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.earnCardName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.earnCardDate {
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.earnCardMid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.earnCardHours {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.earnCardTotal {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.earnCardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.earnCardStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }

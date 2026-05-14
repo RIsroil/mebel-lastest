@@ -147,7 +147,58 @@
   flex-shrink: 0;
 }
 
-/* Edit button */
+/* Calendar icon button */
+.calBtn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  transition: all 0.15s;
+}
+.calBtn:hover { background: var(--surface2); border-color: var(--accent); }
+
+/* Edit (pencil) icon button */
+.iconBtn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  transition: all 0.15s;
+}
+.iconBtn:hover { background: var(--surface2); color: var(--accent); border-color: var(--accent); }
+
+/* Delete (trash) icon button */
+.trashBtn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--red);
+  background: transparent;
+  color: var(--red);
+  transition: all 0.15s;
+}
+.trashBtn:hover { background: var(--red); color: #fff; }
+
+/* Keep editBtn for form modal usage */
 .editBtn {
   padding: 5px 10px;
   font-size: 11px;
@@ -162,7 +213,7 @@
 }
 .editBtn:hover { background: var(--surface2); color: var(--text); }
 
-/* Delete button */
+/* Keep deleteBtn for form modal usage */
 .deleteBtn {
   padding: 5px 10px;
   font-size: 11px;
@@ -360,21 +411,6 @@
   margin-bottom: 8px;
 }
 
-/* Attendance button */
-.attendanceBtn {
-  padding: 5px 10px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text2);
-  font-size: 12px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.attendanceBtn:hover {
-  background: var(--surface3);
-  color: var(--text1);
-}
 
 /* Nav button in modals */
 .navBtn {
