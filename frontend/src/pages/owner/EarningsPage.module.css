@@ -5,6 +5,8 @@
   margin-bottom: 16px;
 }
 
+.mobileCards { display: none; }
+
 @media (max-width: 768px) {
   .statGrid {
     grid-template-columns: 1fr 1fr;
@@ -313,8 +315,6 @@
 }
 
 /* Mobile card layout */
-.mobileCards { display: none; }
-
 .earnCard {
   background: var(--surface);
   border: 1px solid var(--border);

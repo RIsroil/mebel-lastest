@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTopbar } from '@/context/TopbarContext'
 import { furnitureApi } from '@/api/furniture.api'
@@ -67,6 +67,7 @@ const DashboardPage = () => {
     .reduce((sum, o) => sum + o.salePrice, 0)
 
   const workerMap = new Map(workers.map((w) => [w.id, w]))
+  const navigate = useNavigate()
 
   return (
     <div>
@@ -98,44 +99,70 @@ const DashboardPage = () => {
       </div>
 
       <div className={styles.mainGrid}>
-        {/* Active orders table */}
+        {/* Active orders */}
         <div className={styles.tableCard}>
           <div className={styles.tableHeader}>
             <span className={styles.tableTitle}>Faol buyurtmalar</span>
             <Link to="/orders" className={styles.viewAll}>Barchasi →</Link>
           </div>
+
+          {/* Desktop jadval */}
           <div className={styles.tableScroll}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Raqam</th>
-                <th>Mebel</th>
-                <th>Mijoz</th>
-                <th>Status</th>
-                <th>Narx</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {activeOrders.slice(0, 6).map((order) => (
-                <tr key={order.id}>
-                  <td className={styles.orderNum}>{order.orderNumber}</td>
-                  <td>{order.title}</td>
-                  <td>{order.clientName ?? '—'}</td>
-                  <td><Badge variant={order.status} /></td>
-                  <td className={styles.price}>{formatNumber(order.salePrice)}</td>
-                  <td>
-                    <Link to={`/orders/${order.id}`} className={styles.detailBtn}>→</Link>
-                  </td>
-                </tr>
-              ))}
-              {!isLoading && activeOrders.length === 0 && (
+            <table className={styles.table}>
+              <thead>
                 <tr>
-                  <td colSpan={6} className={styles.empty}>Faol buyurtmalar yo'q</td>
+                  <th>Raqam</th>
+                  <th>Mebel</th>
+                  <th>Mijoz</th>
+                  <th>Status</th>
+                  <th>Narx</th>
+                  <th></th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {activeOrders.slice(0, 6).map((order) => (
+                  <tr key={order.id}>
+                    <td className={styles.orderNum}>{order.orderNumber}</td>
+                    <td>{order.title}</td>
+                    <td>{order.clientName ?? '—'}</td>
+                    <td><Badge variant={order.status} /></td>
+                    <td className={styles.price}>{formatNumber(order.salePrice)}</td>
+                    <td>
+                      <Link to={`/orders/${order.id}`} className={styles.detailBtn}>→</Link>
+                    </td>
+                  </tr>
+                ))}
+                {!isLoading && activeOrders.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className={styles.empty}>Faol buyurtmalar yo'q</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile kartalar */}
+          <div className={styles.orderCards}>
+            {!isLoading && activeOrders.length === 0 && (
+              <div className={styles.emptySmall} style={{ textAlign: 'center', padding: 24 }}>
+                Faol buyurtmalar yo'q
+              </div>
+            )}
+            {activeOrders.slice(0, 6).map((order) => (
+              <div
+                key={order.id}
+                className={styles.orderCard}
+                onClick={() => navigate(`/orders/${order.id}`)}
+              >
+                <div className={styles.orderCardTop}>
+                  <span className={styles.orderCardTitle}>{order.title}</span>
+                </div>
+                <div className={styles.orderCardBottom}>
+                  <Badge variant={order.status} />
+                  <span className={styles.orderCardPrice}>{formatNumber(order.salePrice)} so'm</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

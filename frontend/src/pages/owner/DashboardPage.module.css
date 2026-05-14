@@ -17,6 +17,8 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.orderCards { display: none; }
+
 @media (max-width: 768px) {
   .statGrid {
     grid-template-columns: repeat(2, 1fr);
@@ -28,25 +30,12 @@
     grid-template-columns: 1fr;
   }
 
-  .tableCard {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Mijoz, Narx, Detail ustunlarini yashir */
-  .table th:nth-child(3),
-  .table td:nth-child(3),
-  .table th:nth-child(5),
-  .table td:nth-child(5),
-  .table th:nth-child(6),
-  .table td:nth-child(6) {
-    display: none;
-  }
-
-  .table thead th,
-  .table tbody td {
-    padding: 10px 10px;
-    font-size: 12px;
+  .tableScroll { display: none; }
+  .orderCards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
   }
 }
 
@@ -191,3 +180,45 @@
 .stockName { color: var(--text2); }
 
 .emptySmall { font-size: 12px; color: var(--text3); }
+
+/* Order cards (mobile) */
+.orderCard {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s;
+}
+.orderCard:active { opacity: 0.85; }
+
+.orderCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.orderCardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  line-height: 1.35;
+}
+
+.orderCardBottom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.orderCardPrice {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-left: auto;
+}
