@@ -36,7 +36,7 @@ services:
       - mebel_net
 
   backend:
-    build: .
+    image: ${BACKEND_IMAGE:-ghcr.io/risroil/mebel-backend:latest}
     container_name: mebel_backend
     restart: always
     depends_on:
@@ -61,7 +61,7 @@ services:
       - mebel_net
 
   frontend:
-    build: ./frontend
+    image: ${FRONTEND_IMAGE:-ghcr.io/risroil/mebel-frontend:latest}
     container_name: mebel_frontend
     restart: always
     ports:
