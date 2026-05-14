@@ -18,7 +18,7 @@
   box-shadow: var(--shadow);
 }
 .lastMonthLabel { color: var(--text3); font-weight: 500; }
-.incomeChip  {
+.incomeChip {
   background: var(--green-bg);
   color: var(--green);
   border-radius: 20px;
@@ -58,10 +58,9 @@
   cursor: pointer;
   transition: border-color 0.15s;
   box-shadow: var(--shadow);
+  font-family: var(--font);
 }
-.dateInput:focus, .selectInput:focus {
-  border-color: var(--accent);
-}
+.dateInput:focus, .selectInput:focus { border-color: var(--accent); }
 
 /* Summary cards */
 .summaryRow {
@@ -82,7 +81,7 @@
 .incomeVal   { color: var(--green); }
 .expenseVal  { color: var(--red); }
 
-/* Table */
+/* Desktop table */
 .tableWrapper {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -95,9 +94,7 @@
   border-collapse: collapse;
   font-size: 13px;
 }
-.table thead tr {
-  background: var(--surface2);
-}
+.table thead tr { background: var(--surface2); }
 .table th {
   padding: 10px 14px;
   text-align: left;
@@ -143,8 +140,49 @@
 
 .empty {
   text-align: center;
-  padding: 36px !important;
+  padding: 36px;
   color: var(--text3);
+  font-size: 13px;
+}
+
+/* ── Mobile log kartalar ─────────────────────────── */
+.logCards { display: none; }
+
+.logCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.logCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.logCardAmount {
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.logCardDesc {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.logCardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 @media (max-width: 768px) {
@@ -152,7 +190,6 @@
     gap: 6px;
     padding: 10px 12px;
     font-size: 12px;
-    flex-wrap: wrap;
   }
 
   .filters {
@@ -173,38 +210,12 @@
     gap: 8px;
   }
 
-  .summaryVal { font-size: 16px; }
+  .summaryVal  { font-size: 16px; }
   .summaryCard { padding: 12px 14px; }
 
-  .tableWrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-  /* Sana va Havola ustunlarini yashir */
-  .table th:nth-child(1),
-  .table td:nth-child(1),
-  .table th:nth-child(4),
-  .table td:nth-child(4) {
-    display: none;
-  }
-
-  .table th,
-  .table td {
-    padding: 10px 10px;
-  }
-
-  .table td:nth-child(2) {
-    white-space: nowrap;
-    vertical-align: top;
-    padding-top: 12px;
-  }
-
-  .descCell { max-width: 140px; }
-
-  .descText {
-    -webkit-line-clamp: 2;
-    font-size: 12px;
-  }
-
-  .amountCol { font-size: 13px; }
+  /* Jadval o'rniga kartalar */
+  .tableWrapper { display: none; }
+  .logCards { display: flex; flex-direction: column; gap: 8px; }
 }
 
 /* Pagination */
@@ -223,6 +234,7 @@
   padding: 6px 16px;
   cursor: pointer;
   font-size: 13px;
+  font-family: var(--font);
   transition: border-color 0.15s, color 0.15s;
   box-shadow: var(--shadow);
 }

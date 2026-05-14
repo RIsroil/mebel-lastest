@@ -174,6 +174,51 @@
   font-size: 13px;
 }
 
+/* Mobile card layout */
+.mobileCards { display: none; }
+
+.itemCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.itemCard:active { opacity: 0.8; }
+.itemCardLow { border-color: var(--red); }
+
+.itemCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.itemCardName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+
+.itemCardMid {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.itemCardActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
 @media (max-width: 768px) {
   .toolbar {
     flex-wrap: wrap;
@@ -187,28 +232,8 @@
 
   .formRow { grid-template-columns: 1fr !important; }
 
-  .tableCard {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* SKU, Birlik, O'rt. narx, Umumiy qiymat ustunlarini yashir */
-  .table th:nth-child(2),
-  .table td:nth-child(2),
-  .table th:nth-child(3),
-  .table td:nth-child(3),
-  .table th:nth-child(5),
-  .table td:nth-child(5),
-  .table th:nth-child(6),
-  .table td:nth-child(6) {
-    display: none;
-  }
-
-  .table thead th,
-  .table tbody td {
-    padding: 10px 10px;
-    font-size: 12px;
-  }
+  .tableCard { display: none; }
+  .mobileCards { display: flex; flex-direction: column; gap: 8px; }
 }
 
 /* Form inside modal */

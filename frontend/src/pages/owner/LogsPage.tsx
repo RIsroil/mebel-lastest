@@ -159,7 +159,7 @@ const LogsPage = () => {
         </div>
       )}
 
-      {/* Jadval */}
+      {/* Desktop jadval */}
       <div className={styles.tableWrapper}>
         <table className={styles.table}>
           <thead>
@@ -199,6 +199,33 @@ const LogsPage = () => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile kartalar */}
+      <div className={styles.logCards}>
+        {logsQuery.isLoading && (
+          <div className={styles.empty}>Yuklanmoqda...</div>
+        )}
+        {!logsQuery.isLoading && logs.length === 0 && (
+          <div className={styles.empty}>Yozuvlar topilmadi</div>
+        )}
+        {logs.map(log => (
+          <div key={log.id} className={styles.logCard}>
+            <div className={styles.logCardTop}>
+              <span className={`${styles.typeBadge} ${styles[TYPE_CLASS[log.logType]]}`}>
+                {TYPE_LABEL[log.logType]}
+              </span>
+              <span className={`${styles.logCardAmount} ${log.amount >= 0 ? styles.amountPos : styles.amountNeg}`}>
+                {log.amount >= 0 ? '+' : ''}{formatNumber(log.amount)}
+              </span>
+            </div>
+            <div className={styles.logCardDesc}>{log.description ?? '—'}</div>
+            <div className={styles.logCardBottom}>
+              <span className={styles.dateCell}>{log.logDate}</span>
+              <LogNavLink log={log} />
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Pagination */}

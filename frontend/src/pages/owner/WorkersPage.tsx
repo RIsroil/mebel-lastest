@@ -207,6 +207,7 @@ const WorkersPage = () => {
         </span>
       </div>
 
+      {/* Desktop jadval */}
       <div className={styles.tableCard}>
         <table className={styles.table}>
           <thead>
@@ -288,6 +289,68 @@ const WorkersPage = () => {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile kartalar */}
+      <div className={styles.mobileCards}>
+        {!isLoading && filtered.length === 0 && (
+          <div className={styles.empty} style={{ textAlign: 'center', padding: 48, color: 'var(--text3)', fontSize: 13 }}>
+            Ishchilar topilmadi
+          </div>
+        )}
+        {filtered.map((worker) => (
+          <div key={worker.id} className={styles.workerCard}>
+            <div className={styles.workerCardTop}>
+              <div className={styles.workerCardLeft}>
+                <Avatar name={worker.fullName || worker.username} role="WORKER" size="sm" />
+                <div className={styles.workerCardInfo}>
+                  <span className={styles.workerCardName}>{worker.fullName || worker.username}</span>
+                  <span className={styles.workerCardSub}>{worker.workshopName ?? worker.username}</span>
+                </div>
+              </div>
+              <div>
+                {worker.blocked
+                  ? <span className={styles.blockedBadge}>Bloklangan</span>
+                  : worker.active
+                    ? <span className={styles.activeBadge}>Aktiv</span>
+                    : <span className={styles.inactiveBadge}>Nofaol</span>}
+              </div>
+            </div>
+            <div className={styles.workerCardMid}>
+              <span className={styles.workerCardSalary}>
+                {worker.dailySalary != null ? formatNumber(worker.dailySalary) : '—'} so'm/kun
+              </span>
+              {worker.payType && (
+                <span className={cn(styles.payBadge, worker.payType === 'DAILY' ? styles.payDaily : styles.payMonthly)}>
+                  {PAY_LABELS[worker.payType]}
+                </span>
+              )}
+            </div>
+            <div className={styles.workerCardActions}>
+              <button
+                type="button"
+                className={styles.attendanceBtn}
+                onClick={() => openAttendance(worker)}
+              >
+                📅 Davomat
+              </button>
+              <button
+                type="button"
+                className={styles.editBtn}
+                onClick={() => openEdit(worker)}
+              >
+                Tahrirlash
+              </button>
+              <button
+                type="button"
+                className={styles.deleteBtn}
+                onClick={() => setDeleteTarget(worker)}
+              >
+                O'chirish
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Create worker modal */}

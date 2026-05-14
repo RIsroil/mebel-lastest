@@ -157,6 +157,7 @@ const WarehousePage = () => {
         </span>
       </div>
 
+      {/* Desktop jadval */}
       <div className={styles.tableCard}>
         <table className={styles.table}>
           <thead>
@@ -234,6 +235,53 @@ const WarehousePage = () => {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile kartalar */}
+      <div className={styles.mobileCards}>
+        {!isLoading && filtered.length === 0 && (
+          <div className={styles.empty} style={{ textAlign: 'center', padding: 48, color: 'var(--text3)', fontSize: 13 }}>
+            Materiallar topilmadi
+          </div>
+        )}
+        {filtered.map((item) => (
+          <div
+            key={item.id}
+            className={cn(styles.itemCard, item.lowStock && styles.itemCardLow)}
+            onClick={() => navigate(`/warehouse/${item.id}`)}
+          >
+            <div className={styles.itemCardTop}>
+              <span className={styles.itemCardName}>{item.name}</span>
+              {item.lowStock
+                ? <span className={styles.lowBadge}>⚠ Kam</span>
+                : <span className={styles.okBadge}>OK</span>}
+            </div>
+            <div className={styles.itemCardMid}>
+              <span className={item.lowStock ? styles.lowQty : styles.qty}>
+                {formatNumber(item.quantity)} {UNIT_LABELS[item.unitType]}
+              </span>
+              {item.minQuantityAlert != null && item.minQuantityAlert > 0 && (
+                <span className={styles.minHint}>min: {item.minQuantityAlert}</span>
+              )}
+            </div>
+            <div className={styles.itemCardActions} onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className={styles.actionBtn}
+                onClick={() => { setTxItemId(item.id); txForm.reset({ transactionType: 'IN', unitPrice: 0 }) }}
+              >
+                + Tranzaksiya
+              </button>
+              <button
+                type="button"
+                className={cn(styles.actionBtn, styles.editBtn)}
+                onClick={() => openEdit(item)}
+              >
+                Tahrir
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Create / Edit item modal */}

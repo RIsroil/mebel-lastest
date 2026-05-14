@@ -198,26 +198,23 @@ const OrdersPage = () => {
         {filtered.map((order) => (
           <div
             key={order.id}
-            className={styles.orderCard}
+            className={cn(styles.orderCard, order.pinned && styles.orderCardPinned)}
             onClick={() => navigate(`/orders/${order.id}`)}
           >
             <div className={styles.orderCardTop}>
-              <span className={styles.orderCardTitle}>
-                {order.pinned && <span style={{ marginRight: 6 }}>📌</span>}
-                {order.title}
-              </span>
-              <span className={styles.orderCardNum}>{order.orderNumber}</span>
-            </div>
-            <div className={styles.orderCardBottom}>
-              <Badge variant={order.status} />
-              <span className={styles.orderCardPrice}>{formatNumber(order.salePrice)} so'm</span>
+              <span className={styles.orderCardTitle}>{order.title}</span>
               <button
                 type="button"
                 className={cn(styles.orderCardPinBtn, order.pinned && styles.orderCardPinBtnActive)}
                 onClick={(e) => { e.stopPropagation(); togglePinMutation.mutate(order.id) }}
+                title={order.pinned ? 'Pindan chiqarish' : 'Pin qilish'}
               >
-                {order.pinned ? '📌 Unpin' : 'Pin'}
+                {order.pinned ? '📌' : '☆'}
               </button>
+            </div>
+            <div className={styles.orderCardBottom}>
+              <Badge variant={order.status} />
+              <span className={styles.orderCardPrice}>{formatNumber(order.salePrice)} so'm</span>
             </div>
           </div>
         ))}
