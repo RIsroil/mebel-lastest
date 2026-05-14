@@ -104,6 +104,7 @@ const DashboardPage = () => {
             <span className={styles.tableTitle}>Faol buyurtmalar</span>
             <Link to="/orders" className={styles.viewAll}>Barchasi →</Link>
           </div>
+          <div className={styles.tableScroll}>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -135,6 +136,7 @@ const DashboardPage = () => {
               )}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Right panel */}

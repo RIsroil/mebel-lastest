@@ -15,6 +15,7 @@
   letter-spacing: 0.4px;
   text-transform: uppercase;
   margin-bottom: 8px;
+  padding-right: 32px;
 }
 
 .value {
@@ -23,6 +24,7 @@
   color: var(--text);
   margin-bottom: 4px;
   line-height: 1.2;
+  word-break: break-all;
 }
 
 .change {
@@ -39,4 +41,12 @@
   right: 16px;
   font-size: 22px;
   opacity: 0.6;
+}
+
+@media (max-width: 768px) {
+  .card { padding: 14px; }
+  .label { font-size: 10px; padding-right: 28px; letter-spacing: 0.3px; }
+  .value { font-size: 20px; }
+  .change { font-size: 10px; }
+  .icon { font-size: 18px; top: 12px; right: 12px; }
 }

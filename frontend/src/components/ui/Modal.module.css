@@ -21,6 +21,19 @@
   overflow-y: auto;
 }
 
+@media (max-width: 480px) {
+  .overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal {
+    border-radius: var(--radius) var(--radius) 0 0;
+    padding: 20px 16px;
+    max-height: 92vh;
+  }
+}
+
 .header {
   display: flex;
   align-items: center;

@@ -11,6 +11,12 @@
   gap: 16px;
 }
 
+/* Table scroll wrapper */
+.tableScroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 @media (max-width: 768px) {
   .statGrid {
     grid-template-columns: repeat(2, 1fr);
@@ -22,9 +28,11 @@
     grid-template-columns: 1fr;
   }
 
-  /* Mijoz ustunini yashir (3-chi) */
+  /* Mijoz, Narx ustunlarini yashir */
   .table th:nth-child(3),
-  .table td:nth-child(3) {
+  .table td:nth-child(3),
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
     display: none;
   }
 }

@@ -11,9 +11,14 @@
     grid-template-columns: 1fr;
   }
 
-  .clockTime { font-size: 48px; }
+  .clockTime { font-size: 40px; }
 
-  .tableCard { overflow-x: auto; }
+  .clockCard { padding: 24px 20px; min-height: 180px; }
+
+  .tableCard {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Clock card */

@@ -175,6 +175,13 @@
   .formRow { grid-template-columns: 1fr !important; }
   .hint { margin-left: 0; width: 100%; }
 
+  .searchInput { max-width: 100%; min-width: 0; width: 100%; }
+
+  .tableCard {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   /* Username, Seh, To'lov, Maosh/kun, Qo'shilgan ustunlarini yashir */
   .table th:nth-child(2),
   .table td:nth-child(2),

@@ -180,17 +180,32 @@
 }
 
 @media (max-width: 768px) {
+  .header { padding: 16px; }
+
   .headerMain {
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 16px;
   }
 
   .headerStats {
     margin-left: 0;
-    gap: 16px;
+    gap: 12px;
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .stat { align-items: flex-start; }
 
-  .tableCard { overflow-x: auto; }
+  .tableCard {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Yetkazuvchi, Izoh ustunlarini yashir */
+  .table th:nth-child(5),
+  .table td:nth-child(5),
+  .table th:nth-child(6),
+  .table td:nth-child(6) {
+    display: none;
+  }
 }

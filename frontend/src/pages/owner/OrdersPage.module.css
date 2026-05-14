@@ -154,11 +154,18 @@
 
   .formRow { grid-template-columns: 1fr; }
 
-  /* Mijoz, Material xarajat ustunlarini yashir */
+  .tableCard {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Mijoz, Material xarajat, Pin ustunlarini yashir */
   .table th:nth-child(3),
   .table td:nth-child(3),
   .table th:nth-child(6),
-  .table td:nth-child(6) {
+  .table td:nth-child(6),
+  .table th:nth-child(7),
+  .table td:nth-child(7) {
     display: none;
   }
 }
