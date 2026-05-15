@@ -36,7 +36,8 @@ services:
       - mebel_net
 
   backend:
-    image: ${BACKEND_IMAGE:-ghcr.io/risroil/mebel-backend:latest}
+    build: .
+    image: mebel-backend:local
     container_name: mebel_backend
     restart: always
     ports:
