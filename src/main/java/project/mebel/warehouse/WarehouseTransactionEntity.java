@@ -31,10 +31,10 @@ public class WarehouseTransactionEntity extends CreatedAuditEntity {
     @Column(name = "quantity", nullable = false, precision = 12, scale = 3)
     private BigDecimal quantity;
 
-    @Column(name = "unit_price", nullable = false, precision = 12, scale = 2)
+    @Column(name = "unit_price", nullable = false, precision = 16, scale = 2)
     private BigDecimal unitPrice;
 
-    @Column(name = "total_cost", nullable = false, precision = 14, scale = 2)
+    @Column(name = "total_cost", nullable = false, precision = 20, scale = 2)
     private BigDecimal totalCost;
 
     @Column(name = "qty_before", nullable = false, precision = 12, scale = 3)

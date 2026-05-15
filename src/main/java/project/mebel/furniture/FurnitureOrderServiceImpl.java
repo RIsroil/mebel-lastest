@@ -226,10 +226,6 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                 .orElseThrow(() -> ApiException.notFound("warehouse.item.not.found"));
 
         BigDecimal qty = request.getQuantityUsed();
-        if (item.getQuantity().compareTo(qty) < 0) {
-            throw ApiException.badRequest("insufficient.stock");
-        }
-
         BigDecimal unitPrice = item.getAvgUnitPrice();
         BigDecimal totalCost = qty.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
 

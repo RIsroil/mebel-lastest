@@ -39,7 +39,7 @@ public class WarehouseItemEntity extends SoftDeleteEntity {
     @Builder.Default
     private BigDecimal avgUnitPrice = BigDecimal.ZERO;
 
-    @Column(name = "total_value", nullable = false, precision = 14, scale = 2)
+    @Column(name = "total_value", nullable = false, precision = 20, scale = 2)
     @Builder.Default
     private BigDecimal totalValue = BigDecimal.ZERO;
 

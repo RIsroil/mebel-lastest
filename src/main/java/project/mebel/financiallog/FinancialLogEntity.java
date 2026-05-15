@@ -27,7 +27,7 @@ public class FinancialLogEntity extends CreatedAuditEntity {
     private FinancialLogType logType;
 
     // Musbat = kirim, manfiy = chiqim
-    @Column(name = "amount", nullable = false, precision = 14, scale = 2)
+    @Column(name = "amount", nullable = false, precision = 20, scale = 2)
     private BigDecimal amount;
 
     @Column(name = "description", columnDefinition = "TEXT")

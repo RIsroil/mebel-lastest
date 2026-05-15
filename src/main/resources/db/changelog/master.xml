@@ -36,5 +36,6 @@
     <include file="changes/029-create-save-cuts-table.xml" relativeToChangelogFile="true"/>
     <include file="changes/030-create-save-images-table.xml" relativeToChangelogFile="true"/>
     <include file="changes/031-add-updated-columns-to-save-images.xml" relativeToChangelogFile="true"/>
+    <include file="changes/032-increase-financial-column-precision.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

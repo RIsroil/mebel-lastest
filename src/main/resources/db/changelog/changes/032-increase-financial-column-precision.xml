@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="032-increase-financial-column-precision" author="Isroil">
+        <!-- warehouse_items: total_value NUMERIC(14,2) → NUMERIC(20,2) -->
+        <modifyDataType tableName="warehouse_items" columnName="total_value" newDataType="NUMERIC(20,2)"/>
+
+        <!-- warehouse_transactions: unit_price, total_cost -->
+        <modifyDataType tableName="warehouse_transactions" columnName="unit_price" newDataType="NUMERIC(16,2)"/>
+        <modifyDataType tableName="warehouse_transactions" columnName="total_cost" newDataType="NUMERIC(20,2)"/>
+
+        <!-- financial_logs: amount -->
+        <modifyDataType tableName="financial_logs" columnName="amount" newDataType="NUMERIC(20,2)"/>
+    </changeSet>
+
+</databaseChangeLog>
