@@ -542,6 +542,147 @@
   font-style: italic;
 }
 
+/* ── Worker monthly calendar ─────────────────────────────────── */
+.workerCal {
+  margin-top: 4px;
+}
+
+.workerCalHeader {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-bottom: 3px;
+}
+
+.workerCalDayHead {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  padding: 4px 0;
+}
+
+.workerCalBody {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.workerCalDay {
+  min-height: 56px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 5px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: border-color 0.15s;
+}
+
+.calOtherMonth {
+  opacity: 0.3;
+  background: transparent;
+  border-color: transparent;
+}
+
+.calToday {
+  border-color: var(--accent) !important;
+  background: rgba(193, 127, 62, 0.06);
+}
+
+.calWorked {
+  background: rgba(34, 197, 94, 0.07);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.calAbsent {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.calLocked {
+  background: var(--surface2);
+}
+
+.calDateNum {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  line-height: 1;
+}
+
+.calDayInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.calTime {
+  font-size: 10px;
+  color: var(--text2);
+  font-family: monospace;
+}
+
+.calHoursOk {
+  font-size: 10px;
+  font-weight: 700;
+  color: #22c55e;
+}
+
+.calHoursShort {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+}
+
+.calAbsentMark {
+  font-size: 10px;
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* Month summary row */
+.workerCalSummary {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.calSummItem {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.calSummVal {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.calSummKey {
+  font-size: 10px;
+  color: var(--text3);
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .workerCalDay { min-height: 46px; padding: 4px 4px; }
+  .calDateNum   { font-size: 11px; }
+  .calTime      { display: none; }
+  .calSummVal   { font-size: 13px; }
+}
+
 /* Arrow between check-in and check-out times */
 .arrow {
   color: var(--text3);

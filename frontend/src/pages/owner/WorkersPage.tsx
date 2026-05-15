@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
+import { useQueries, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import type { Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -35,13 +35,14 @@ function toLocalDate(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
-function weekLabel(monday: Date): string {
-  const sunday = new Date(monday)
-  sunday.setDate(monday.getDate() + 6)
-  const fmt = (d: Date) =>
-    `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`
-  return `${fmt(monday)} – ${fmt(sunday)}`
+function addDays(d: Date, n: number): Date {
+  const r = new Date(d)
+  r.setDate(r.getDate() + n)
+  return r
 }
+
+const MONTH_NAMES = ['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr']
+const DAY_SHORT = ['Du','Se','Ch','Pa','Ju','Sh','Ya']
 
 const PAY_LABELS: Record<PayType, string> = {
   DAILY:   'Kunlik',
@@ -77,7 +78,8 @@ const WorkersPage = () => {
   const [deleteTarget, setDeleteTarget]     = useState<AdminUserResponse | null>(null)
   const [editTarget, setEditTarget]         = useState<AdminUserResponse | null>(null)
   const [attendanceWorker, setAttendanceWorker] = useState<AdminUserResponse | null>(null)
-  const [attendanceMonday, setAttendanceMonday] = useState(() => getMondayOf(new Date()))
+  const [attendanceYear, setAttendanceYear]     = useState(() => new Date().getFullYear())
+  const [attendanceMonth, setAttendanceMonth]   = useState(() => new Date().getMonth())
 
   const { data: workersResp, isLoading } = useQuery({
     queryKey: ['workers'],
@@ -132,17 +134,53 @@ const WorkersPage = () => {
 
   const handleClose = () => { setShowCreate(false); reset() }
 
-  const attendanceMondayStr = toLocalDate(attendanceMonday)
-  const { data: weeklyResp, isLoading: weeklyLoading } = useQuery({
-    queryKey: ['worker-weekly', attendanceWorker?.id, attendanceMondayStr],
-    queryFn: () => attendanceApi.getWorkerWeekly(attendanceWorker!.id, attendanceMondayStr),
-    enabled: !!attendanceWorker,
+  const calendarMondays = useMemo((): string[] => {
+    const firstDay = new Date(attendanceYear, attendanceMonth, 1)
+    const lastDay  = new Date(attendanceYear, attendanceMonth + 1, 0)
+    const start = getMondayOf(firstDay)
+    const end   = getMondayOf(lastDay)
+    const mondays: string[] = []
+    let cur = start
+    while (cur <= end) {
+      mondays.push(toLocalDate(cur))
+      cur = addDays(cur, 7)
+    }
+    return mondays
+  }, [attendanceYear, attendanceMonth])
+
+  const weekQueries = useQueries({
+    queries: calendarMondays.map((monday) => ({
+      queryKey: ['worker-weekly', attendanceWorker?.id, monday],
+      queryFn: () => attendanceApi.getWorkerWeekly(attendanceWorker!.id, monday),
+      enabled: !!attendanceWorker,
+    })),
   })
-  const weeklyDays: WeeklyDayResponse[] = weeklyResp?.data?.data ?? []
+
+  const dayMap = useMemo((): Record<string, WeeklyDayResponse> => {
+    const map: Record<string, WeeklyDayResponse> = {}
+    for (const q of weekQueries) {
+      const days: WeeklyDayResponse[] = q.data?.data?.data ?? []
+      for (const d of days) map[d.date] = d
+    }
+    return map
+  }, [weekQueries])
+
+  const weeklyLoading = weekQueries.some((q) => q.isLoading)
+
+  const calendarDates = useMemo((): Date[] => {
+    return calendarMondays.flatMap((mondayStr) => {
+      const monday = new Date(mondayStr)
+      return Array.from({ length: 7 }, (_, i) => addDays(monday, i))
+    })
+  }, [calendarMondays])
+
+  const isAttendanceCurrentMonth = attendanceYear === new Date().getFullYear() && attendanceMonth === new Date().getMonth()
+  const todayStr = toLocalDate(new Date())
 
   const openAttendance = (worker: AdminUserResponse) => {
     setAttendanceWorker(worker)
-    setAttendanceMonday(getMondayOf(new Date()))
+    setAttendanceYear(new Date().getFullYear())
+    setAttendanceMonth(new Date().getMonth())
   }
 
   const openEdit = (worker: AdminUserResponse) => {
@@ -517,148 +555,121 @@ const WorkersPage = () => {
         )}
       </Modal>
 
-      {/* Worker weekly attendance modal */}
+      {/* Worker attendance modal — monthly calendar */}
       <Modal
         isOpen={!!attendanceWorker}
         onClose={() => setAttendanceWorker(null)}
-        title={attendanceWorker ? `${attendanceWorker.fullName || attendanceWorker.username} — Haftalik davomat` : ''}
-        maxWidth={740}
+        title={attendanceWorker ? `${attendanceWorker.fullName || attendanceWorker.username} — ${MONTH_NAMES[attendanceMonth]} ${attendanceYear}` : ''}
+        maxWidth={600}
       >
         {attendanceWorker && (
           <div>
-            {/* Hafta navigatsiyasi */}
+            {/* Oy navigatsiyasi */}
             <div className={styles.weekNav}>
               <button
                 type="button"
                 className={styles.navBtn}
                 onClick={() => {
-                  const d = new Date(attendanceMonday)
-                  d.setDate(d.getDate() - 7)
-                  setAttendanceMonday(d)
+                  if (attendanceMonth === 0) { setAttendanceYear((y) => y - 1); setAttendanceMonth(11) }
+                  else setAttendanceMonth((m) => m - 1)
                 }}
-              >
-                ← Oldingi
-              </button>
-              <span className={styles.weekNavLabel}>{weekLabel(attendanceMonday)}</span>
+              >← Oldingi</button>
+              <span className={styles.weekNavLabel}>{MONTH_NAMES[attendanceMonth]} {attendanceYear}</span>
               <button
                 type="button"
                 className={styles.navBtn}
-                disabled={toLocalDate(getMondayOf(new Date())) === attendanceMondayStr}
+                disabled={isAttendanceCurrentMonth}
                 onClick={() => {
-                  const d = new Date(attendanceMonday)
-                  d.setDate(d.getDate() + 7)
-                  if (toLocalDate(d) <= toLocalDate(getMondayOf(new Date()))) {
-                    setAttendanceMonday(d)
-                  }
+                  if (isAttendanceCurrentMonth) return
+                  if (attendanceMonth === 11) { setAttendanceYear((y) => y + 1); setAttendanceMonth(0) }
+                  else setAttendanceMonth((m) => m + 1)
                 }}
-              >
-                Keyingi →
-              </button>
+              >Keyingi →</button>
             </div>
 
-            {weeklyLoading ? (
-              <div className={styles.loadingCell}>Yuklanmoqda...</div>
-            ) : (
-              <div className={styles.weeklyTableWrap}>
-              <table className={styles.weeklyTable}>
-                <thead>
-                  <tr>
-                    <th>Kun</th>
-                    <th>Kelish → Ketish</th>
-                    <th>Ishlagan / Norma</th>
-                    <th>Hisoblangan / Kunlik</th>
-                    <th>Qo'shimcha</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {weeklyDays.map((day) => {
-                    const hasData    = day.hoursWorked != null
-                    const normaOk    = hasData && day.hoursWorked! >= (day.hoursTarget ?? 8)
-                    const hasBonus   = day.bonusHours != null && day.bonusHours > 0
+            {/* Calendar grid */}
+            <div className={styles.workerCal}>
+              <div className={styles.workerCalHeader}>
+                {DAY_SHORT.map((d) => (
+                  <div key={d} className={styles.workerCalDayHead}>{d}</div>
+                ))}
+              </div>
+
+              {weeklyLoading ? (
+                <div className={styles.loadingCell}>Yuklanmoqda...</div>
+              ) : (
+                <div className={styles.workerCalBody}>
+                  {calendarDates.map((date) => {
+                    const dateStr = toLocalDate(date)
+                    const isThisMonth = date.getMonth() === attendanceMonth
+                    const dayData = dayMap[dateStr]
+                    const isToday = dateStr === todayStr
+                    const hasWorked = !!dayData?.checkInTime
+                    const normaOk = hasWorked && (dayData?.hoursWorked ?? 0) >= (dayData?.hoursTarget ?? 8)
 
                     return (
-                      <tr
-                        key={day.date}
-                        className={
-                          !hasData
-                            ? styles.emptyRow
-                            : day.hoursLocked
-                            ? styles.lockedRow
-                            : undefined
-                        }
+                      <div
+                        key={dateStr}
+                        className={[
+                          styles.workerCalDay,
+                          !isThisMonth ? styles.calOtherMonth : '',
+                          isToday ? styles.calToday : '',
+                          isThisMonth && hasWorked ? styles.calWorked : '',
+                          isThisMonth && !hasWorked && dayData ? styles.calAbsent : '',
+                          dayData?.hoursLocked ? styles.calLocked : '',
+                        ].filter(Boolean).join(' ')}
                       >
-                        {/* Kun */}
-                        <td>
-                          <div className={styles.weekDayLabel}>{day.dayLabel}</div>
-                          <div className={styles.weekDayDate}>
-                            {day.date.slice(5).replace('-', '/')}
+                        <span className={styles.calDateNum}>{date.getDate()}</span>
+                        {isThisMonth && dayData && (
+                          <div className={styles.calDayInfo}>
+                            {hasWorked ? (
+                              <>
+                                <span className={styles.calTime}>{dayData.checkInTime!.slice(0, 5)}</span>
+                                {dayData.hoursWorked != null && (
+                                  <span className={normaOk ? styles.calHoursOk : styles.calHoursShort}>
+                                    {dayData.hoursWorked}h
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className={styles.calAbsentMark}>✕</span>
+                            )}
                           </div>
-                        </td>
-
-                        {/* Kelish → Ketish */}
-                        <td className={styles.monoCell}>
-                          {hasData ? (
-                            <span>
-                              {day.checkInTime  ? day.checkInTime.slice(0, 5)  : '--:--'}
-                              <span className={styles.arrow}> → </span>
-                              {day.checkOutTime ? day.checkOutTime.slice(0, 5) : '--:--'}
-                            </span>
-                          ) : (
-                            <span className={styles.dash}>Kelmagan</span>
-                          )}
-                        </td>
-
-                        {/* Ishlagan / Norma */}
-                        <td>
-                          {hasData ? (
-                            <>
-                              <span className={normaOk ? styles.hoursOk : styles.hoursShort}>
-                                {day.hoursWorked}h
-                              </span>
-                              <span className={styles.target}> / {day.hoursTarget ?? 8}h</span>
-                            </>
-                          ) : (
-                            <>
-                              <span className={styles.dash}>—</span>
-                              <span className={styles.target}> / {day.hoursTarget ?? 8}h</span>
-                            </>
-                          )}
-                        </td>
-
-                        {/* Hisoblangan / Kunlik */}
-                        <td>
-                          {day.dailyPayAmount != null ? (
-                            <>
-                              <span className={styles.payAmount}>{formatNumber(day.dailyPayAmount)}</span>
-                              {day.dailySalary != null && (
-                                <span className={styles.target}> / {formatNumber(day.dailySalary)}</span>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              <span className={styles.dash}>—</span>
-                              {day.dailySalary != null && (
-                                <span className={styles.target}> / {formatNumber(day.dailySalary)}</span>
-                              )}
-                            </>
-                          )}
-                        </td>
-
-                        {/* Bonus */}
-                        <td>
-                          {hasBonus ? (
-                            <span className={styles.bonusBadge}>+{day.bonusHours}h qo'shimcha</span>
-                          ) : (
-                            <span className={styles.dash}>—</span>
-                          )}
-                        </td>
-                      </tr>
+                        )}
+                      </div>
                     )
                   })}
-                </tbody>
-              </table>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
+
+            {/* Oy xulosasi */}
+            {!weeklyLoading && (() => {
+              const monthDays = Object.values(dayMap).filter((d) => {
+                const [y, m] = d.date.split('-').map(Number)
+                return y === attendanceYear && m === attendanceMonth + 1
+              })
+              const worked = monthDays.filter((d) => d.checkInTime).length
+              const totalHours = monthDays.reduce((s, d) => s + (d.hoursWorked ?? 0), 0)
+              const totalPay   = monthDays.reduce((s, d) => s + (d.dailyPayAmount ?? 0), 0)
+              if (monthDays.length === 0) return null
+              return (
+                <div className={styles.workerCalSummary}>
+                  <div className={styles.calSummItem}>
+                    <span className={styles.calSummVal}>{worked}</span>
+                    <span className={styles.calSummKey}>Kelgan kun</span>
+                  </div>
+                  <div className={styles.calSummItem}>
+                    <span className={styles.calSummVal}>{Math.round(totalHours * 10) / 10}h</span>
+                    <span className={styles.calSummKey}>Ishlagan soat</span>
+                  </div>
+                  <div className={styles.calSummItem}>
+                    <span className={styles.calSummVal}>{formatNumber(totalPay)}</span>
+                    <span className={styles.calSummKey}>Hisoblangan maosh</span>
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )}
       </Modal>

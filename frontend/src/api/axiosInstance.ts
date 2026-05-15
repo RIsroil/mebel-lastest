@@ -88,10 +88,14 @@ api.interceptors.response.use(
       }
     }
 
-    // 403 — foydalanuvchi bloklanganmi yoki sessiya yaroqsiz
+    // 403 — faqat hisob bloklangan bo'lsa logout; oddiy "access.denied" (noto'g'ri rol)
+    // uchun logout qilmaymiz — foydalanuvchi autentifikatsiyalangan lekin ruxsati yo'q.
     if (error.response?.status === 403 && !isAuthOnlyPath(original.url)) {
-      useAuthStore.getState().logout()
-      window.location.href = '/login'
+      const msg: string = error.response?.data?.message ?? ''
+      if (msg.toLowerCase().includes('block')) {
+        useAuthStore.getState().logout()
+        window.location.href = '/login'
+      }
       return Promise.reject(error)
     }
 

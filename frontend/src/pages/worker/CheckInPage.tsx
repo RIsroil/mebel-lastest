@@ -3,10 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useTopbar } from '@/context/TopbarContext'
 import { attendanceApi } from '@/api/attendance.api'
-import { furnitureApi } from '@/api/furniture.api'
 import { useAuthStore } from '@/store/auth.store'
 import { toApiDate, formatDate, formatTime } from '@/utils/formatDate'
-import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import styles from './CheckInPage.module.css'
 
@@ -45,12 +43,6 @@ const CheckInPage = () => {
     queryFn:  () => attendanceApi.getMyHistory({ from: sevenDaysAgo, to: today }),
   })
 
-  // Biriktirilgan mebel buyurtmalari
-  const { data: ordersResp } = useQuery({
-    queryKey: ['orders'],
-    queryFn:  furnitureApi.orders.getAll,
-  })
-
   const checkInMut = useMutation({
     mutationFn: attendanceApi.checkIn,
     onSuccess:  () => {
@@ -75,13 +67,6 @@ const CheckInPage = () => {
 
   const todayAttendance = todayResp?.data?.data?.[0] ?? null
   const history         = historyResp?.data?.data ?? []
-  const allOrders       = ordersResp?.data?.data ?? []
-
-  const myOrders = allOrders.filter(
-    (o) =>
-      o.assignedWorkers.some((w) => w.workerId === user?.id) &&
-      (o.status === 'IN_PROGRESS' || o.status === 'DRAFT')
-  )
 
   const timeStr = now.toLocaleTimeString('uz-UZ', {
     hour:   '2-digit',
@@ -100,8 +85,7 @@ const CheckInPage = () => {
 
   return (
     <div className={styles.page}>
-      <div className={styles.topGrid}>
-        {/* Soat kartasi */}
+      {/* Soat kartasi */}
         <div className={styles.clockCard}>
           <div className={styles.clockTime}>{timeStr}</div>
           <div className={styles.clockDate}>{dateStr}</div>
@@ -143,27 +127,6 @@ const CheckInPage = () => {
             </Button>
           )}
         </div>
-
-        {/* Biriktirilgan buyurtmalar */}
-        <div className={styles.ordersCard}>
-          <div className={styles.cardTitle}>Mening buyurtmalarim</div>
-          {myOrders.length === 0 ? (
-            <p className={styles.emptySmall}>Biriktirilgan buyurtma yo'q</p>
-          ) : (
-            <div className={styles.orderList}>
-              {myOrders.map((o) => (
-                <div key={o.id} className={styles.orderRow}>
-                  <div className={styles.orderInfo}>
-                    <span className={styles.orderNum}>{o.orderNumber}</span>
-                    <span className={styles.orderTitle}>{o.title}</span>
-                  </div>
-                  <Badge variant={o.status} />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* So'nggi 7 kun jadvali */}
       <div className={styles.tableCard}>
