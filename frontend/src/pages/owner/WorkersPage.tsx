@@ -88,6 +88,7 @@ const WorkersPage = () => {
   const [editCheckIn,  setEditCheckIn]  = useState('09:00')
   const [editCheckOut, setEditCheckOut] = useState('17:00')
   const [editNotes,    setEditNotes]    = useState('')
+  const [editHours,    setEditHours]    = useState('')
 
   const { data: workersResp, isLoading } = useQuery({
     queryKey: ['workers'],
@@ -128,6 +129,15 @@ const WorkersPage = () => {
   const ownerEntryMut = useMutation({
     mutationFn: ({ workerId, body }: { workerId: string; body: ManualEntryRequest }) =>
       attendanceApi.ownerUpsertWorkerEntry(workerId, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worker-weekly'] })
+      setEditDayInfo(null)
+    },
+  })
+
+  const overrideHoursMut = useMutation({
+    mutationFn: ({ attendanceId, hoursWorked, notes }: { attendanceId: string; hoursWorked: number; notes?: string }) =>
+      attendanceApi.overrideHours(attendanceId, { hoursWorked, notes }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worker-weekly'] })
       setEditDayInfo(null)
@@ -208,6 +218,7 @@ const WorkersPage = () => {
     setEditCheckIn(dayData?.checkInTime?.slice(0, 5) ?? '09:00')
     setEditCheckOut(dayData?.checkOutTime?.slice(0, 5) ?? '17:00')
     setEditNotes(dayData?.notes ?? '')
+    setEditHours(dayData?.hoursWorked != null ? String(dayData.hoursWorked) : '')
   }
 
   const openEdit = (worker: AdminUserResponse) => {
@@ -636,7 +647,8 @@ const WorkersPage = () => {
                     const hasWorked = !!dayData?.checkInTime
                     const normaOk = hasWorked && (dayData?.hoursWorked ?? 0) >= (dayData?.hoursTarget ?? 8)
                     const isPastOrToday = dateStr <= todayStr
-                    const canEdit = isThisMonth && isPastOrToday && !!attendanceWorker
+                    const isDayPaid = !!dayData?.paid
+                    const canEdit = isThisMonth && isPastOrToday && !!attendanceWorker && !isDayPaid
 
                     return (
                       <div
@@ -678,6 +690,9 @@ const WorkersPage = () => {
                                     {dayData.checkInTime.slice(0,5)}–{dayData.checkOutTime.slice(0,5)}
                                   </span>
                                 )}
+                              {dayData.paid && (
+                                <span className={styles.calPaidBadge}>✓</span>
+                              )}
                               </>
                             ) : (
                               <div className={styles.calHoursRow}>
@@ -739,64 +754,140 @@ const WorkersPage = () => {
       <Modal
         isOpen={!!editDayInfo}
         onClose={() => setEditDayInfo(null)}
-        title={editDayInfo ? `${editDayInfo.dateStr} — davomat kiritish` : ''}
+        title={editDayInfo
+          ? editDayInfo.dayData?.checkInTime
+            ? `${editDayInfo.dateStr} — soatlarni tahrirlash`
+            : `${editDayInfo.dateStr} — davomat kiritish`
+          : ''}
         maxWidth={380}
       >
         {editDayInfo && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Kirish vaqti *</label>
-                <input
-                  className={styles.formInput}
-                  type="time"
-                  value={editCheckIn}
-                  onChange={(e) => setEditCheckIn(e.target.value)}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Chiqish vaqti *</label>
-                <input
-                  className={styles.formInput}
-                  type="time"
-                  value={editCheckOut}
-                  onChange={(e) => setEditCheckOut(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Izoh</label>
-              <input
-                className={styles.formInput}
-                placeholder="Ixtiyoriy..."
-                value={editNotes}
-                onChange={(e) => setEditNotes(e.target.value)}
-              />
-            </div>
-            <div className={styles.formActions}>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setEditDayInfo(null)}>
-                Bekor qilish
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                loading={ownerEntryMut.isPending}
-                disabled={!editCheckIn || !editCheckOut || editCheckOut <= editCheckIn}
-                onClick={() => {
-                  ownerEntryMut.mutate({
-                    workerId: editDayInfo.workerId,
-                    body: {
-                      date: editDayInfo.dateStr,
-                      checkInTime: editCheckIn,
-                      checkOutTime: editCheckOut,
-                      notes: editNotes || undefined,
-                    },
-                  })
-                }}
-              >
-                Saqlash →
-              </Button>
-            </div>
+            {editDayInfo.dayData?.checkInTime ? (
+              /* Ishchi mavjud, faqat soat tahrirlanadi */
+              <>
+                <div style={{
+                  background: 'var(--surface2)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 8,
+                  padding: '10px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}>
+                  <span style={{ fontSize: 12, color: 'var(--text3)' }}>Ishchi vaqti</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+                    {editDayInfo.dayData.checkInTime.slice(0, 5)}
+                    {editDayInfo.dayData.checkOutTime ? ` – ${editDayInfo.dayData.checkOutTime.slice(0, 5)}` : ''}
+                  </span>
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    Ishlangan soat *
+                    <span style={{ fontWeight: 400, color: 'var(--text3)', marginLeft: 8 }}>
+                      (avvalgi: {editDayInfo.dayData.hoursWorked ?? '—'}h)
+                    </span>
+                  </label>
+                  <input
+                    className={styles.formInput}
+                    type="number"
+                    min={0}
+                    max={24}
+                    step={0.5}
+                    placeholder="8"
+                    value={editHours}
+                    onChange={(e) => setEditHours(e.target.value)}
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Izoh</label>
+                  <input
+                    className={styles.formInput}
+                    placeholder="Ixtiyoriy..."
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                  />
+                </div>
+                <div className={styles.formActions}>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setEditDayInfo(null)}>
+                    Bekor qilish
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    loading={overrideHoursMut.isPending}
+                    disabled={!editHours || parseFloat(editHours) <= 0 || !editDayInfo.dayData.attendanceId}
+                    onClick={() => {
+                      if (!editDayInfo.dayData?.attendanceId) return
+                      overrideHoursMut.mutate({
+                        attendanceId: editDayInfo.dayData.attendanceId,
+                        hoursWorked: parseFloat(editHours),
+                        notes: editNotes || undefined,
+                      })
+                    }}
+                  >
+                    Saqlash →
+                  </Button>
+                </div>
+              </>
+            ) : (
+              /* Ishchi yo'q edi — qo'lda davomat kiritish */
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Kirish vaqti *</label>
+                    <input
+                      className={styles.formInput}
+                      type="time"
+                      value={editCheckIn}
+                      onChange={(e) => setEditCheckIn(e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Chiqish vaqti *</label>
+                    <input
+                      className={styles.formInput}
+                      type="time"
+                      value={editCheckOut}
+                      onChange={(e) => setEditCheckOut(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Izoh</label>
+                  <input
+                    className={styles.formInput}
+                    placeholder="Ixtiyoriy..."
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                  />
+                </div>
+                <div className={styles.formActions}>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setEditDayInfo(null)}>
+                    Bekor qilish
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    loading={ownerEntryMut.isPending}
+                    disabled={!editCheckIn || !editCheckOut || editCheckOut <= editCheckIn}
+                    onClick={() => {
+                      ownerEntryMut.mutate({
+                        workerId: editDayInfo.workerId,
+                        body: {
+                          date: editDayInfo.dateStr,
+                          checkInTime: editCheckIn,
+                          checkOutTime: editCheckOut,
+                          notes: editNotes || undefined,
+                        },
+                      })
+                    }}
+                  >
+                    Saqlash →
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </Modal>

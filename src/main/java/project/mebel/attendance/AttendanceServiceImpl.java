@@ -129,6 +129,11 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .filter(a -> a.getWorkshopId().equals(owner.getWorkshopId()))
                 .orElseThrow(() -> ApiException.notFound("attendance.not.found"));
 
+        EarningEntity existingEarning = earningRepo.findByAttendanceId(attendanceId).orElse(null);
+        if (existingEarning != null && existingEarning.isPaid()) {
+            throw ApiException.badRequest("earning.already.paid");
+        }
+
         LocalDateTime now = LocalDateTime.now();
         attendance.setOwnerOverrideHours(request.getHoursWorked());
         attendance.setOwnerOverrideBy(owner.getId());
@@ -272,6 +277,14 @@ public class AttendanceServiceImpl implements AttendanceService {
         DailyAttendanceEntity attendance = attendanceRepo.findByUserIdAndWorkDate(worker.getId(), date)
                 .orElse(null);
 
+        // To'langan kun davomati o'zgartirilmasin
+        if (attendance != null) {
+            EarningEntity existingEarning = earningRepo.findByAttendanceId(attendance.getId()).orElse(null);
+            if (existingEarning != null && existingEarning.isPaid()) {
+                throw ApiException.badRequest("earning.already.paid");
+            }
+        }
+
         LocalDateTime now = LocalDateTime.now();
         if (attendance == null) {
             attendance = DailyAttendanceEntity.builder()
@@ -399,6 +412,7 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .dailyPayAmount(pay)
                 .bonusHours(bonus)
                 .editable(!a.getWorkDate().isAfter(today))
+                .paid(earning != null && earning.isPaid())
                 .build();
     }
 

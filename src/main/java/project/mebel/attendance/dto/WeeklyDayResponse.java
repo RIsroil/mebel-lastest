@@ -38,4 +38,7 @@ public class WeeklyDayResponse {
 
     // Whether this worker can still edit this day (past/today = true; future = false)
     private boolean editable;
+
+    // Maosh to'langan bo'lsa — owner ham tahrirlay olmaydi
+    private boolean paid;
 }

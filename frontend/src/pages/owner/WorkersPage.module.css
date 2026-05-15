@@ -720,6 +720,13 @@
   line-height: 1;
 }
 
+.calPaidBadge {
+  font-size: 9px;
+  color: var(--green);
+  font-weight: 700;
+  line-height: 1;
+}
+
 @media (max-width: 768px) {
   .calTimeRange { display: none; }
   .calEditBtn { width: 16px; height: 16px; font-size: 11px; }

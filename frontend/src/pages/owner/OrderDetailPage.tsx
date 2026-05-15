@@ -59,6 +59,7 @@ const OrderDetailPage = () => {
   const [showAssignWorker, setShowAssignWorker] = useState(false)
   const [assignWorkerData, setAssignWorkerData] = useState<{ workerId: string; commissionPct: string } | null>(null)
   const [lightboxUrl,      setLightboxUrl]      = useState<string | null>(null)
+  const [confirmDelete,    setConfirmDelete]    = useState<{ usageId: string; itemName: string } | null>(null)
 
   // Yangi material (warehouse item) yaratish uchun
   const [newItemForRowIdx, setNewItemForRowIdx] = useState<number | null>(null)
@@ -100,7 +101,21 @@ const OrderDetailPage = () => {
 
   const removeMaterialMutation = useMutation({
     mutationFn: (usageId: string) => furnitureApi.orders.removeMaterial(id!, usageId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['order', id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order', id] })
+      queryClient.invalidateQueries({ queryKey: ['warehouseItems'] })
+      queryClient.invalidateQueries({ queryKey: ['warehouseTodayOut'] })
+    },
+  })
+
+  const adjustMaterialMutation = useMutation({
+    mutationFn: ({ usageId, delta }: { usageId: string; delta: number }) =>
+      furnitureApi.orders.adjustMaterial(id!, usageId, delta),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order', id] })
+      queryClient.invalidateQueries({ queryKey: ['warehouseItems'] })
+      queryClient.invalidateQueries({ queryKey: ['warehouseTodayOut'] })
+    },
   })
 
   const createWarehouseItemMutation = useMutation({
@@ -292,26 +307,29 @@ const OrderDetailPage = () => {
                           <button
                             type="button"
                             className={`${styles.matActionBtn} ${styles.matActionBtnAdd}`}
-                            title="Yana qo'shish"
-                            onClick={() => {
-                              setMaterialRows([{ warehouseItemId: m.warehouseItemId, quantityUsed: '', notes: '' }])
-                              setShowAddMaterial(true)
-                            }}
+                            title="+1 qo'shish"
+                            disabled={adjustMaterialMutation.isPending}
+                            onClick={() => adjustMaterialMutation.mutate({ usageId: m.id, delta: 1 })}
                           >
                             +
                           </button>
                           <button
                             type="button"
                             className={`${styles.matActionBtn} ${styles.matActionBtnRemove}`}
-                            title="Omborga qaytarish"
-                            disabled={removeMaterialMutation.isPending}
-                            onClick={() => {
-                              if (window.confirm(`"${m.itemName}" ni buyurtmadan olib tashlash va omborga qaytarishni xohlaysizmi?`)) {
-                                removeMaterialMutation.mutate(m.id)
-                              }
-                            }}
+                            title="-1 kamaytirish"
+                            disabled={adjustMaterialMutation.isPending || m.quantityUsed <= 1}
+                            onClick={() => adjustMaterialMutation.mutate({ usageId: m.id, delta: -1 })}
                           >
                             −
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.matActionBtn} ${styles.matActionBtnDelete}`}
+                            title="Butunlay olib tashlash"
+                            disabled={removeMaterialMutation.isPending}
+                            onClick={() => setConfirmDelete({ usageId: m.id, itemName: m.itemName ?? '—' })}
+                          >
+                            🗑
                           </button>
                         </div>
                       </td>
@@ -680,6 +698,7 @@ const OrderDetailPage = () => {
               }
               queryClient.invalidateQueries({ queryKey: ['order', id] })
               queryClient.invalidateQueries({ queryKey: ['warehouseItems'] })
+              queryClient.invalidateQueries({ queryKey: ['warehouseTodayOut'] })
               setShowAddMaterial(false)
               setMaterialRows([emptyMaterialRow()])
             }}
@@ -811,6 +830,39 @@ const OrderDetailPage = () => {
           </div>
         )}
       </Modal>
+
+      {/* Custom confirm: butunlay o'chirish */}
+      {confirmDelete && (
+        <div className={styles.confirmOverlay} onClick={() => setConfirmDelete(null)}>
+          <div className={styles.confirmBox} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.confirmIcon}>🗑</div>
+            <div className={styles.confirmTitle}>Materialni olib tashlash</div>
+            <div className={styles.confirmMsg}>
+              <strong>"{confirmDelete.itemName}"</strong> ni buyurtmadan butunlay olib tashlash va omborga qaytarish?
+            </div>
+            <div className={styles.confirmActions}>
+              <button
+                type="button"
+                className={styles.confirmCancel}
+                onClick={() => setConfirmDelete(null)}
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                className={styles.confirmOk}
+                disabled={removeMaterialMutation.isPending}
+                onClick={() => {
+                  removeMaterialMutation.mutate(confirmDelete.usageId)
+                  setConfirmDelete(null)
+                }}
+              >
+                Ha, olib tashlash
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Yangi warehouse material yaratish modal */}
       <Modal

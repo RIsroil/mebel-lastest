@@ -72,6 +72,8 @@ const WarehousePage = () => {
   const { data: todayOutResp } = useQuery({
     queryKey: ['warehouseTodayOut'],
     queryFn:  warehouseApi.transactions.getTodayOut,
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 
   const createMut = useMutation({
@@ -580,6 +582,8 @@ const WarehousePage = () => {
                     <td>{formatNumber(tx.unitPrice)}</td>
                     <td className={styles.todayCost}>{formatNumber(tx.totalCost)}</td>
                     <td className={styles.todayTime}>
+                      {new Date(tx.createdAt).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit' })}
+                      {' '}
                       {new Date(tx.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
                     </td>
                   </tr>

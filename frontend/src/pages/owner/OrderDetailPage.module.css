@@ -140,6 +140,94 @@
 }
 .matActionBtnRemove:disabled { opacity: 0.4; cursor: not-allowed; }
 
+.matActionBtnDelete {
+  color: var(--text3);
+  border-color: var(--border);
+  font-size: 14px;
+}
+.matActionBtnDelete:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+.matActionBtnDelete:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Custom confirm dialog */
+.confirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirmBox {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  padding: 28px 28px 22px;
+  max-width: 360px;
+  width: 90%;
+  text-align: center;
+}
+
+.confirmIcon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.confirmTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.confirmMsg {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+  margin-bottom: 22px;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.confirmCancel {
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background 0.15s;
+}
+.confirmCancel:hover { background: var(--surface2); }
+
+.confirmOk {
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: none;
+  background: #ef4444;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: opacity 0.15s;
+}
+.confirmOk:hover { opacity: 0.85; }
+.confirmOk:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* Table card */
 .tableCard {
   background: var(--surface);

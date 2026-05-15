@@ -186,7 +186,8 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Transactional(readOnly = true)
     public List<WarehouseTransactionResponse> getTodayOutTransactions(Principal principal) {
         UserEntity owner = requireOwner(principal);
-        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        java.time.ZoneId zone = java.time.ZoneId.of("Asia/Tashkent");
+        LocalDateTime startOfDay = LocalDate.now(zone).atStartOfDay();
         LocalDateTime endOfDay = startOfDay.plusDays(1);
         List<WarehouseTransactionEntity> txs = txRepo
                 .findAllByWorkshopIdAndTransactionTypeAndCreatedAtBetweenOrderByCreatedAtDesc(

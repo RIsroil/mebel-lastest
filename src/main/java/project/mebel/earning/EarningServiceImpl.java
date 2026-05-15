@@ -96,7 +96,7 @@ public class EarningServiceImpl implements EarningService {
         };
         financialLogService.record(owner.getWorkshopId(), logType,
                 saved.getTotalAmount().negate(), desc, saved.getWorkerId(),
-                workerName, saved.getEarnDate(), owner.getId());
+                workerName, LocalDate.now(), owner.getId());
 
         return toResponse(saved, workerName);
     }

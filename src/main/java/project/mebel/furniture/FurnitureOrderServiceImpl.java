@@ -380,6 +380,117 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
         return toResponse(order);
     }
 
+    @Override
+    @Transactional
+    public FurnitureOrderResponse adjustMaterialUsage(UUID orderId, UUID usageId, AdjustMaterialRequest request, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        FurnitureOrderEntity order = findOrder(orderId, owner.getWorkshopId());
+
+        if (order.getStatus() == FurnitureStatus.COMPLETED || order.getStatus() == FurnitureStatus.SOLD
+                || order.getStatus() == FurnitureStatus.CANCELLED) {
+            throw ApiException.badRequest("order.already.closed");
+        }
+
+        MaterialUsageEntity usage = usageRepo.findById(usageId)
+                .orElseThrow(() -> ApiException.notFound("material.usage.not.found"));
+
+        if (!usage.getFurnitureOrderId().equals(orderId)) {
+            throw ApiException.forbidden("access.denied");
+        }
+
+        BigDecimal delta = request.getDelta();
+        if (delta == null || delta.compareTo(BigDecimal.ZERO) == 0) {
+            throw ApiException.badRequest("material.usage.qty.invalid");
+        }
+
+        BigDecimal newQty = usage.getQuantityUsed().add(delta);
+        if (newQty.compareTo(BigDecimal.ZERO) <= 0) {
+            throw ApiException.badRequest("material.usage.qty.invalid");
+        }
+
+        WarehouseItemEntity item = warehouseItemRepo.findByIdAndWorkshopId(usage.getWarehouseItemId(), owner.getWorkshopId())
+                .orElseThrow(() -> ApiException.notFound("warehouse.item.not.found"));
+
+        BigDecimal unitPrice = usage.getUnitPriceAtTime();
+        BigDecimal absDelta = delta.abs();
+        BigDecimal totalCostDelta = absDelta.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal qtyBefore  = item.getQuantity();
+        BigDecimal priceBefore = item.getAvgUnitPrice();
+        BigDecimal qtyAfter;
+        BigDecimal priceAfter;
+        TransactionType txType;
+
+        if (delta.compareTo(BigDecimal.ZERO) > 0) {
+            // Qo'shimcha sarflanmoqda — ombordan chiqaramiz
+            qtyAfter  = qtyBefore.subtract(absDelta);
+            priceAfter = priceBefore;
+            txType     = TransactionType.OUT;
+        } else {
+            // Qisman qaytarilmoqda — omborga qaytaramiz (weighted avg)
+            BigDecimal newTotal = qtyBefore.multiply(priceBefore).add(absDelta.multiply(unitPrice));
+            qtyAfter  = qtyBefore.add(absDelta);
+            priceAfter = qtyAfter.compareTo(BigDecimal.ZERO) > 0
+                    ? newTotal.divide(qtyAfter, 2, RoundingMode.HALF_UP)
+                    : unitPrice;
+            txType = TransactionType.IN;
+        }
+
+        item.setQuantity(qtyAfter);
+        item.setAvgUnitPrice(priceAfter);
+        item.setTotalValue(qtyAfter.multiply(priceAfter).setScale(2, RoundingMode.HALF_UP));
+        item.setUpdatedBy(owner.getId());
+        warehouseItemRepo.save(item);
+
+        WarehouseTransactionEntity tx = WarehouseTransactionEntity.builder()
+                .itemId(item.getId())
+                .workshopId(owner.getWorkshopId())
+                .transactionType(txType)
+                .quantity(absDelta)
+                .unitPrice(unitPrice)
+                .totalCost(totalCostDelta)
+                .qtyBefore(qtyBefore)
+                .qtyAfter(qtyAfter)
+                .priceBefore(priceBefore)
+                .priceAfter(priceAfter)
+                .furnitureOrderId(orderId)
+                .notes(delta.compareTo(BigDecimal.ZERO) > 0
+                        ? "Qo'shimcha sarflandi: " + order.getTitle() + " (#" + order.getOrderNumber() + ")"
+                        : "Qisman qaytarildi: " + order.getTitle() + " (#" + order.getOrderNumber() + ")")
+                .build();
+        tx.setCreatedBy(owner.getId());
+        warehouseTxRepo.save(tx);
+
+        BigDecimal newTotalCost = newQty.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
+        usage.setQuantityUsed(newQty);
+        usage.setTotalCost(newTotalCost);
+        usage.setUpdatedBy(owner.getId());
+        usageRepo.save(usage);
+
+        String logDesc = delta.compareTo(BigDecimal.ZERO) > 0
+                ? "Xomashyo sarflandi (+): " + item.getName()
+                  + " — +" + absDelta.stripTrailingZeros().toPlainString() + " " + item.getUnitType()
+                  + " | Buyurtma: " + order.getTitle() + " (#" + order.getOrderNumber() + ")"
+                : "Xomashyo qaytarildi (-): " + item.getName()
+                  + " — -" + absDelta.stripTrailingZeros().toPlainString() + " " + item.getUnitType()
+                  + " | Buyurtma: " + order.getTitle() + " (#" + order.getOrderNumber() + ")";
+
+        financialLogService.record(
+                owner.getWorkshopId(),
+                FinancialLogType.MATERIAL_USED,
+                delta.compareTo(BigDecimal.ZERO) > 0 ? totalCostDelta.negate() : totalCostDelta,
+                logDesc, order.getId(), order.getTitle() + " (#" + order.getOrderNumber() + ")",
+                LocalDate.now(), owner.getId()
+        );
+
+        BigDecimal newActualCost = usageRepo.sumTotalCostByOrderId(orderId);
+        order.setActualMaterialCost(newActualCost);
+        order.setUpdatedBy(owner.getId());
+        orderRepo.save(order);
+
+        return toResponse(order);
+    }
+
     private void generateCommissionEarnings(FurnitureOrderEntity order, UserEntity owner) {
         if (order.getSalePrice() == null || order.getSalePrice().compareTo(BigDecimal.ZERO) == 0) return;
 

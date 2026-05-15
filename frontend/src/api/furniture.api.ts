@@ -43,6 +43,9 @@ export const furnitureApi = {
     removeMaterial: (id: string, usageId: string) =>
       api.delete<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}/materials/${usageId}`),
 
+    adjustMaterial: (id: string, usageId: string, delta: number) =>
+      api.patch<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}/materials/${usageId}/adjust`, { delta }),
+
     uploadImage: (id: string, file: File) => {
       const form = new FormData()
       form.append('file', file)

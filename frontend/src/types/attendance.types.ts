@@ -45,4 +45,5 @@ export interface WeeklyDayResponse {
   dailyPayAmount: number | null
   bonusHours: number | null
   editable: boolean
+  paid: boolean
 }
