@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="031-add-updated-columns-to-save-images" author="Isroil">
+        <addColumn tableName="save_images">
+            <column name="updated_at" type="TIMESTAMP"/>
+            <column name="updated_by" type="UUID"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>
