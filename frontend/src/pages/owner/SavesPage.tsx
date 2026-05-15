@@ -383,9 +383,11 @@ const SavesPage = () => {
                               <button
                                 type="button"
                                 className={`${styles.rowBtn} ${styles.rowBtnDanger}`}
-                                onClick={() =>
-                                  removeCutMut.mutate({ saveId: selectedSave.id, cutId: cut.id })
-                                }
+                                onClick={() => {
+                                  if (confirm(`"${cut.materialName}" kesimini o'chirishni tasdiqlaysizmi?`)) {
+                                    removeCutMut.mutate({ saveId: selectedSave.id, cutId: cut.id })
+                                  }
+                                }}
                                 disabled={removeCutMut.isPending}
                               >
                                 ✕

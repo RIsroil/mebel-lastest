@@ -35,7 +35,7 @@ public class EarningServiceImpl implements EarningService {
     public List<EarningResponse> getMyEarnings(LocalDate from, LocalDate to, Principal principal) {
         UserEntity worker = requireWorker(principal);
         return earningRepo.findAllByWorkerIdAndEarnDateBetween(worker.getId(), from, to)
-                .stream().map(e -> toResponse(e, worker.getFullName())).toList();
+                .stream().map(e -> toResponse(e, displayName(worker))).toList();
     }
 
     @Override
@@ -47,7 +47,7 @@ public class EarningServiceImpl implements EarningService {
                 .orElseThrow(() -> ApiException.notFound("worker.not.found"));
 
         return earningRepo.findAllByWorkerIdAndEarnDateBetween(workerId, from, to)
-                .stream().map(e -> toResponse(e, worker.getFullName())).toList();
+                .stream().map(e -> toResponse(e, displayName(worker))).toList();
     }
 
     @Override
@@ -56,7 +56,9 @@ public class EarningServiceImpl implements EarningService {
         UserEntity owner = requireOwner(principal);
         return earningRepo.findAllByWorkshopIdAndEarnDateBetween(owner.getWorkshopId(), from, to)
                 .stream().map(e -> {
-                    String name = userRepo.findById(e.getWorkerId()).map(UserEntity::getFullName).orElse(null);
+                    String name = userRepo.findById(e.getWorkerId())
+                            .map(this::displayName)
+                            .orElse("—");
                     return toResponse(e, name);
                 }).toList();
     }
@@ -77,7 +79,9 @@ public class EarningServiceImpl implements EarningService {
         earning.setPaidBy(owner.getId());
         earning.setUpdatedBy(owner.getId());
 
-        String workerName = userRepo.findById(earning.getWorkerId()).map(UserEntity::getFullName).orElse(null);
+        String workerName = userRepo.findById(earning.getWorkerId())
+                .map(this::displayName)
+                .orElse("—");
         EarningEntity saved = earningRepo.save(earning);
 
         FinancialLogType logType = switch (saved.getEarnType()) {
@@ -134,7 +138,11 @@ public class EarningServiceImpl implements EarningService {
         bonus.setEarningId(saved.getId());
         bonusRepo.save(bonus);
 
-        return toResponse(saved, worker.getFullName());
+        return toResponse(saved, displayName(worker));
+    }
+
+    private String displayName(UserEntity user) {
+        return user.getFullName() != null ? user.getFullName() : user.getUsername();
     }
 
     private UserEntity requireWorker(Principal principal) {

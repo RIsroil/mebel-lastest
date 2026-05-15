@@ -536,3 +536,19 @@
 .todayCost { font-weight: 700; color: #ef4444; }
 .todayTime { color: var(--text3); font-size: 12px; white-space: nowrap; }
 
+.todayRowClickable {
+  cursor: pointer;
+}
+.todayRowClickable td {
+  transition: background 0.12s;
+}
+.todayRowClickable:hover td {
+  background: rgba(193, 127, 62, 0.08);
+}
+.todayRowClickable .todayName::after {
+  content: ' →';
+  color: var(--accent);
+  font-size: 11px;
+  opacity: 0.7;
+}
+

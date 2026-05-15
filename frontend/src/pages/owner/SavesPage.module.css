@@ -521,7 +521,7 @@
   /* Detail section — full width, proper padding */
   .detail {
     overflow-y: visible;
-    overflow-x: hidden;
+    overflow-x: visible;
     padding-bottom: 80px;
   }
 
@@ -541,15 +541,20 @@
   }
 
   .table {
-    min-width: 520px;
+    min-width: 0;
+    width: 100%;
     font-size: 12px;
   }
 
   .table th, .table td {
-    padding: 9px 10px;
+    padding: 8px 8px;
   }
 
-  /* Hide notes column on mobile */
+  /* Mobile: hide #, Balandligi, Izoh columns (keep Material, Bo'yi, Eni, Soni, actions) */
+  .table th:nth-child(1),
+  .table td:nth-child(1),
+  .table th:nth-child(5),
+  .table td:nth-child(5),
   .table th:nth-child(7),
   .table td:nth-child(7) {
     display: none;

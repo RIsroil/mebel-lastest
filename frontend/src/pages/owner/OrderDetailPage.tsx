@@ -288,19 +288,32 @@ const OrderDetailPage = () => {
                     </td>
                     {order.status === 'IN_PROGRESS' && (
                       <td>
-                        <button
-                          type="button"
-                          className={styles.removeMatBtn}
-                          title="Materialni olib tashlash (omborga qaytaradi)"
-                          disabled={removeMaterialMutation.isPending}
-                          onClick={() => {
-                            if (window.confirm(`"${m.itemName}" ni buyurtmadan olib tashlash va omborga qaytarishni xohlaysizmi?`)) {
-                              removeMaterialMutation.mutate(m.id)
-                            }
-                          }}
-                        >
-                          ×
-                        </button>
+                        <div className={styles.matActions}>
+                          <button
+                            type="button"
+                            className={`${styles.matActionBtn} ${styles.matActionBtnAdd}`}
+                            title="Yana qo'shish"
+                            onClick={() => {
+                              setMaterialRows([{ warehouseItemId: m.warehouseItemId, quantityUsed: '', notes: '' }])
+                              setShowAddMaterial(true)
+                            }}
+                          >
+                            +
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.matActionBtn} ${styles.matActionBtnRemove}`}
+                            title="Omborga qaytarish"
+                            disabled={removeMaterialMutation.isPending}
+                            onClick={() => {
+                              if (window.confirm(`"${m.itemName}" ni buyurtmadan olib tashlash va omborga qaytarishni xohlaysizmi?`)) {
+                                removeMaterialMutation.mutate(m.id)
+                              }
+                            }}
+                          >
+                            −
+                          </button>
+                        </div>
                       </td>
                     )}
                   </tr>

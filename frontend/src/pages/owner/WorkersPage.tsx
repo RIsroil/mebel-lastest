@@ -11,7 +11,7 @@ import { workshopApi } from '@/api/workshop.api'
 import { attendanceApi } from '@/api/attendance.api'
 import type { AdminUserResponse } from '@/types/admin.types'
 import type { PayType } from '@/types/auth.types'
-import type { WeeklyDayResponse } from '@/types/attendance.types'
+import type { WeeklyDayResponse, ManualEntryRequest } from '@/types/attendance.types'
 import { formatNumber } from '@/utils/formatMoney'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
@@ -81,6 +81,14 @@ const WorkersPage = () => {
   const [attendanceYear, setAttendanceYear]     = useState(() => new Date().getFullYear())
   const [attendanceMonth, setAttendanceMonth]   = useState(() => new Date().getMonth())
 
+  // Day edit modal state
+  const [editDayInfo, setEditDayInfo] = useState<{
+    dateStr: string; workerId: string; dayData: WeeklyDayResponse | null
+  } | null>(null)
+  const [editCheckIn,  setEditCheckIn]  = useState('09:00')
+  const [editCheckOut, setEditCheckOut] = useState('17:00')
+  const [editNotes,    setEditNotes]    = useState('')
+
   const { data: workersResp, isLoading } = useQuery({
     queryKey: ['workers'],
     queryFn:  () => adminApi.users.getAll({ role: 'WORKER', size: 200 }),
@@ -114,6 +122,15 @@ const WorkersPage = () => {
       queryClient.invalidateQueries({ queryKey: ['workers'] })
       setEditTarget(null)
       editForm.reset()
+    },
+  })
+
+  const ownerEntryMut = useMutation({
+    mutationFn: ({ workerId, body }: { workerId: string; body: ManualEntryRequest }) =>
+      attendanceApi.ownerUpsertWorkerEntry(workerId, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worker-weekly'] })
+      setEditDayInfo(null)
     },
   })
 
@@ -153,6 +170,8 @@ const WorkersPage = () => {
       queryKey: ['worker-weekly', attendanceWorker?.id, monday],
       queryFn: () => attendanceApi.getWorkerWeekly(attendanceWorker!.id, monday),
       enabled: !!attendanceWorker,
+      retry: 1,
+      staleTime: 30_000,
     })),
   })
 
@@ -166,6 +185,7 @@ const WorkersPage = () => {
   }, [weekQueries])
 
   const weeklyLoading = weekQueries.some((q) => q.isLoading)
+  const weeklyError   = !weeklyLoading && weekQueries.every((q) => q.isError)
 
   const calendarDates = useMemo((): Date[] => {
     return calendarMondays.flatMap((mondayStr) => {
@@ -181,6 +201,13 @@ const WorkersPage = () => {
     setAttendanceWorker(worker)
     setAttendanceYear(new Date().getFullYear())
     setAttendanceMonth(new Date().getMonth())
+  }
+
+  const openDayEdit = (dateStr: string, workerId: string, dayData: WeeklyDayResponse | null) => {
+    setEditDayInfo({ dateStr, workerId, dayData })
+    setEditCheckIn(dayData?.checkInTime?.slice(0, 5) ?? '09:00')
+    setEditCheckOut(dayData?.checkOutTime?.slice(0, 5) ?? '17:00')
+    setEditNotes(dayData?.notes ?? '')
   }
 
   const openEdit = (worker: AdminUserResponse) => {
@@ -597,6 +624,8 @@ const WorkersPage = () => {
 
               {weeklyLoading ? (
                 <div className={styles.loadingCell}>Yuklanmoqda...</div>
+              ) : weeklyError ? (
+                <div className={styles.loadingCell} style={{ color: 'var(--red)' }}>Ma'lumot yuklanmadi</div>
               ) : (
                 <div className={styles.workerCalBody}>
                   {calendarDates.map((date) => {
@@ -606,6 +635,8 @@ const WorkersPage = () => {
                     const isToday = dateStr === todayStr
                     const hasWorked = !!dayData?.checkInTime
                     const normaOk = hasWorked && (dayData?.hoursWorked ?? 0) >= (dayData?.hoursTarget ?? 8)
+                    const isPastOrToday = dateStr <= todayStr
+                    const canEdit = isThisMonth && isPastOrToday && !!attendanceWorker
 
                     return (
                       <div
@@ -620,19 +651,49 @@ const WorkersPage = () => {
                         ].filter(Boolean).join(' ')}
                       >
                         <span className={styles.calDateNum}>{date.getDate()}</span>
-                        {isThisMonth && dayData && (
+                        {isThisMonth && (
                           <div className={styles.calDayInfo}>
                             {hasWorked ? (
                               <>
-                                <span className={styles.calTime}>{dayData.checkInTime!.slice(0, 5)}</span>
-                                {dayData.hoursWorked != null && (
-                                  <span className={normaOk ? styles.calHoursOk : styles.calHoursShort}>
-                                    {dayData.hoursWorked}h
+                                <div className={styles.calHoursRow}>
+                                  {dayData.hoursWorked != null && (
+                                    <span className={normaOk ? styles.calHoursOk : styles.calHoursShort}>
+                                      {dayData.hoursWorked}h
+                                    </span>
+                                  )}
+                                  {canEdit && (
+                                    <button
+                                      type="button"
+                                      className={styles.calEditBtn}
+                                      title="Soatlarni tahrirlash"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        openDayEdit(dateStr, attendanceWorker!.id, dayData)
+                                      }}
+                                    >✎</button>
+                                  )}
+                                </div>
+                                {dayData.checkInTime && dayData.checkOutTime && (
+                                  <span className={styles.calTimeRange}>
+                                    {dayData.checkInTime.slice(0,5)}–{dayData.checkOutTime.slice(0,5)}
                                   </span>
                                 )}
                               </>
                             ) : (
-                              <span className={styles.calAbsentMark}>✕</span>
+                              <div className={styles.calHoursRow}>
+                                <span className={styles.calAbsentMark}>✕</span>
+                                {canEdit && (
+                                  <button
+                                    type="button"
+                                    className={styles.calEditBtn}
+                                    title="Davomat kiritish"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      openDayEdit(dateStr, attendanceWorker!.id, dayData ?? null)
+                                    }}
+                                  >✎</button>
+                                )}
+                              </div>
                             )}
                           </div>
                         )}
@@ -670,6 +731,72 @@ const WorkersPage = () => {
                 </div>
               )
             })()}
+          </div>
+        )}
+      </Modal>
+
+      {/* Day edit modal */}
+      <Modal
+        isOpen={!!editDayInfo}
+        onClose={() => setEditDayInfo(null)}
+        title={editDayInfo ? `${editDayInfo.dateStr} — davomat kiritish` : ''}
+        maxWidth={380}
+      >
+        {editDayInfo && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Kirish vaqti *</label>
+                <input
+                  className={styles.formInput}
+                  type="time"
+                  value={editCheckIn}
+                  onChange={(e) => setEditCheckIn(e.target.value)}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Chiqish vaqti *</label>
+                <input
+                  className={styles.formInput}
+                  type="time"
+                  value={editCheckOut}
+                  onChange={(e) => setEditCheckOut(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Izoh</label>
+              <input
+                className={styles.formInput}
+                placeholder="Ixtiyoriy..."
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+              />
+            </div>
+            <div className={styles.formActions}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setEditDayInfo(null)}>
+                Bekor qilish
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                loading={ownerEntryMut.isPending}
+                disabled={!editCheckIn || !editCheckOut || editCheckOut <= editCheckIn}
+                onClick={() => {
+                  ownerEntryMut.mutate({
+                    workerId: editDayInfo.workerId,
+                    body: {
+                      date: editDayInfo.dateStr,
+                      checkInTime: editCheckIn,
+                      checkOutTime: editCheckOut,
+                      notes: editNotes || undefined,
+                    },
+                  })
+                }}
+              >
+                Saqlash →
+              </Button>
+            </div>
           </div>
         )}
       </Modal>

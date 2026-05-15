@@ -80,6 +80,15 @@ public class AttendanceController {
         return ResponseEntity.ok(attendanceService.getWorkerAttendance(workerId, from, to, principal));
     }
 
+    @PostMapping("/workers/{workerId}/manual-entry")
+    @Operation(summary = "Ishchi davomatini qo'lda kiritish yoki yangilash (OWNER)")
+    public ResponseEntity<WeeklyDayResponse> ownerUpsertWorkerEntry(
+            @PathVariable UUID workerId,
+            @RequestBody ManualEntryRequest request,
+            Principal principal) {
+        return ResponseEntity.ok(attendanceService.ownerUpsertWorkerEntry(workerId, request, principal));
+    }
+
     @PostMapping("/manual-entry")
     @Operation(summary = "Qo'lda kirish/chiqish vaqtini kiritish (WORKER)")
     public ResponseEntity<WeeklyDayResponse> upsertManualEntry(

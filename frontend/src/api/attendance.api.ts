@@ -42,4 +42,7 @@ export const attendanceApi = {
     api.get<ApiResponse<WeeklyDayResponse[]>>(`/api/attendance/workers/${workerId}/weekly`, {
       params: weekStart ? { weekStart } : {},
     }),
+
+  ownerUpsertWorkerEntry: (workerId: string, body: ManualEntryRequest) =>
+    api.post<ApiResponse<WeeklyDayResponse>>(`/api/attendance/workers/${workerId}/manual-entry`, body),
 }

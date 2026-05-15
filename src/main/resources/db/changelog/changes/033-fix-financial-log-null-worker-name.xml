@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="033-fix-financial-log-null-worker-name" author="system">
+        <!-- "Maosh to'landi: null", "Komissiya to'landi: null", "Bonus to'landi: null" yozuvlarini
+             mos username bilan almashtirish -->
+        <sql>
+            UPDATE financial_logs fl
+            SET description = REPLACE(fl.description, ': null',
+                COALESCE(': ' || (
+                    SELECT COALESCE(u.full_name, u.username)
+                    FROM users u
+                    WHERE u.id = fl.reference_id
+                ), ': —'))
+            WHERE fl.description LIKE '%: null'
+              AND fl.reference_id IS NOT NULL;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

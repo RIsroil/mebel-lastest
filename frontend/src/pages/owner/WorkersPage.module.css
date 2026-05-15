@@ -683,6 +683,48 @@
   .calSummVal   { font-size: 13px; }
 }
 
+/* Calendar edit button (pencil) */
+.calHoursRow {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.calEditBtn {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  color: var(--text3);
+  padding: 0;
+  opacity: 0.6;
+  transition: opacity 0.15s, color 0.15s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.calEditBtn:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.calTimeRange {
+  font-size: 9px;
+  color: var(--text3);
+  font-family: monospace;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+@media (max-width: 768px) {
+  .calTimeRange { display: none; }
+  .calEditBtn { width: 16px; height: 16px; font-size: 11px; }
+}
+
 /* Arrow between check-in and check-out times */
 .arrow {
   color: var(--text3);

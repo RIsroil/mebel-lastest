@@ -229,6 +229,7 @@ public class WarehouseServiceImpl implements WarehouseService {
                 .unitPrice(tx.getUnitPrice()).totalCost(tx.getTotalCost())
                 .qtyBefore(tx.getQtyBefore()).qtyAfter(tx.getQtyAfter())
                 .supplierName(tx.getSupplierName()).invoiceNumber(tx.getInvoiceNumber())
-                .notes(tx.getNotes()).createdAt(tx.getCreatedAt()).build();
+                .notes(tx.getNotes()).createdAt(tx.getCreatedAt())
+                .furnitureOrderId(tx.getFurnitureOrderId()).build();
     }
 }

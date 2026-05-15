@@ -72,6 +72,12 @@ Hammasi `@SuperBuilder + @NoArgsConstructor` bilan.
 - `Utils.getUserFromPrincipal(principal)` → Principal'dan UserEntity olish
 - `GlobalResponseAdvice` String body uchun JSON serialize qiladi (String body edge case)
 - Attendance cron: har kuni 03:00 da o'tgan kunlar locklari
+- Soft-delete o'chirilgan entity ni topish uchun native query ishlatish kerak (`@SQLRestriction` bypass):
+  ```java
+  @Query(value = "SELECT * FROM table WHERE id = :id", nativeQuery = true)
+  Optional<Entity> findByIdIncludeDeleted(@Param("id") UUID id);
+  ```
+- `WarehouseItemRepository.findByIdAndWorkshopIdIncludeDeleted` — o'chirilgan warehouse itemlarni ham topadi
 
 ---
 
@@ -135,9 +141,31 @@ const items = resp?.data?.data ?? []   // resp.data = ApiResponse, .data = actua
 
 - `furniture_saves` — shablon (nom, tavsif, workshopId)
 - `save_cuts` — har bir kesim: `material_name` (freetext), `length_mm`, `width_mm`, `height_mm` (optional), `quantity`
+- `save_images` — shablon rasmlari (MinIO)
 - Material nomi enum emas — user o'zi yozadi (LDSP, MDF, DSP, Yog'och...)
 - Backend: `project.mebel.saves` package
 - Frontend: `SavesPage.tsx` — chap: shablon list, o'ng: kesimlar jadvali
+- **MUHIM:** Saves warehouse bilan hech qanday bog'liq EMAS — faqat ma'lumot uchun, hech qanday tranzaksiya/log yaratmaydi
+
+---
+
+## Warehouse (Ombor) — muhim xususiyatlar
+
+- **Holat badge'lari:** `quantity < 0` → "Yetishmaydi" (qizil), `lowStock` → "Kam qoldi" (sariq), aks holda "OK" (yashil)
+- **Moliyaviy ustunlar precision:** `total_value`, `total_cost`, `amount` → `NUMERIC(20,2)`, `unit_price` → `NUMERIC(16,2)`
+- **Material o'chirish:** `DELETE /api/warehouse/items/{id}` — soft delete + moliyaviy jurnalga yozadi (qiymat negate)
+- **Bugun OUT tranzaksiyalar:** `GET /api/warehouse/transactions/today-out` — bugun ishlatilgan materiallar
+- **Ombor statistikasi (frontend):** WarehousePage yuklanishida umumiy qiymat va bugungi chiqim kartalar ko'rinadi
+
+## Buyurtma (Order) — material boshqaruvi
+
+- **Material qo'shish:** `POST /api/furniture/orders/{id}/materials` — ombordan chiqarib buyurtmaga qo'shadi
+- **Material olib tashlash:** `DELETE /api/furniture/orders/{id}/materials/{usageId}` — omborga qaytaradi
+  - Agar warehouse item soft-deleted bo'lsa → qayta tiklaydi (restore)
+  - Agar active bo'lsa → IN tranzaksiya yaratadi (weighted avg price)
+  - Moliyaviy jurnalga teskari yozuv qiladi
+  - `insufficient.stock` tekshiruvi YO'Q — salbiy qiymatga tushishi mumkin
+- **Salbiy ombor:** Ruxsat etiladi — miqdor manfiy bo'lishi mumkin (buyurtmaga material qo'shilganda)
 
 ---
 
@@ -151,7 +179,8 @@ Barcha migration `src/main/resources/db/changelog/changes/` da:
 - 014: warehouse_transactions, 015: material_usages
 - 016: daily_attendance, 017: earnings, 018: bonuses, 019: indexes
 - 020-027: ALTER migrations
-- 028: furniture_saves, 029: save_cuts
+- 028: furniture_saves, 029: save_cuts, 030: save_images, 031: save_images updated cols
+- 032: warehouse/financial ustunlar precision oshirildi (NUMERIC 14→20)
 
 ---
 

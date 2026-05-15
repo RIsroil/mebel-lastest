@@ -35,6 +35,12 @@
     height: 90px;
   }
 
+  .matActionBtn {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+
   .formRow { grid-template-columns: 1fr; }
 
   .infoCard { padding: 14px; }
@@ -93,28 +99,46 @@
 
 .divider { height: 1px; background: var(--border); margin: 4px 0; }
 
-/* Remove material button */
-.removeMatBtn {
-  width: 24px;
-  height: 24px;
+/* Material row action buttons */
+.matActions {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.matActionBtn {
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
   background: transparent;
-  color: var(--text3);
-  font-size: 14px;
+  font-size: 17px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.15s;
   line-height: 1;
+  flex-shrink: 0;
 }
-.removeMatBtn:hover {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: #ef4444;
+
+.matActionBtnAdd {
+  color: var(--green);
+  border-color: var(--green);
+}
+.matActionBtnAdd:hover {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.matActionBtnRemove {
   color: #ef4444;
+  border-color: #ef4444;
 }
-.removeMatBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.matActionBtnRemove:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+.matActionBtnRemove:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Table card */
 .tableCard {

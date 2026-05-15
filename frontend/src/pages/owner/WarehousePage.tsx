@@ -564,7 +564,17 @@ const WarehousePage = () => {
               </thead>
               <tbody>
                 {todayOutTxs.map((tx) => (
-                  <tr key={tx.id}>
+                  <tr
+                    key={tx.id}
+                    className={tx.furnitureOrderId ? styles.todayRowClickable : undefined}
+                    onClick={() => {
+                      if (tx.furnitureOrderId) {
+                        setShowTodayOut(false)
+                        navigate(`/orders/${tx.furnitureOrderId}`)
+                      }
+                    }}
+                    title={tx.furnitureOrderId ? 'Buyurtmani ko\'rish →' : undefined}
+                  >
                     <td className={styles.todayName}>{tx.itemName}</td>
                     <td>{formatNumber(tx.quantity)}</td>
                     <td>{formatNumber(tx.unitPrice)}</td>

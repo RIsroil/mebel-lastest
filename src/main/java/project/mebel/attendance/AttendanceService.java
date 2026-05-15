@@ -29,6 +29,8 @@ public interface AttendanceService {
 
     WeeklyDayResponse upsertManualEntry(ManualEntryRequest request, Principal principal);
 
+    WeeklyDayResponse ownerUpsertWorkerEntry(UUID workerId, ManualEntryRequest request, Principal principal);
+
     List<WeeklyDayResponse> getMyWeeklyAttendance(LocalDate weekStart, Principal principal);
 
     List<WeeklyDayResponse> getWorkerWeeklyAttendance(UUID workerId, LocalDate weekStart, Principal principal);

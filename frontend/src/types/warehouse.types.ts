@@ -39,6 +39,7 @@ export interface WarehouseTransactionResponse {
   supplierName: string | null
   invoiceNumber: string | null
   createdAt: string
+  furnitureOrderId: string | null
 }
 
 export interface CreateTransactionRequest {

@@ -247,6 +247,76 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
+    @Transactional
+    public WeeklyDayResponse ownerUpsertWorkerEntry(UUID workerId, ManualEntryRequest request, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        UserEntity worker = userRepo.findById(workerId)
+                .filter(u -> owner.getWorkshopId().equals(u.getWorkshopId()))
+                .orElseThrow(() -> ApiException.notFound("worker.not.found"));
+
+        LocalDate date  = request.getDate();
+        LocalDate today = LocalDate.now();
+        if (date.isAfter(today)) {
+            throw ApiException.badRequest("cannot.enter.future.date");
+        }
+        if (request.getCheckOutTime().isBefore(request.getCheckInTime())) {
+            throw ApiException.badRequest("checkout.before.checkin");
+        }
+
+        LocalDateTime checkInDt  = date.atTime(request.getCheckInTime());
+        LocalDateTime checkOutDt = date.atTime(request.getCheckOutTime());
+        long minutes = Duration.between(request.getCheckInTime(), request.getCheckOutTime()).toMinutes();
+        BigDecimal hoursWorked = BigDecimal.valueOf(minutes)
+                .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+
+        DailyAttendanceEntity attendance = attendanceRepo.findByUserIdAndWorkDate(worker.getId(), date)
+                .orElse(null);
+
+        LocalDateTime now = LocalDateTime.now();
+        if (attendance == null) {
+            attendance = DailyAttendanceEntity.builder()
+                    .userId(worker.getId())
+                    .workshopId(worker.getWorkshopId())
+                    .workDate(date)
+                    .checkInTime(checkInDt)
+                    .checkOutTime(checkOutDt)
+                    .hoursWorked(hoursWorked)
+                    .hoursSelfReported(false)
+                    .hoursSubmittedAt(now)
+                    .hoursDeadline(date.plusDays(1).atStartOfDay())
+                    .hoursLocked(true)
+                    .hoursLockedAt(now)
+                    .manualEntry(true)
+                    .ownerOverrideHours(hoursWorked)
+                    .ownerOverrideBy(owner.getId())
+                    .ownerOverrideAt(now)
+                    .notes(request.getNotes())
+                    .build();
+            attendance.setCreatedBy(owner.getId());
+        } else {
+            attendance.setCheckInTime(checkInDt);
+            attendance.setCheckOutTime(checkOutDt);
+            attendance.setHoursWorked(hoursWorked);
+            attendance.setHoursSubmittedAt(now);
+            attendance.setHoursLocked(true);
+            attendance.setHoursLockedAt(now);
+            attendance.setOwnerOverrideHours(hoursWorked);
+            attendance.setOwnerOverrideBy(owner.getId());
+            attendance.setOwnerOverrideAt(now);
+            if (request.getNotes() != null) attendance.setNotes(request.getNotes());
+            attendance.setUpdatedBy(owner.getId());
+        }
+
+        DailyAttendanceEntity saved = attendanceRepo.save(attendance);
+        if (hoursWorked.compareTo(BigDecimal.ZERO) > 0) {
+            upsertEarning(saved, worker, owner.getId());
+        }
+
+        EarningEntity earning = earningRepo.findByAttendanceId(saved.getId()).orElse(null);
+        return toWeeklyDay(saved, worker, today, earning);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<WeeklyDayResponse> getMyWeeklyAttendance(LocalDate weekStart, Principal principal) {
         UserEntity worker = requireWorker(principal);

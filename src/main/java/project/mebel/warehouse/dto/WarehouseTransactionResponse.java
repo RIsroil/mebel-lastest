@@ -25,4 +25,5 @@ public class WarehouseTransactionResponse {
     private String invoiceNumber;
     private String notes;
     private LocalDateTime createdAt;
+    private UUID furnitureOrderId;
 }
