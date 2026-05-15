@@ -33,6 +33,6 @@ build/
 .vscode/
 
 ### Environment files (server secrets) ###
-#.env.server
+#.env
 .env.local
 .env.production.local
