@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { useAuthStore } from '@/store/auth.store'
 
 import AuthLayout from '@/layouts/AuthLayout'
 import AppLayout from '@/layouts/AppLayout'
@@ -27,6 +28,13 @@ import WeeklyAttendancePage from '@/pages/worker/WeeklyAttendancePage'
 
 import UsersPage from '@/pages/admin/UsersPage'
 
+const RoleHome = () => {
+  const role = useAuthStore((s) => s.user?.role)
+  if (role === 'WORKER') return <Navigate to="/weekly-attendance" replace />
+  if (role === 'ADMIN')  return <Navigate to="/admin/users" replace />
+  return <Navigate to="/dashboard" replace />
+}
+
 export const router = createBrowserRouter([
   // ── Public sahifalar (auth kerak emas) ──────────────────────────────────────
   {
@@ -45,8 +53,8 @@ export const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
-          // Default redirect — login bo'lgandan so'ng rol bo'yicha yo'naltirish
-          { path: '/', element: <Navigate to="/dashboard" replace /> },
+          // Default redirect — rol bo'yicha yo'naltirish
+          { path: '/', element: <RoleHome /> },
 
           // OWNER sahifalari
           {

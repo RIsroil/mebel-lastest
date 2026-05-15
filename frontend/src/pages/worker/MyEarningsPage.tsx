@@ -113,6 +113,7 @@ const MyEarningsPage = () => {
           <span className={styles.tableTitle}>Bu oy barcha daromadlar</span>
           <span className={styles.txCount}>{earnings.length} ta yozuv</span>
         </div>
+        <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
             <tr>
@@ -156,6 +157,7 @@ const MyEarningsPage = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )
