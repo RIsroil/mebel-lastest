@@ -1,3 +1,56 @@
+/* ── Stats row ──────────────────────────────────────────────── */
+.statsRow {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.statCard {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  cursor: default;
+}
+
+.statCardClickable {
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.statCardClickable:hover {
+  border-color: var(--accent);
+  background: rgba(193, 127, 62, 0.05);
+}
+
+.statCardActive { border-color: rgba(239, 68, 68, 0.3); }
+
+.statLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text3);
+}
+
+.statValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.statValueOut { color: #ef4444; }
+
+.statSub {
+  font-size: 11px;
+  color: var(--accent);
+}
+
+/* ── Toolbar ────────────────────────────────────────────────── */
 .toolbar {
   display: flex;
   align-items: center;
@@ -332,6 +385,9 @@
 }
 
 @media (max-width: 768px) {
+  .statsRow { flex-direction: column; gap: 8px; }
+  .statValue { font-size: 17px; }
+
   .toolbar {
     flex-wrap: wrap;
     gap: 8px;
@@ -346,6 +402,12 @@
 
   .tableCard { display: none; }
   .mobileCards { display: flex; flex-direction: column; gap: 8px; }
+
+  /* today-out modal: narx (3) va vaqt (5) ni yashir */
+  .todayTable th:nth-child(3),
+  .todayTable td:nth-child(3),
+  .todayTable th:nth-child(5),
+  .todayTable td:nth-child(5) { display: none; }
 }
 
 /* Form inside modal */
@@ -429,3 +491,48 @@
   justify-content: flex-end;
   margin-top: 20px;
 }
+
+/* ── Today-out modal ────────────────────────────────────────── */
+.todayEmpty {
+  text-align: center;
+  color: var(--text3);
+  font-size: 13px;
+  padding: 24px 0;
+}
+
+.todayList { display: flex; flex-direction: column; gap: 12px; }
+
+.todayTotal {
+  font-size: 13px;
+  color: var(--text2);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.todayTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.todayTable th {
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+.todayTable td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.todayTable tr:last-child td { border-bottom: none; }
+.todayTable tbody tr:hover td { background: var(--surface2); }
+
+.todayName { font-weight: 600; }
+.todayCost { font-weight: 700; color: #ef4444; }
+.todayTime { color: var(--text3); font-size: 12px; white-space: nowrap; }
+

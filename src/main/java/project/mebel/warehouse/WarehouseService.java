@@ -21,4 +21,6 @@ public interface WarehouseService {
     WarehouseItemResponse addTransaction(UUID itemId, WarehouseTransactionRequest request, Principal principal);
 
     List<WarehouseTransactionResponse> getTransactions(UUID itemId, Principal principal);
+
+    List<WarehouseTransactionResponse> getTodayOutTransactions(Principal principal);
 }

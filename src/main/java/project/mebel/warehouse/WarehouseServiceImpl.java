@@ -182,6 +182,23 @@ public class WarehouseServiceImpl implements WarehouseService {
                 .stream().map(tx -> toTxResponse(tx, null)).toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<WarehouseTransactionResponse> getTodayOutTransactions(Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = startOfDay.plusDays(1);
+        List<WarehouseTransactionEntity> txs = txRepo
+                .findAllByWorkshopIdAndTransactionTypeAndCreatedAtBetweenOrderByCreatedAtDesc(
+                        owner.getWorkshopId(), TransactionType.OUT, startOfDay, endOfDay);
+        // item nomini olish uchun lazy load
+        return txs.stream().map(tx -> {
+            String itemName = itemRepo.findById(tx.getItemId())
+                    .map(WarehouseItemEntity::getName).orElse("—");
+            return toTxResponse(tx, itemName);
+        }).toList();
+    }
+
     private WarehouseItemEntity findItem(UUID id, UUID workshopId) {
         return itemRepo.findByIdAndWorkshopId(id, workshopId)
                 .orElseThrow(() -> ApiException.notFound("warehouse.item.not.found"));

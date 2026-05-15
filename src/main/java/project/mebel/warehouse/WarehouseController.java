@@ -68,4 +68,10 @@ public class WarehouseController {
                                                                                Principal principal) {
         return ResponseEntity.ok(warehouseService.getTransactions(id, principal));
     }
+
+    @GetMapping("/transactions/today-out")
+    @Operation(summary = "Bugun ishlatilgan materiallar (OUT tranzaksiyalar)")
+    public ResponseEntity<List<WarehouseTransactionResponse>> getTodayOutTransactions(Principal principal) {
+        return ResponseEntity.ok(warehouseService.getTodayOutTransactions(principal));
+    }
 }

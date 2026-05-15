@@ -27,6 +27,8 @@ public interface FurnitureOrderService {
 
     FurnitureOrderResponse addMaterialUsage(UUID orderId, MaterialUsageRequest request, Principal principal);
 
+    FurnitureOrderResponse removeMaterialUsage(UUID orderId, UUID usageId, Principal principal);
+
     FurnitureOrderResponse togglePin(UUID orderId, Principal principal);
 
     FurnitureOrderResponse uploadImage(UUID orderId, MultipartFile file, Principal principal);

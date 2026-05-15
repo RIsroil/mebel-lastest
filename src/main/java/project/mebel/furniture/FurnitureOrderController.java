@@ -89,6 +89,14 @@ public class FurnitureOrderController {
         return ResponseEntity.ok(orderService.addMaterialUsage(id, request, principal));
     }
 
+    @DeleteMapping("/{id}/materials/{usageId}")
+    @Operation(summary = "Buyurtmadan materialni olib tashlash (omborga qaytaradi)")
+    public ResponseEntity<FurnitureOrderResponse> removeMaterial(@PathVariable UUID id,
+                                                                 @PathVariable UUID usageId,
+                                                                 Principal principal) {
+        return ResponseEntity.ok(orderService.removeMaterialUsage(id, usageId, principal));
+    }
+
     @PatchMapping("/{id}/pin")
     @Operation(summary = "Buyurtmani pin/unpin qilish")
     public ResponseEntity<FurnitureOrderResponse> togglePin(@PathVariable UUID id, Principal principal) {

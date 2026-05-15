@@ -98,6 +98,11 @@ const OrderDetailPage = () => {
       furnitureApi.orders.addMaterial(id!, body),
   })
 
+  const removeMaterialMutation = useMutation({
+    mutationFn: (usageId: string) => furnitureApi.orders.removeMaterial(id!, usageId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['order', id] }),
+  })
+
   const createWarehouseItemMutation = useMutation({
     mutationFn: async ({ name, unitType, qty, price }: { name: string; unitType: UnitType; qty: number; price: number }) => {
       const res = await warehouseApi.items.create({ name, unitType })
@@ -265,6 +270,7 @@ const OrderDetailPage = () => {
                   <th>Jami</th>
                   <th>Vaqt</th>
                   <th>Izoh</th>
+                  {order.status === 'IN_PROGRESS' && <th></th>}
                 </tr>
               </thead>
               <tbody>
@@ -280,11 +286,28 @@ const OrderDetailPage = () => {
                     <td style={{ fontSize: 12, color: 'var(--text2)', maxWidth: 160 }}>
                       {m.notes || '—'}
                     </td>
+                    {order.status === 'IN_PROGRESS' && (
+                      <td>
+                        <button
+                          type="button"
+                          className={styles.removeMatBtn}
+                          title="Materialni olib tashlash (omborga qaytaradi)"
+                          disabled={removeMaterialMutation.isPending}
+                          onClick={() => {
+                            if (window.confirm(`"${m.itemName}" ni buyurtmadan olib tashlash va omborga qaytarishni xohlaysizmi?`)) {
+                              removeMaterialMutation.mutate(m.id)
+                            }
+                          }}
+                        >
+                          ×
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
                 {order.materialUsages.length === 0 && (
                   <tr>
-                    <td colSpan={6} className={styles.empty}>Material qo'shilmagan</td>
+                    <td colSpan={order.status === 'IN_PROGRESS' ? 7 : 6} className={styles.empty}>Material qo'shilmagan</td>
                   </tr>
                 )}
               </tbody>

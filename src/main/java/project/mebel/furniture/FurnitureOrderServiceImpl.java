@@ -31,6 +31,7 @@ import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -275,6 +276,102 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                 totalCost.negate(), materialDesc, order.getId(), orderRef, LocalDate.now(), owner.getId());
 
         // Recalculate actual material cost
+        BigDecimal newActualCost = usageRepo.sumTotalCostByOrderId(orderId);
+        order.setActualMaterialCost(newActualCost);
+        order.setUpdatedBy(owner.getId());
+        orderRepo.save(order);
+
+        return toResponse(order);
+    }
+
+    @Override
+    @Transactional
+    public FurnitureOrderResponse removeMaterialUsage(UUID orderId, UUID usageId, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        FurnitureOrderEntity order = findOrder(orderId, owner.getWorkshopId());
+
+        if (order.getStatus() == FurnitureStatus.COMPLETED || order.getStatus() == FurnitureStatus.SOLD
+                || order.getStatus() == FurnitureStatus.CANCELLED) {
+            throw ApiException.badRequest("order.already.closed");
+        }
+
+        MaterialUsageEntity usage = usageRepo.findById(usageId)
+                .orElseThrow(() -> ApiException.notFound("material.usage.not.found"));
+
+        if (!usage.getFurnitureOrderId().equals(orderId)) {
+            throw ApiException.forbidden("access.denied");
+        }
+
+        BigDecimal qty       = usage.getQuantityUsed();
+        BigDecimal unitPrice = usage.getUnitPriceAtTime();
+        BigDecimal totalCost = usage.getTotalCost();
+
+        // Find warehouse item — including soft-deleted ones via native query
+        Optional<WarehouseItemEntity> itemOpt = warehouseItemRepo
+                .findByIdAndWorkshopIdIncludeDeleted(usage.getWarehouseItemId(), owner.getWorkshopId());
+
+        if (itemOpt.isPresent()) {
+            WarehouseItemEntity item = itemOpt.get();
+            BigDecimal qtyBefore   = item.getQuantity();
+            BigDecimal priceBefore = item.getAvgUnitPrice();
+
+            if (item.getDeletedAt() != null) {
+                // Item was deleted — restore it with the returned quantity
+                item.setDeletedAt(null);
+                item.setDeletedBy(null);
+                item.setQuantity(qty);
+                item.setAvgUnitPrice(unitPrice);
+                item.setTotalValue(qty.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP));
+                item.setUpdatedBy(owner.getId());
+                qtyBefore  = BigDecimal.ZERO;
+                priceBefore = unitPrice;
+            } else {
+                // Return quantity using weighted average
+                BigDecimal newTotal  = qtyBefore.multiply(priceBefore).add(qty.multiply(unitPrice));
+                BigDecimal qtyAfter  = qtyBefore.add(qty);
+                BigDecimal priceAfter = qtyAfter.compareTo(BigDecimal.ZERO) > 0
+                        ? newTotal.divide(qtyAfter, 2, RoundingMode.HALF_UP)
+                        : unitPrice;
+                item.setQuantity(qtyAfter);
+                item.setAvgUnitPrice(priceAfter);
+                item.setTotalValue(qtyAfter.multiply(priceAfter).setScale(2, RoundingMode.HALF_UP));
+                item.setUpdatedBy(owner.getId());
+
+                WarehouseTransactionEntity tx = WarehouseTransactionEntity.builder()
+                        .itemId(item.getId())
+                        .workshopId(owner.getWorkshopId())
+                        .transactionType(TransactionType.IN)
+                        .quantity(qty)
+                        .unitPrice(unitPrice)
+                        .totalCost(totalCost)
+                        .qtyBefore(qtyBefore)
+                        .qtyAfter(qtyAfter)
+                        .priceBefore(priceBefore)
+                        .priceAfter(priceAfter)
+                        .furnitureOrderId(orderId)
+                        .notes("Material qaytarildi: " + order.getTitle() + " (#" + order.getOrderNumber() + ")")
+                        .build();
+                tx.setCreatedBy(owner.getId());
+                warehouseTxRepo.save(tx);
+            }
+            warehouseItemRepo.save(item);
+
+            // Reverse financial log
+            String desc = "Material qaytarildi: " + item.getName()
+                    + " — " + qty.stripTrailingZeros().toPlainString() + " " + item.getUnitType()
+                    + " | Buyurtma: " + order.getTitle() + " (#" + order.getOrderNumber() + ")";
+            financialLogService.record(owner.getWorkshopId(), FinancialLogType.MATERIAL_USED,
+                    totalCost, desc, order.getId(),
+                    order.getTitle() + " (#" + order.getOrderNumber() + ")",
+                    LocalDate.now(), owner.getId());
+        }
+
+        // Soft-delete the usage record
+        usage.setDeletedAt(LocalDateTime.now());
+        usage.setDeletedBy(owner.getId());
+        usageRepo.save(usage);
+
+        // Recalculate order material cost
         BigDecimal newActualCost = usageRepo.sumTotalCostByOrderId(orderId);
         order.setActualMaterialCost(newActualCost);
         order.setUpdatedBy(owner.getId());

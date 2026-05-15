@@ -40,6 +40,9 @@ export const furnitureApi = {
     addMaterial: (id: string, body: AddMaterialRequest) =>
       api.post<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}/materials`, body),
 
+    removeMaterial: (id: string, usageId: string) =>
+      api.delete<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}/materials/${usageId}`),
+
     uploadImage: (id: string, file: File) => {
       const form = new FormData()
       form.append('file', file)

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm, useWatch } from 'react-hook-form'
@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTopbar } from '@/context/TopbarContext'
 import { warehouseApi } from '@/api/warehouse.api'
-import type { UnitType, TransactionType, WarehouseItemResponse } from '@/types/warehouse.types'
+import type { UnitType, TransactionType, WarehouseItemResponse, WarehouseTransactionResponse } from '@/types/warehouse.types'
 import { formatNumber } from '@/utils/formatMoney'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
@@ -62,10 +62,16 @@ const WarehousePage = () => {
   const [editItem, setEditItem] = useState<WarehouseItemResponse | null>(null)
   const [txItemId, setTxItemId] = useState<string | null>(null)
   const [deleteItem, setDeleteItem] = useState<WarehouseItemResponse | null>(null)
+  const [showTodayOut, setShowTodayOut] = useState(false)
 
   const { data: itemsResp, isLoading } = useQuery({
     queryKey: ['warehouseItems'],
     queryFn:  warehouseApi.items.getAll,
+  })
+
+  const { data: todayOutResp } = useQuery({
+    queryKey: ['warehouseTodayOut'],
+    queryFn:  warehouseApi.transactions.getTodayOut,
   })
 
   const createMut = useMutation({
@@ -143,11 +149,36 @@ const WarehousePage = () => {
     const q = search.toLowerCase()
     return i.name.toLowerCase().includes(q) || (i.sku ?? '').toLowerCase().includes(q)
   })
-  const lowStockCount = items.filter((i) => i.lowStock).length
-  const negStockCount = items.filter((i) => i.quantity < 0).length
+  const lowStockCount  = items.filter((i) => i.lowStock).length
+  const negStockCount  = items.filter((i) => i.quantity < 0).length
+  const totalValue     = useMemo(() => items.reduce((s, i) => s + (i.totalValue ?? 0), 0), [items])
+  const todayOutTxs    = todayOutResp?.data?.data ?? []
+  const todayOutValue  = useMemo(() => todayOutTxs.reduce((s, t) => s + (t.totalCost ?? 0), 0), [todayOutTxs])
 
   return (
     <div>
+      {/* Stats cards */}
+      <div className={styles.statsRow}>
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Ombor umumiy qiymati</span>
+          <span className={styles.statValue}>{formatNumber(totalValue)} so'm</span>
+        </div>
+        <button
+          type="button"
+          className={cn(styles.statCard, styles.statCardClickable, todayOutValue > 0 && styles.statCardActive)}
+          onClick={() => setShowTodayOut(true)}
+          title="Bugungi ishlatilgan materiallar"
+        >
+          <span className={styles.statLabel}>Bugun ishlatilgan</span>
+          <span className={cn(styles.statValue, todayOutValue > 0 && styles.statValueOut)}>
+            {formatNumber(todayOutValue)} so'm
+          </span>
+          {todayOutTxs.length > 0 && (
+            <span className={styles.statSub}>{todayOutTxs.length} ta harakat · tafsilot →</span>
+          )}
+        </button>
+      </div>
+
       <div className={styles.toolbar}>
         <input
           className={styles.searchInput}
@@ -505,6 +536,48 @@ const WarehousePage = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Today out transactions modal */}
+      <Modal
+        isOpen={showTodayOut}
+        onClose={() => setShowTodayOut(false)}
+        title="Bugun ishlatilgan materiallar"
+        maxWidth={560}
+      >
+        {todayOutTxs.length === 0 ? (
+          <p className={styles.todayEmpty}>Bugun hech qanday material ishlatilmagan</p>
+        ) : (
+          <div className={styles.todayList}>
+            <div className={styles.todayTotal}>
+              Jami: <strong>{formatNumber(todayOutValue)} so'm</strong> · {todayOutTxs.length} ta harakat
+            </div>
+            <table className={styles.todayTable}>
+              <thead>
+                <tr>
+                  <th>Material</th>
+                  <th>Miqdor</th>
+                  <th>Narx</th>
+                  <th>Jami</th>
+                  <th>Vaqt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {todayOutTxs.map((tx) => (
+                  <tr key={tx.id}>
+                    <td className={styles.todayName}>{tx.itemName}</td>
+                    <td>{formatNumber(tx.quantity)}</td>
+                    <td>{formatNumber(tx.unitPrice)}</td>
+                    <td className={styles.todayCost}>{formatNumber(tx.totalCost)}</td>
+                    <td className={styles.todayTime}>
+                      {new Date(tx.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Modal>
 
       {/* Delete confirm modal */}

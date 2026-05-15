@@ -31,5 +31,8 @@ export const warehouseApi = {
 
     create: (itemId: string, body: CreateTransactionRequest) =>
       api.post<ApiResponse<WarehouseTransactionResponse>>(`/api/warehouse/items/${itemId}/transactions`, body),
+
+    getTodayOut: () =>
+      api.get<ApiResponse<WarehouseTransactionResponse[]>>('/api/warehouse/transactions/today-out'),
   },
 }
