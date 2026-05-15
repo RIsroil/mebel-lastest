@@ -1,6 +1,6 @@
 package project.mebel.auth;
 
-import liquibase.license.User;
+import io.jsonwebtoken.ExpiredJwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -179,14 +179,23 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public ResponseEntity<ApiResponseStructure<UserTokenResponse>> refreshToken(String refreshToken) {
-        String username = jwtService.extractUsername(refreshToken);
-        UserEntity user = userRepository.findByUsername(username);
-        if (!jwtService.isTokenValid(refreshToken, user)) {
+        try {
+            String username = jwtService.extractUsername(refreshToken);
+            UserEntity user = userRepository.findByUsernameAndDeletedAtIsNull(username)
+                    .orElseThrow(() -> ApiException.unauthorized("invalid.or.expired.refresh.token"));
+            if (!jwtService.isTokenValid(refreshToken, user)) {
+                throw ApiException.unauthorized("invalid.or.expired.refresh.token");
+            }
+            String newAccessToken = jwtService.generateAccessToken(user);
+            UserTokenResponse userResponse = new UserTokenResponse(newAccessToken, refreshToken);
+            return responseHelper.success("token.refreshed.successfully", userResponse);
+        } catch (ApiException e) {
+            throw e;
+        } catch (ExpiredJwtException e) {
+            throw ApiException.unauthorized("invalid.or.expired.refresh.token");
+        } catch (Exception e) {
             throw ApiException.unauthorized("invalid.or.expired.refresh.token");
         }
-        String newAccessToken = jwtService.generateAccessToken(user);
-        UserTokenResponse userResponse = new UserTokenResponse(newAccessToken, refreshToken);
-        return responseHelper.success("token.refreshed.successfully", userResponse);
     }
 
     private UserResponse toResponse(UserEntity u) {

@@ -26,6 +26,7 @@ const OWNER_NAV: NavSection[] = [
     items: [
       { to: '/dashboard',  icon: '📊', label: 'Dashboard' },
       { to: '/orders',     icon: '🛋️', label: 'Buyurtmalar' },
+      { to: '/saves',      icon: '⭐', label: 'Saves' },
       { to: '/warehouse',  icon: '📦', label: 'Ombor' },
       { to: '/workshops',  icon: '🏭', label: 'Korxonalar' },
     ],

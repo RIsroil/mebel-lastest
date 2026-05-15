@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="029-create-save-cuts-table" author="Isroil">
+        <createTable tableName="save_cuts">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="save_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="material_name" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="length_mm" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="width_mm" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="height_mm" type="INTEGER"/>
+            <column name="quantity" type="INTEGER" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="notes" type="TEXT"/>
+            <column name="created_by" type="UUID"/>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_by" type="UUID"/>
+            <column name="updated_at" type="TIMESTAMP"/>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="save_cuts" baseColumnNames="save_id"
+                constraintName="fk_save_cuts_save"
+                referencedTableName="furniture_saves" referencedColumnNames="id"
+                onDelete="CASCADE"/>
+    </changeSet>
+
+</databaseChangeLog>

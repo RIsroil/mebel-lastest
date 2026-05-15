@@ -18,6 +18,7 @@ import WorkersPage from '@/pages/owner/WorkersPage'
 import WorkshopsPage from '@/pages/owner/WorkshopsPage'
 import EarningsPage from '@/pages/owner/EarningsPage'
 import LogsPage from '@/pages/owner/LogsPage'
+import SavesPage from '@/pages/owner/SavesPage'
 
 import CheckInPage from '@/pages/worker/CheckInPage'
 import SubmitHoursPage from '@/pages/worker/SubmitHoursPage'
@@ -60,6 +61,7 @@ export const router = createBrowserRouter([
               { path: '/workshops', element: <WorkshopsPage /> },
               { path: '/earnings',  element: <EarningsPage /> },
               { path: '/logs',      element: <LogsPage /> },
+              { path: '/saves',     element: <SavesPage /> },
             ],
           },
 

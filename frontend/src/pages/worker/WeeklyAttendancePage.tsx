@@ -1,22 +1,23 @@
-import { useEffect, useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState, useMemo } from 'react'
+import { useQueries, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useTopbar } from '@/context/TopbarContext'
 import { attendanceApi } from '@/api/attendance.api'
 import { useAuthStore } from '@/store/auth.store'
 import { formatNumber } from '@/utils/formatMoney'
 import type { WeeklyDayResponse } from '@/types/attendance.types'
+import Modal from '@/components/ui/Modal'
 import styles from './WeeklyAttendancePage.module.css'
 
+/* ── helpers ──────────────────────────────────────────────────── */
 function getMondayOf(date: Date): Date {
   const d = new Date(date)
-  const day = d.getDay() || 7  // 0(Yak)→7, 1-7
+  const day = d.getDay() || 7
   if (day !== 1) d.setDate(d.getDate() - (day - 1))
   d.setHours(0, 0, 0, 0)
   return d
 }
 
-// UTC emas, lokal vaqt asosida YYYY-MM-DD
 function toLocalDate(d: Date): string {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -24,13 +25,17 @@ function toLocalDate(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
-function weekLabel(monday: Date): string {
-  const sunday = new Date(monday)
-  sunday.setDate(monday.getDate() + 6)
-  const fmt = (d: Date) =>
-    `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`
-  return `${fmt(monday)} – ${fmt(sunday)}`
+function addDays(d: Date, n: number): Date {
+  const r = new Date(d)
+  r.setDate(r.getDate() + n)
+  return r
 }
+
+const MONTH_NAMES = [
+  'Yanvar','Fevral','Mart','Aprel','May','Iyun',
+  'Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr',
+]
+const DAY_SHORT = ['Du','Se','Ch','Pa','Ju','Sh','Ya']
 
 function parseTime(t: string | null): string {
   if (!t) return ''
@@ -45,12 +50,7 @@ function calcHours(checkIn: string, checkOut: string): number | null {
   return mins > 0 ? Math.round(mins * 100 / 60) / 100 : null
 }
 
-interface RowEdit {
-  checkIn: string
-  checkOut: string
-  dirty: boolean
-}
-
+/* ── component ────────────────────────────────────────────────── */
 const WeeklyAttendancePage = () => {
   const { setTitle, setActions } = useTopbar()
   const queryClient = useQueryClient()
@@ -63,238 +63,253 @@ const WeeklyAttendancePage = () => {
     }
   }, [user?.workshopAttendanceMode, navigate])
 
-  const [monday, setMonday] = useState(() => getMondayOf(new Date()))
-  const weekStartStr = toLocalDate(monday)
+  const [year, setYear]   = useState(() => new Date().getFullYear())
+  const [month, setMonth] = useState(() => new Date().getMonth())
 
-  const [edits, setEdits] = useState<Record<string, RowEdit>>({})
-
-  const { data: resp, isLoading } = useQuery({
-    queryKey: ['weekly-attendance', weekStartStr],
-    queryFn: () => attendanceApi.getMyWeekly(weekStartStr),
-  })
-
-  const saveMut = useMutation({
-    mutationFn: attendanceApi.upsertManualEntry,
-    onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: ['weekly-attendance', weekStartStr] })
-      setEdits((prev) => {
-        const next = { ...prev }
-        delete next[vars.date]
-        return next
-      })
-    },
-  })
+  const [editDay, setEditDay]   = useState<WeeklyDayResponse | null>(null)
+  const [editIn, setEditIn]     = useState('')
+  const [editOut, setEditOut]   = useState('')
 
   useEffect(() => {
-    setTitle('Haftalik davomat')
+    setTitle('Davomat')
     setActions(null)
     return () => { setTitle(''); setActions(null) }
   }, [setTitle, setActions])
 
-  const days: WeeklyDayResponse[] = resp?.data?.data ?? []
-
-  const getEdit = (date: string): RowEdit => {
-    if (edits[date]) return edits[date]
-    const day = days.find((d) => d.date === date)
-    return {
-      checkIn:  parseTime(day?.checkInTime ?? null),
-      checkOut: parseTime(day?.checkOutTime ?? null),
-      dirty: false,
+  const calendarMondays = useMemo((): string[] => {
+    const firstDay = new Date(year, month, 1)
+    const lastDay  = new Date(year, month + 1, 0)
+    const start = getMondayOf(firstDay)
+    const end   = getMondayOf(lastDay)
+    const mondays: string[] = []
+    let cur = start
+    while (cur <= end) {
+      mondays.push(toLocalDate(cur))
+      cur = addDays(cur, 7)
     }
-  }
+    return mondays
+  }, [year, month])
 
-  const handleChange = (date: string, field: 'checkIn' | 'checkOut', value: string) => {
-    const prev = getEdit(date)
-    setEdits((e) => ({
-      ...e,
-      [date]: { ...prev, [field]: value, dirty: true },
-    }))
-  }
+  const weekQueries = useQueries({
+    queries: calendarMondays.map((monday) => ({
+      queryKey: ['weekly-attendance', monday],
+      queryFn: () => attendanceApi.getMyWeekly(monday),
+    })),
+  })
 
-  const handleSave = (day: WeeklyDayResponse) => {
-    const edit = getEdit(day.date)
-    if (!edit.checkIn || !edit.checkOut) return
-    saveMut.mutate({
-      date: day.date,
-      checkInTime: edit.checkIn,
-      checkOutTime: edit.checkOut,
-    })
-  }
-
-  const prevWeek = () => {
-    setMonday((m) => {
-      const d = new Date(m)
-      d.setDate(d.getDate() - 7)
-      return d
-    })
-    setEdits({})
-  }
-
-  const nextWeek = () => {
-    const next = new Date(monday)
-    next.setDate(next.getDate() + 7)
-    if (next <= getMondayOf(new Date())) {
-      setMonday(next)
-      setEdits({})
+  const dayMap = useMemo((): Record<string, WeeklyDayResponse> => {
+    const map: Record<string, WeeklyDayResponse> = {}
+    for (const q of weekQueries) {
+      const days: WeeklyDayResponse[] = q.data?.data?.data ?? []
+      for (const d of days) map[d.date] = d
     }
+    return map
+  }, [weekQueries])
+
+  const isLoading = weekQueries.some((q) => q.isLoading)
+
+  const saveMut = useMutation({
+    mutationFn: attendanceApi.upsertManualEntry,
+    onSuccess: (_, vars) => {
+      const d = new Date(vars.date)
+      queryClient.invalidateQueries({ queryKey: ['weekly-attendance', toLocalDate(getMondayOf(d))] })
+      setEditDay(null)
+    },
+  })
+
+  const prevMonth = () => {
+    if (month === 0) { setYear(y => y - 1); setMonth(11) }
+    else setMonth(m => m - 1)
+  }
+  const nextMonth = () => {
+    const now = new Date()
+    if (year > now.getFullYear() || (year === now.getFullYear() && month >= now.getMonth())) return
+    if (month === 11) { setYear(y => y + 1); setMonth(0) }
+    else setMonth(m => m + 1)
   }
 
-  const isCurrentWeek = toLocalDate(getMondayOf(new Date())) === weekStartStr
+  const today = toLocalDate(new Date())
+  const isCurrentMonth = year === new Date().getFullYear() && month === new Date().getMonth()
+
+  const openEdit = (day: WeeklyDayResponse) => {
+    if (!day.editable || day.hoursLocked) return
+    setEditDay(day)
+    setEditIn(parseTime(day.checkInTime))
+    setEditOut(parseTime(day.checkOutTime))
+  }
+
+  const handleSave = () => {
+    if (!editDay || !editIn || !editOut) return
+    saveMut.mutate({ date: editDay.date, checkInTime: editIn, checkOutTime: editOut })
+  }
+
+  const editValid = editIn.length === 5 && editOut.length === 5 &&
+    (calcHours(editIn, editOut) ?? 0) > 0
+
+  const calendarDates: Date[] = useMemo(() => {
+    return calendarMondays.flatMap((mondayStr) => {
+      const monday = new Date(mondayStr)
+      return Array.from({ length: 7 }, (_, i) => addDays(monday, i))
+    })
+  }, [calendarMondays])
 
   return (
     <div className={styles.page}>
-      <div className={styles.weekNav}>
-        <button type="button" className={styles.navBtn} onClick={prevWeek}>← Oldingi</button>
-        <span className={styles.weekLabel}>{weekLabel(monday)}</span>
+      {/* Month navigation */}
+      <div className={styles.monthNav}>
+        <button type="button" className={styles.navBtn} onClick={prevMonth}>← Oldingi</button>
+        <span className={styles.monthLabel}>{MONTH_NAMES[month]} {year}</span>
         <button
           type="button"
           className={styles.navBtn}
-          onClick={nextWeek}
-          disabled={isCurrentWeek}
+          onClick={nextMonth}
+          disabled={isCurrentMonth}
         >
           Keyingi →
         </button>
       </div>
 
-      <div className={styles.tableCard}>
+      {/* Calendar grid */}
+      <div className={styles.calCard}>
+        <div className={styles.calHeader}>
+          {DAY_SHORT.map((d) => (
+            <div key={d} className={styles.dayHeader}>{d}</div>
+          ))}
+        </div>
+
         {isLoading ? (
           <div className={styles.loading}>Yuklanmoqda...</div>
         ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Hafta kuni</th>
-                <th>Kelish</th>
-                <th>Ketish</th>
-                <th>Ishlangan / Norma</th>
-                <th>Bugungi maosh / Kunlik</th>
-                <th>Bonus soat</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {days.map((day) => {
-                const edit     = getEdit(day.date)
-                const editable = day.editable && !day.hoursLocked
-                const previewH = edit.dirty
-                  ? calcHours(edit.checkIn, edit.checkOut)
-                  : day.hoursWorked
+          <div className={styles.calBody}>
+            {calendarDates.map((date) => {
+              const dateStr = toLocalDate(date)
+              const isThisMonth = date.getMonth() === month
+              const dayData = dayMap[dateStr]
+              const isToday = dateStr === today
+              const isLocked = dayData?.hoursLocked
+              const isEditable = dayData?.editable && !dayData?.hoursLocked
+              const isFuture = dayData ? !dayData.editable : isThisMonth && dateStr > today
 
-                const today = toLocalDate(new Date()) === day.date
-                const isSaving = saveMut.isPending && saveMut.variables?.date === day.date
+              return (
+                <div
+                  key={dateStr}
+                  className={[
+                    styles.dayCell,
+                    !isThisMonth ? styles.otherMonth : '',
+                    isToday ? styles.todayCell : '',
+                    dayData?.checkInTime ? styles.workedCell : '',
+                    isFuture ? styles.futureCell : '',
+                    isLocked ? styles.lockedCell : '',
+                    isEditable ? styles.editableCell : '',
+                  ].filter(Boolean).join(' ')}
+                  onClick={() => dayData && openEdit(dayData)}
+                  title={isEditable ? 'Vaqtni tahrirlash uchun bosing' : undefined}
+                >
+                  <span className={styles.dateNum}>{date.getDate()}</span>
 
-                const canSave = editable &&
-                  edit.dirty &&
-                  edit.checkIn.length === 5 &&
-                  edit.checkOut.length === 5 &&
-                  (calcHours(edit.checkIn, edit.checkOut) ?? 0) > 0
-
-                return (
-                  <tr
-                    key={day.date}
-                    className={
-                      today
-                        ? styles.todayRow
-                        : !day.editable
-                        ? styles.futureRow
-                        : day.hoursLocked
-                        ? styles.lockedRow
-                        : undefined
-                    }
-                  >
-                    <td className={styles.dayCell}>
-                      <span className={styles.dayLabel}>{day.dayLabel}</span>
-                      <span className={styles.dayDate}>{day.date.slice(5).replace('-', '/')}</span>
-                    </td>
-
-                    {/* Kelish */}
-                    <td>
-                      {editable ? (
-                        <input
-                          type="time"
-                          className={styles.timeInput}
-                          value={edit.checkIn}
-                          onChange={(e) => handleChange(day.date, 'checkIn', e.target.value)}
-                        />
-                      ) : (
-                        <span className={styles.timeDisplay}>
-                          {day.checkInTime ? day.checkInTime.slice(0, 5) : '--:--'}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Ketish */}
-                    <td>
-                      {editable ? (
-                        <input
-                          type="time"
-                          className={styles.timeInput}
-                          value={edit.checkOut}
-                          onChange={(e) => handleChange(day.date, 'checkOut', e.target.value)}
-                        />
-                      ) : (
-                        <span className={styles.timeDisplay}>
-                          {day.checkOutTime ? day.checkOutTime.slice(0, 5) : '--:--'}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Ishlangan / Norma */}
-                    <td className={styles.hoursCell}>
-                      {previewH != null ? (
-                        <span className={previewH >= (day.hoursTarget ?? 8) ? styles.hoursOk : styles.hoursShort}>
-                          {previewH}h
-                        </span>
-                      ) : (
-                        <span className={styles.dash}>—</span>
-                      )}
-                      <span className={styles.target}>/ {day.hoursTarget ?? 8}h</span>
-                    </td>
-
-                    {/* Bugungi maosh / Kunlik */}
-                    <td className={styles.payCell}>
-                      {day.dailyPayAmount != null ? (
-                        <span className={styles.payAmount}>{formatNumber(day.dailyPayAmount)}</span>
-                      ) : (
-                        <span className={styles.dash}>—</span>
-                      )}
-                      {day.dailySalary != null && (
-                        <span className={styles.dailySalary}>/ {formatNumber(day.dailySalary)}</span>
-                      )}
-                    </td>
-
-                    {/* Bonus soat */}
-                    <td>
-                      {day.bonusHours != null && day.bonusHours > 0 ? (
-                        <span className={styles.bonusBadge}>+{day.bonusHours}h</span>
-                      ) : (
-                        <span className={styles.dash}>—</span>
-                      )}
-                    </td>
-
-                    {/* Saqlash tugmasi */}
-                    <td>
-                      {editable && (
-                        <button
-                          type="button"
-                          className={styles.saveBtn}
-                          disabled={!canSave || isSaving}
-                          onClick={() => handleSave(day)}
-                        >
-                          {isSaving ? '...' : 'Saqlash'}
-                        </button>
-                      )}
-                      {day.hoursLocked && (
-                        <span className={styles.lockedBadge}>Qulflangan</span>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                  {isThisMonth && dayData && (
+                    <div className={styles.dayInfo}>
+                      {dayData.checkInTime ? (
+                        <>
+                          <span className={styles.timeSmall}>
+                            {dayData.checkInTime.slice(0, 5)}
+                          </span>
+                          {dayData.hoursWorked != null && (
+                            <span className={[
+                              styles.hoursBadge,
+                              dayData.hoursWorked >= (dayData.hoursTarget ?? 8)
+                                ? styles.hoursOk : styles.hoursShort,
+                            ].join(' ')}>
+                              {dayData.hoursWorked}h
+                            </span>
+                          )}
+                        </>
+                      ) : !isFuture ? (
+                        <span className={styles.absent}>Kelmagan</span>
+                      ) : null}
+                      {isLocked && <span className={styles.lockedIcon}>🔒</span>}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
+
+      {/* Month summary */}
+      {!isLoading && Object.keys(dayMap).length > 0 && (() => {
+        const monthDays = Object.values(dayMap).filter((d) => {
+          const [y, m] = d.date.split('-').map(Number)
+          return y === year && m === month + 1
+        })
+        const worked = monthDays.filter((d) => d.checkInTime).length
+        const totalHours = monthDays.reduce((sum, d) => sum + (d.hoursWorked ?? 0), 0)
+        const totalPay = monthDays.reduce((sum, d) => sum + (d.dailyPayAmount ?? 0), 0)
+        return (
+          <div className={styles.summary}>
+            <div className={styles.summaryCard}>
+              <span className={styles.summaryVal}>{worked}</span>
+              <span className={styles.summaryKey}>Kelgan kun</span>
+            </div>
+            <div className={styles.summaryCard}>
+              <span className={styles.summaryVal}>{Math.round(totalHours * 10) / 10}h</span>
+              <span className={styles.summaryKey}>Ishlagan soat</span>
+            </div>
+            <div className={styles.summaryCard}>
+              <span className={styles.summaryVal}>{formatNumber(totalPay)}</span>
+              <span className={styles.summaryKey}>Hisoblangan maosh</span>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Edit modal */}
+      <Modal
+        isOpen={!!editDay}
+        onClose={() => setEditDay(null)}
+        title={editDay ? `${editDay.dayLabel} — ${editDay.date.slice(5).replace('-', '/')}` : ''}
+      >
+        {editDay && (
+          <div className={styles.editForm}>
+            <div className={styles.editRow}>
+              <div className={styles.editField}>
+                <label className={styles.editLabel}>Kelish vaqti</label>
+                <input
+                  type="time"
+                  className={styles.timeInput}
+                  value={editIn}
+                  onChange={(e) => setEditIn(e.target.value)}
+                />
+              </div>
+              <div className={styles.editField}>
+                <label className={styles.editLabel}>Ketish vaqti</label>
+                <input
+                  type="time"
+                  className={styles.timeInput}
+                  value={editOut}
+                  onChange={(e) => setEditOut(e.target.value)}
+                />
+              </div>
+            </div>
+            {editIn && editOut && (
+              <p className={styles.previewHours}>
+                Ishlangan vaqt: {calcHours(editIn, editOut) ?? 0}h
+              </p>
+            )}
+            <div className={styles.editActions}>
+              <button
+                type="button"
+                className={styles.saveBtn}
+                disabled={!editValid || saveMut.isPending}
+                onClick={handleSave}
+              >
+                {saveMut.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

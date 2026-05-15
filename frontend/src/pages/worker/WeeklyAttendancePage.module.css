@@ -1,13 +1,15 @@
 .page {
   padding: 0 0 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.weekNav {
+/* ── Month navigation ──────────────────────────────────────── */
+.monthNav {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
 }
 
 .navBtn {
@@ -32,103 +34,227 @@
   cursor: not-allowed;
 }
 
-.weekLabel {
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--text);
+.monthLabel {
   flex: 1;
   text-align: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text);
 }
 
-.tableCard {
+/* ── Calendar card ─────────────────────────────────────────── */
+.calCard {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
+}
+
+.calHeader {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.dayHeader {
+  padding: 10px 4px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text3);
+}
+
+.calBody {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
 }
 
 .loading {
-  padding: 40px;
+  padding: 48px;
   text-align: center;
   color: var(--text3);
+  font-size: 14px;
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 560px;
-}
-
-.table th {
-  padding: 10px 12px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text3);
+/* ── Day cells ─────────────────────────────────────────────── */
+.dayCell {
+  min-height: 72px;
+  padding: 8px;
+  border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  transition: background 0.1s;
+}
+
+.dayCell:nth-child(7n) {
+  border-right: none;
+}
+
+.otherMonth {
+  opacity: 0.3;
+}
+
+.todayCell {
+  background: rgba(193, 127, 62, 0.06);
+}
+
+.todayCell .dateNum {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workedCell {
+  background: rgba(34, 197, 94, 0.04);
+}
+
+.futureCell {
+  opacity: 0.5;
+}
+
+.lockedCell {
   background: var(--surface2);
-  white-space: nowrap;
 }
 
-.table td {
-  padding: 11px 12px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
+.editableCell {
+  cursor: pointer;
+}
+
+.editableCell:hover {
+  background: rgba(193, 127, 62, 0.06);
+}
+
+.dateNum {
   font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 24px;
+  width: 24px;
+  text-align: center;
+}
+
+.dayInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeSmall {
+  font-size: 11px;
+  color: var(--text2);
+  font-family: monospace;
+}
+
+.hoursBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.hoursOk {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--green);
+}
+
+.hoursShort {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.absent {
+  font-size: 10px;
+  color: var(--text3);
+  font-style: italic;
+}
+
+.lockedIcon {
+  font-size: 10px;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+/* ── Summary row ───────────────────────────────────────────── */
+.summary {
+  display: flex;
+  gap: 12px;
+}
+
+.summaryCard {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: var(--shadow);
+}
+
+.summaryVal {
+  font-size: 20px;
+  font-weight: 700;
   color: var(--text);
 }
 
-.table tr:last-child td {
-  border-bottom: none;
-}
-
-.table tbody tr:hover td {
-  background: var(--surface2);
-}
-
-.todayRow td {
-  background: rgba(193, 127, 62, 0.04);
-}
-
-.futureRow td {
-  opacity: 0.45;
-}
-
-.lockedRow td {
-  background: var(--surface2);
-}
-
-.dayCell {
-  min-width: 100px;
-}
-
-.dayLabel {
-  display: block;
-  font-weight: 600;
-  font-size: 13px;
-}
-
-.dayDate {
-  display: block;
-  font-size: 11px;
+.summaryKey {
+  font-size: 12px;
   color: var(--text3);
-  margin-top: 2px;
+}
+
+/* ── Edit modal form ───────────────────────────────────────── */
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.editRow {
+  display: flex;
+  gap: 16px;
+}
+
+.editField {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.editLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .timeInput {
-  padding: 6px 8px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--surface2);
   color: var(--text);
-  font-size: 14px;
+  font-size: 16px;
   font-family: monospace;
-  width: 88px;
   outline: none;
+  width: 100%;
+  box-sizing: border-box;
   transition: border-color 0.15s;
 }
 
@@ -136,73 +262,28 @@
   border-color: var(--accent);
 }
 
-.timeDisplay {
-  font-family: monospace;
-  font-size: 14px;
+.previewHours {
+  font-size: 13px;
   color: var(--text2);
+  margin: 0;
 }
 
-.hoursCell {
-  white-space: nowrap;
-}
-
-.hoursOk {
-  font-weight: 600;
-  color: var(--green);
-}
-
-.hoursShort {
-  font-weight: 600;
-  color: var(--text2);
-}
-
-.target {
-  color: var(--text3);
-  font-size: 12px;
-  margin-left: 4px;
-}
-
-.dash {
-  color: var(--text3);
-}
-
-.payCell {
-  white-space: nowrap;
-}
-
-.payAmount {
-  font-weight: 600;
-  color: var(--text);
-}
-
-.dailySalary {
-  color: var(--text3);
-  font-size: 12px;
-  margin-left: 4px;
-}
-
-.bonusBadge {
-  display: inline-block;
-  padding: 2px 8px;
-  background: rgba(251, 191, 36, 0.15);
-  color: #d97706;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+.editActions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .saveBtn {
-  padding: 6px 12px;
+  padding: 10px 20px;
   background: var(--accent);
   color: #fff;
   border: none;
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: 8px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   font-family: var(--font);
   transition: opacity 0.15s;
-  white-space: nowrap;
 }
 
 .saveBtn:disabled {
@@ -214,12 +295,43 @@
   opacity: 0.88;
 }
 
-.lockedBadge {
-  display: inline-block;
-  padding: 3px 8px;
-  background: var(--surface2);
-  color: var(--text3);
-  border-radius: 6px;
-  font-size: 11px;
-  border: 1px solid var(--border);
+/* ── Mobile ────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .dayCell {
+    min-height: 56px;
+    padding: 5px 4px;
+  }
+
+  .dateNum {
+    font-size: 12px;
+    width: 20px;
+    line-height: 20px;
+  }
+
+  .todayCell .dateNum {
+    width: 20px;
+    height: 20px;
+  }
+
+  .timeSmall {
+    font-size: 9px;
+  }
+
+  .hoursBadge {
+    font-size: 9px;
+    padding: 1px 3px;
+  }
+
+  .absent {
+    font-size: 9px;
+  }
+
+  .summary {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .editRow {
+    flex-direction: column;
+  }
 }

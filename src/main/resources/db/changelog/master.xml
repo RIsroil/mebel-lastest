@@ -32,5 +32,7 @@
     <include file="changes/025-add-attendance-mode-and-manual-entry.xml" relativeToChangelogFile="true"/>
     <include file="changes/026-add-stored-path-to-furniture-images.xml" relativeToChangelogFile="true"/>
     <include file="changes/027-add-pinned-to-furniture-orders.xml" relativeToChangelogFile="true"/>
+    <include file="changes/028-create-furniture-saves-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/029-create-save-cuts-table.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
