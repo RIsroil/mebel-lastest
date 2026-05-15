@@ -80,9 +80,27 @@ public class WarehouseServiceImpl implements WarehouseService {
     public void deleteItem(UUID id, Principal principal) {
         UserEntity owner = requireOwner(principal);
         WarehouseItemEntity item = findItem(id, owner.getWorkshopId());
+
+        BigDecimal totalValue = item.getTotalValue() != null ? item.getTotalValue() : BigDecimal.ZERO;
+        String desc = "Material o'chirildi: " + item.getName()
+                + " | Miqdor: " + item.getQuantity().stripTrailingZeros().toPlainString()
+                + " " + item.getUnitType()
+                + " | Umumiy qiymat: " + totalValue.stripTrailingZeros().toPlainString() + " so'm";
+
         item.setDeletedAt(LocalDateTime.now());
         item.setDeletedBy(owner.getId());
         itemRepo.save(item);
+
+        financialLogService.record(
+                owner.getWorkshopId(),
+                FinancialLogType.WAREHOUSE_PURCHASE,
+                totalValue.negate(),
+                desc,
+                item.getId(),
+                item.getName(),
+                LocalDate.now(),
+                owner.getId()
+        );
     }
 
     @Override

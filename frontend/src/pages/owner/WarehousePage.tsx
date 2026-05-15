@@ -61,6 +61,7 @@ const WarehousePage = () => {
   const [showItem, setShowItem] = useState(false)
   const [editItem, setEditItem] = useState<WarehouseItemResponse | null>(null)
   const [txItemId, setTxItemId] = useState<string | null>(null)
+  const [deleteItem, setDeleteItem] = useState<WarehouseItemResponse | null>(null)
 
   const { data: itemsResp, isLoading } = useQuery({
     queryKey: ['warehouseItems'],
@@ -78,6 +79,10 @@ const WarehousePage = () => {
   const txMut = useMutation({
     mutationFn: ({ id, body }: { id: string; body: TxForm }) => warehouseApi.transactions.create(id, body),
     onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['warehouseItems'] }); closeTx() },
+  })
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => warehouseApi.items.remove(id),
+    onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['warehouseItems'] }); setDeleteItem(null) },
   })
 
   const itemForm = useForm<ItemForm>({
@@ -139,6 +144,7 @@ const WarehousePage = () => {
     return i.name.toLowerCase().includes(q) || (i.sku ?? '').toLowerCase().includes(q)
   })
   const lowStockCount = items.filter((i) => i.lowStock).length
+  const negStockCount = items.filter((i) => i.quantity < 0).length
 
   return (
     <div>
@@ -151,6 +157,9 @@ const WarehousePage = () => {
         />
         <span className={styles.hint}>
           Jami: <strong>{items.length}</strong> ta
+          {negStockCount > 0 && (
+            <span className={styles.lowAlert}> · ⚠ {negStockCount} ta yetishmaydi</span>
+          )}
           {lowStockCount > 0 && (
             <span className={styles.lowAlert}> · ⚠ {lowStockCount} ta kam qoldi</span>
           )}
@@ -186,7 +195,7 @@ const WarehousePage = () => {
                 </td>
                 <td className={styles.sku}>{item.sku ?? '—'}</td>
                 <td>{UNIT_LABELS[item.unitType]}</td>
-                <td className={item.lowStock ? styles.lowQty : styles.qty}>
+                <td className={item.quantity < 0 ? styles.negQty : item.lowStock ? styles.lowQty : styles.qty}>
                   {formatNumber(item.quantity)}
                   {item.minQuantityAlert != null && item.minQuantityAlert > 0 && (
                     <span className={styles.minHint}> / min: {item.minQuantityAlert}</span>
@@ -195,9 +204,11 @@ const WarehousePage = () => {
                 <td>{formatNumber(item.avgUnitPrice)}</td>
                 <td className={styles.price}>{formatNumber(item.totalValue)}</td>
                 <td>
-                  {item.lowStock
-                    ? <span className={styles.lowBadge}>Kam qoldi</span>
-                    : <span className={styles.okBadge}>OK</span>}
+                  {item.quantity < 0
+                    ? <span className={styles.negBadge}>Yetishmaydi</span>
+                    : item.lowStock
+                      ? <span className={styles.lowBadge}>Kam qoldi</span>
+                      : <span className={styles.okBadge}>OK</span>}
                 </td>
                 <td>
                   <div className={styles.actions}>
@@ -224,6 +235,14 @@ const WarehousePage = () => {
                       onClick={() => openEdit(item)}
                     >
                       ✎
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.deleteBtn}
+                      title="O'chirish"
+                      onClick={() => setDeleteItem(item)}
+                    >
+                      🗑
                     </button>
                     <button
                       type="button"
@@ -257,17 +276,19 @@ const WarehousePage = () => {
         {filtered.map((item) => (
           <div
             key={item.id}
-            className={cn(styles.itemCard, item.lowStock && styles.itemCardLow)}
+            className={cn(styles.itemCard, item.quantity < 0 ? styles.itemCardNeg : item.lowStock && styles.itemCardLow)}
             onClick={() => navigate(`/warehouse/${item.id}`)}
           >
             <div className={styles.itemCardTop}>
               <span className={styles.itemCardName}>{item.name}</span>
-              {item.lowStock
-                ? <span className={styles.lowBadge}>⚠ Kam</span>
-                : <span className={styles.okBadge}>OK</span>}
+              {item.quantity < 0
+                ? <span className={styles.negBadge}>Yetishmaydi</span>
+                : item.lowStock
+                  ? <span className={styles.lowBadge}>⚠ Kam</span>
+                  : <span className={styles.okBadge}>OK</span>}
             </div>
             <div className={styles.itemCardMid}>
-              <span className={item.lowStock ? styles.lowQty : styles.qty}>
+              <span className={item.quantity < 0 ? styles.negQty : item.lowStock ? styles.lowQty : styles.qty}>
                 {formatNumber(item.quantity)} {UNIT_LABELS[item.unitType]}
               </span>
               {item.minQuantityAlert != null && item.minQuantityAlert > 0 && (
@@ -298,6 +319,14 @@ const WarehousePage = () => {
                 onClick={() => openEdit(item)}
               >
                 ✎
+              </button>
+              <button
+                type="button"
+                className={styles.deleteBtn}
+                title="O'chirish"
+                onClick={() => setDeleteItem(item)}
+              >
+                🗑
               </button>
             </div>
           </div>
@@ -476,6 +505,43 @@ const WarehousePage = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete confirm modal */}
+      <Modal
+        isOpen={deleteItem !== null}
+        onClose={() => setDeleteItem(null)}
+        title="Materialni o'chirish"
+        maxWidth={420}
+      >
+        {deleteItem && (
+          <div className={styles.deleteConfirm}>
+            <p className={styles.deleteMsg}>
+              <strong>"{deleteItem.name}"</strong> materialini o'chirmoqchimisiz?
+            </p>
+            {deleteItem.totalValue !== 0 && (
+              <p className={styles.deleteWarn}>
+                Umumiy qiymati <strong>{formatNumber(deleteItem.totalValue)} so'm</strong> moliyaviy jurnaldan ayirib tashlanadi.
+              </p>
+            )}
+            <p className={styles.deleteNote}>
+              Bu harakat qaytarib bo'lmaydi. Material bilan bog'liq buyurtma yozuvlari saqlanib qoladi.
+            </p>
+            <div className={styles.deleteActions}>
+              <Button variant="ghost" size="sm" onClick={() => setDeleteItem(null)}>
+                Bekor qilish
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                loading={deleteMut.isPending}
+                onClick={() => deleteMut.mutate(deleteItem.id)}
+              >
+                O'chirish
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )
