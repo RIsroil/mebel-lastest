@@ -6,6 +6,7 @@ import { furnitureApi } from '@/api/furniture.api'
 import { warehouseApi } from '@/api/warehouse.api'
 import { adminApi } from '@/api/admin.api'
 import type { FurnitureStatus } from '@/types/furniture.types'
+import type { UnitType } from '@/types/warehouse.types'
 import { formatNumber } from '@/utils/formatMoney'
 import { formatDate, formatDateTime } from '@/utils/formatDate'
 import Badge from '@/components/ui/Badge'
@@ -25,6 +26,18 @@ const emptyMaterialRow = (): MaterialRow => ({ warehouseItemId: '', quantityUsed
 function isMaterialRowValid(row: MaterialRow) {
   return row.warehouseItemId !== '' && parseFloat(row.quantityUsed) > 0
 }
+
+const UNIT_TYPES: { value: UnitType; label: string }[] = [
+  { value: 'PIECE',  label: 'Dona (PIECE)' },
+  { value: 'M2',     label: 'Kvadrat metr (M2)' },
+  { value: 'METER',  label: 'Metr (METER)' },
+  { value: 'M3',     label: 'Kub metr (M3)' },
+  { value: 'KG',     label: 'Kilogram (KG)' },
+  { value: 'GRAM',   label: 'Gram (GRAM)' },
+  { value: 'LITRE',  label: 'Litr (LITRE)' },
+  { value: 'ML',     label: 'Millilitr (ML)' },
+  { value: 'CM',     label: 'Santimetr (CM)' },
+]
 
 const NEXT_STATUSES: Record<FurnitureStatus, FurnitureStatus[]> = {
   DRAFT:       ['IN_PROGRESS', 'CANCELLED'],
@@ -46,6 +59,14 @@ const OrderDetailPage = () => {
   const [showAssignWorker, setShowAssignWorker] = useState(false)
   const [assignWorkerData, setAssignWorkerData] = useState<{ workerId: string; commissionPct: string } | null>(null)
   const [lightboxUrl,      setLightboxUrl]      = useState<string | null>(null)
+
+  // Yangi material (warehouse item) yaratish uchun
+  const [newItemForRowIdx, setNewItemForRowIdx] = useState<number | null>(null)
+  const [newItemName,      setNewItemName]      = useState('')
+  const [newItemUnitType,  setNewItemUnitType]  = useState<UnitType>('PIECE')
+  const [newItemQty,       setNewItemQty]       = useState('')
+  const [newItemPrice,     setNewItemPrice]     = useState('')
+
   const statusMenuRef  = useRef<HTMLDivElement>(null)
   const imageInputRef  = useRef<HTMLInputElement>(null)
 
@@ -75,6 +96,32 @@ const OrderDetailPage = () => {
   const addMaterialMutation = useMutation({
     mutationFn: (body: { warehouseItemId: string; quantityUsed: number; notes?: string }) =>
       furnitureApi.orders.addMaterial(id!, body),
+  })
+
+  const createWarehouseItemMutation = useMutation({
+    mutationFn: async ({ name, unitType, qty, price }: { name: string; unitType: UnitType; qty: number; price: number }) => {
+      const res = await warehouseApi.items.create({ name, unitType })
+      const newItemId = res.data.data.id
+      if (qty > 0) {
+        await warehouseApi.transactions.create(newItemId, {
+          transactionType: 'IN',
+          quantity: qty,
+          unitPrice: price,
+        })
+      }
+      return newItemId
+    },
+    onSuccess: (newItemId) => {
+      queryClient.invalidateQueries({ queryKey: ['warehouseItems'] })
+      if (newItemForRowIdx !== null) {
+        setMaterialRows((r) => r.map((m, i) => i === newItemForRowIdx ? { ...m, warehouseItemId: newItemId } : m))
+      }
+      setNewItemForRowIdx(null)
+      setNewItemName('')
+      setNewItemUnitType('PIECE')
+      setNewItemQty('')
+      setNewItemPrice('')
+    },
   })
 
   const assignWorkerMutation = useMutation({
@@ -511,12 +558,23 @@ const OrderDetailPage = () => {
                   }
                 >
                   <option value="">Tanlang...</option>
-                  {items.filter((i) => i.active && i.quantity > 0).map((item) => (
+                  {items.filter((i) => i.active).map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.name} ({item.quantity} {item.unitType})
                     </option>
                   ))}
                 </select>
+                <button
+                  type="button"
+                  onClick={() => { setNewItemForRowIdx(idx) }}
+                  style={{
+                    marginTop: 4, background: 'none', border: 'none',
+                    color: 'var(--accent)', fontSize: 12, cursor: 'pointer',
+                    padding: '2px 0', textAlign: 'left',
+                  }}
+                >
+                  + Omborxonada yo'q? Yangi material qo'shish
+                </button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 <div className={styles.formGroup}>
@@ -716,6 +774,101 @@ const OrderDetailPage = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Yangi warehouse material yaratish modal */}
+      <Modal
+        isOpen={newItemForRowIdx !== null}
+        onClose={() => {
+          setNewItemForRowIdx(null)
+          setNewItemName('')
+          setNewItemUnitType('PIECE')
+          setNewItemQty('')
+          setNewItemPrice('')
+        }}
+        title="Yangi material qo'shish"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <p style={{ fontSize: 12, color: 'var(--text3)', margin: 0 }}>
+            Bu material omborxonaga ham qo'shiladi
+          </p>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Material nomi *</label>
+            <input
+              className={styles.formInput}
+              placeholder="Masalan: LDSP 18mm, Vintlar..."
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+            />
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>O'lchov birligi *</label>
+            <select
+              className={styles.formSelect}
+              value={newItemUnitType}
+              onChange={(e) => setNewItemUnitType(e.target.value as UnitType)}
+            >
+              {UNIT_TYPES.map((u) => (
+                <option key={u.value} value={u.value}>{u.label}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Boshlang'ich miqdor</label>
+              <input
+                className={styles.formInput}
+                type="number"
+                step="0.01"
+                placeholder="0"
+                value={newItemQty}
+                onChange={(e) => setNewItemQty(e.target.value)}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Birlik narxi (UZS)</label>
+              <input
+                className={styles.formInput}
+                type="number"
+                placeholder="0"
+                value={newItemPrice}
+                onChange={(e) => setNewItemPrice(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className={styles.formActions}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setNewItemForRowIdx(null)
+                setNewItemName('')
+                setNewItemUnitType('PIECE')
+                setNewItemQty('')
+                setNewItemPrice('')
+              }}
+            >
+              Bekor qilish
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              loading={createWarehouseItemMutation.isPending}
+              disabled={!newItemName.trim()}
+              onClick={() => {
+                createWarehouseItemMutation.mutate({
+                  name: newItemName.trim(),
+                  unitType: newItemUnitType,
+                  qty: parseFloat(newItemQty) || 0,
+                  price: parseFloat(newItemPrice) || 0,
+                })
+              }}
+            >
+              Yaratish va tanlash →
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

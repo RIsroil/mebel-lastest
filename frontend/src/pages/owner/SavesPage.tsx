@@ -353,7 +353,7 @@ const SavesPage = () => {
                         <th>Material nomi</th>
                         <th>Bo'yi (mm)</th>
                         <th>Eni (mm)</th>
-                        <th>Qalinligi (mm)</th>
+                        <th>Balandligi (mm)</th>
                         <th>Soni</th>
                         <th>Izoh</th>
                         <th></th>
@@ -505,7 +505,7 @@ const SavesPage = () => {
                     onChange={(e) => updateRow(idx, 'materialName', e.target.value)}
                   />
                 </div>
-                <div className={styles.dimRow}>
+                <div className={styles.dimRow2}>
                   <div className={styles.dimField}>
                     <label className={styles.label}>Bo'yi (mm) *</label>
                     <input
@@ -527,7 +527,7 @@ const SavesPage = () => {
                     />
                   </div>
                   <div className={styles.dimField}>
-                    <label className={styles.label}>Qalinligi (mm)</label>
+                    <label className={styles.label}>Balandligi (mm)</label>
                     <input
                       className={styles.input}
                       type="number"
@@ -610,7 +610,7 @@ const SavesPage = () => {
               />
             </div>
             <div className={styles.dimField}>
-              <label className={styles.label}>Qalinligi (mm)</label>
+              <label className={styles.label}>Balandligi (mm)</label>
               <input
                 className={styles.input}
                 type="number"
