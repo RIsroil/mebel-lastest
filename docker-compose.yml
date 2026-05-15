@@ -37,7 +37,6 @@ services:
 
   backend:
     build: .
-    image: mebel-backend:local
     container_name: mebel_backend
     restart: always
     ports:
