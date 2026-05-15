@@ -1,10 +1,6 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
-import type { Resolver } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { useTopbar } from '@/context/TopbarContext'
 import { furnitureApi } from '@/api/furniture.api'
 import { warehouseApi } from '@/api/warehouse.api'
@@ -18,6 +14,18 @@ import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import styles from './OrderDetailPage.module.css'
 
+interface MaterialRow {
+  warehouseItemId: string
+  quantityUsed: string
+  notes: string
+}
+
+const emptyMaterialRow = (): MaterialRow => ({ warehouseItemId: '', quantityUsed: '', notes: '' })
+
+function isMaterialRowValid(row: MaterialRow) {
+  return row.warehouseItemId !== '' && parseFloat(row.quantityUsed) > 0
+}
+
 const NEXT_STATUSES: Record<FurnitureStatus, FurnitureStatus[]> = {
   DRAFT:       ['IN_PROGRESS', 'CANCELLED'],
   IN_PROGRESS: ['COMPLETED', 'CANCELLED'],
@@ -25,14 +33,6 @@ const NEXT_STATUSES: Record<FurnitureStatus, FurnitureStatus[]> = {
   SOLD:        [],
   CANCELLED:   ['DRAFT'],
 }
-
-const materialSchema = z.object({
-  warehouseItemId: z.string().min(1, 'Material tanlang'),
-  quantityUsed:    z.coerce.number().min(0.01, 'Miqdor kiritish shart'),
-  notes:           z.string().optional(),
-})
-
-type MaterialFormData = z.infer<typeof materialSchema>
 
 const OrderDetailPage = () => {
   const { id } = useParams<{ id: string }>()
@@ -42,6 +42,7 @@ const OrderDetailPage = () => {
 
   const [showStatusMenu,   setShowStatusMenu]   = useState(false)
   const [showAddMaterial,  setShowAddMaterial]  = useState(false)
+  const [materialRows,     setMaterialRows]     = useState<MaterialRow[]>([emptyMaterialRow()])
   const [showAssignWorker, setShowAssignWorker] = useState(false)
   const [assignWorkerData, setAssignWorkerData] = useState<{ workerId: string; commissionPct: string } | null>(null)
   const [lightboxUrl,      setLightboxUrl]      = useState<string | null>(null)
@@ -72,18 +73,8 @@ const OrderDetailPage = () => {
   const changeStatusMutate = changeStatusMutation.mutate
 
   const addMaterialMutation = useMutation({
-    mutationFn: (body: MaterialFormData) =>
-      furnitureApi.orders.addMaterial(id!, {
-        warehouseItemId: body.warehouseItemId,
-        quantityUsed:    body.quantityUsed,
-        notes:           body.notes,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['order', id] })
-      queryClient.invalidateQueries({ queryKey: ['warehouseItems'] })
-      setShowAddMaterial(false)
-      materialForm.reset()
-    },
+    mutationFn: (body: { warehouseItemId: string; quantityUsed: number; notes?: string }) =>
+      furnitureApi.orders.addMaterial(id!, body),
   })
 
   const assignWorkerMutation = useMutation({
@@ -110,10 +101,6 @@ const OrderDetailPage = () => {
   const deleteImageMutation = useMutation({
     mutationFn: (imageId: string) => furnitureApi.orders.deleteImage(id!, imageId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['order', id] }),
-  })
-
-  const materialForm = useForm<MaterialFormData>({
-    resolver: zodResolver(materialSchema) as Resolver<MaterialFormData>,
   })
 
   const order   = orderResp?.data?.data
@@ -476,79 +463,136 @@ const OrderDetailPage = () => {
         </div>
       </div>
 
-      {/* Add material modal */}
+      {/* Add material modal — batch */}
       <Modal
         isOpen={showAddMaterial}
-        onClose={() => { setShowAddMaterial(false); materialForm.reset() }}
+        onClose={() => { setShowAddMaterial(false); setMaterialRows([emptyMaterialRow()]) }}
         title="Material qo'shish"
       >
-        <form
-          onSubmit={materialForm.handleSubmit((data) => addMaterialMutation.mutate(data))}
-          noValidate
-        >
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Material *</label>
-            <select
-              className={styles.formSelect}
-              {...materialForm.register('warehouseItemId')}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '60vh', overflowY: 'auto' }}>
+          {materialRows.map((row, idx) => (
+            <div
+              key={idx}
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: 10,
+                padding: 12,
+                background: 'var(--surface2)',
+              }}
             >
-              <option value="">Tanlang...</option>
-              {items.filter((i) => i.active && i.quantity > 0).map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} ({item.quantity} {item.unitType})
-                </option>
-              ))}
-            </select>
-            {materialForm.formState.errors.warehouseItemId && (
-              <span style={{ fontSize: 11, color: 'var(--red)' }}>
-                {materialForm.formState.errors.warehouseItemId.message}
-              </span>
-            )}
-          </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{
+                  fontSize: 12, fontWeight: 700, color: 'var(--text3)',
+                  background: 'var(--border)', width: 22, height: 22,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%',
+                }}>
+                  {idx + 1}
+                </span>
+                {materialRows.length > 1 && (
+                  <button
+                    type="button"
+                    style={{
+                      width: 26, height: 26, border: '1px solid var(--border)',
+                      borderRadius: 6, background: 'transparent', cursor: 'pointer', fontSize: 11, color: 'var(--text3)',
+                    }}
+                    onClick={() => setMaterialRows((r) => r.filter((_, i) => i !== idx))}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Material *</label>
+                <select
+                  className={styles.formSelect}
+                  value={row.warehouseItemId}
+                  onChange={(e) =>
+                    setMaterialRows((r) => r.map((m, i) => i === idx ? { ...m, warehouseItemId: e.target.value } : m))
+                  }
+                >
+                  <option value="">Tanlang...</option>
+                  {items.filter((i) => i.active && i.quantity > 0).map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} ({item.quantity} {item.unitType})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Miqdor *</label>
+                  <input
+                    className={styles.formInput}
+                    type="number"
+                    step="0.01"
+                    placeholder="1.0"
+                    value={row.quantityUsed}
+                    onChange={(e) =>
+                      setMaterialRows((r) => r.map((m, i) => i === idx ? { ...m, quantityUsed: e.target.value } : m))
+                    }
+                  />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Izoh</label>
+                  <input
+                    className={styles.formInput}
+                    placeholder="Ixtiyoriy..."
+                    value={row.notes}
+                    onChange={(e) =>
+                      setMaterialRows((r) => r.map((m, i) => i === idx ? { ...m, notes: e.target.value } : m))
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
 
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Miqdor *</label>
-            <input
-              className={styles.formInput}
-              type="number"
-              step="0.01"
-              placeholder="1.0"
-              {...materialForm.register('quantityUsed')}
-            />
-            {materialForm.formState.errors.quantityUsed && (
-              <span style={{ fontSize: 11, color: 'var(--red)' }}>
-                {materialForm.formState.errors.quantityUsed.message}
-              </span>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => setMaterialRows((r) => [...r, emptyMaterialRow()])}
+            style={{
+              width: '100%', padding: 10,
+              border: '1.5px dashed var(--border)', borderRadius: 8,
+              background: 'transparent', color: 'var(--accent)',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            + Yana bir material qo'shish
+          </button>
+        </div>
 
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Izoh</label>
-            <input
-              className={styles.formInput}
-              placeholder="Ixtiyoriy..."
-              {...materialForm.register('notes')}
-            />
-          </div>
-
-          <div className={styles.formActions}>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => { setShowAddMaterial(false); materialForm.reset() }}
-            >
-              Bekor qilish
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              loading={addMaterialMutation.isPending}
-            >
-              Qo'shish →
-            </Button>
-          </div>
-        </form>
+        <div className={styles.formActions} style={{ marginTop: 12 }}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => { setShowAddMaterial(false); setMaterialRows([emptyMaterialRow()]) }}
+          >
+            Bekor qilish
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            loading={addMaterialMutation.isPending}
+            disabled={!materialRows.some(isMaterialRowValid)}
+            onClick={async () => {
+              const validRows = materialRows.filter(isMaterialRowValid)
+              for (const row of validRows) {
+                await addMaterialMutation.mutateAsync({
+                  warehouseItemId: row.warehouseItemId,
+                  quantityUsed: parseFloat(row.quantityUsed),
+                  notes: row.notes || undefined,
+                })
+              }
+              queryClient.invalidateQueries({ queryKey: ['order', id] })
+              queryClient.invalidateQueries({ queryKey: ['warehouseItems'] })
+              setShowAddMaterial(false)
+              setMaterialRows([emptyMaterialRow()])
+            }}
+          >
+            {materialRows.filter(isMaterialRowValid).length} ta material qo'shish →
+          </Button>
+        </div>
       </Modal>
 
       {/* Assign worker — worker tanlash */}

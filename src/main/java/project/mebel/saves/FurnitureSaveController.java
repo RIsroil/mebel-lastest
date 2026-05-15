@@ -4,8 +4,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import project.mebel.saves.dto.FurnitureSaveRequest;
 import project.mebel.saves.dto.FurnitureSaveResponse;
 import project.mebel.saves.dto.SaveCutRequest;
@@ -79,5 +81,30 @@ public class FurnitureSaveController {
                                                            @PathVariable UUID cutId,
                                                            Principal principal) {
         return ResponseEntity.ok(saveService.removeCut(id, cutId, principal));
+    }
+
+    @PostMapping(value = "/{id}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Savega rasm yuklash (max 3 ta)")
+    public ResponseEntity<FurnitureSaveResponse> uploadImage(@PathVariable UUID id,
+                                                             @RequestParam("file") MultipartFile file,
+                                                             Principal principal) {
+        return ResponseEntity.ok(saveService.uploadImage(id, file, principal));
+    }
+
+    @DeleteMapping("/{id}/images/{imageId}")
+    @Operation(summary = "Rasmni o'chirish")
+    public ResponseEntity<FurnitureSaveResponse> deleteImage(@PathVariable UUID id,
+                                                             @PathVariable UUID imageId,
+                                                             Principal principal) {
+        return ResponseEntity.ok(saveService.deleteImage(id, imageId, principal));
+    }
+
+    @GetMapping("/{id}/images/{imageId}/raw")
+    @Operation(summary = "Rasmni olish (raw bytes)")
+    public ResponseEntity<byte[]> serveImage(@PathVariable UUID id, @PathVariable UUID imageId) {
+        FurnitureSaveService.ImageData data = saveService.serveImage(id, imageId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(data.mimeType()))
+                .body(data.bytes());
     }
 }

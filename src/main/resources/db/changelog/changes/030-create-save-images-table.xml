@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="030-create-save-images-table" author="Isroil">
+        <createTable tableName="save_images">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="save_id" type="UUID">
+                <constraints nullable="false" foreignKeyName="fk_save_images_save" references="furniture_saves(id)"/>
+            </column>
+            <column name="minio_bucket" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="minio_object_key" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="original_filename" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mime_type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_size_bytes" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sort_order" type="SMALLINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_primary" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="stored_path" type="VARCHAR(1000)"/>
+            <column name="created_by" type="UUID"/>
+            <column name="created_at" type="TIMESTAMP"/>
+            <column name="deleted_at" type="TIMESTAMP"/>
+            <column name="deleted_by" type="UUID"/>
+        </createTable>
+        <createIndex tableName="save_images" indexName="idx_save_images_save_id">
+            <column name="save_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

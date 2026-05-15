@@ -26,4 +26,15 @@ export const savesApi = {
 
   removeCut: (saveId: string, cutId: string) =>
     api.delete<ApiResponse<FurnitureSave>>(`/api/saves/${saveId}/cuts/${cutId}`),
+
+  uploadImage: (saveId: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post<ApiResponse<FurnitureSave>>(`/api/saves/${saveId}/images`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+
+  deleteImage: (saveId: string, imageId: string) =>
+    api.delete<ApiResponse<FurnitureSave>>(`/api/saves/${saveId}/images/${imageId}`),
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTopbar } from '@/context/TopbarContext'
 import { savesApi } from '@/api/saves.api'
@@ -7,7 +7,7 @@ import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import styles from './SavesPage.module.css'
 
-interface CutForm {
+interface CutRow {
   materialName: string
   lengthMm: string
   widthMm: string
@@ -16,7 +16,7 @@ interface CutForm {
   notes: string
 }
 
-const emptyCutForm = (): CutForm => ({
+const emptyCutRow = (): CutRow => ({
   materialName: '',
   lengthMm: '',
   widthMm: '',
@@ -25,20 +25,37 @@ const emptyCutForm = (): CutForm => ({
   notes: '',
 })
 
+function isCutRowValid(row: CutRow) {
+  return (
+    row.materialName.trim().length > 0 &&
+    parseInt(row.lengthMm, 10) > 0 &&
+    parseInt(row.widthMm, 10) > 0
+  )
+}
+
 const SavesPage = () => {
   const { setTitle, setActions } = useTopbar()
   const queryClient = useQueryClient()
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
-  const [createOpen, setCreateOpen]   = useState(false)
-  const [saveName, setSaveName]       = useState('')
-  const [saveDesc, setSaveDesc]       = useState('')
+  const [createOpen, setCreateOpen] = useState(false)
+  const [saveName, setSaveName]     = useState('')
+  const [saveDesc, setSaveDesc]     = useState('')
 
-  const [editSave, setEditSave]       = useState<FurnitureSave | null>(null)
+  const [editSave, setEditSave]     = useState<FurnitureSave | null>(null)
 
   const [selectedSave, setSelectedSave] = useState<FurnitureSave | null>(null)
-  const [cutFormOpen, setCutFormOpen]   = useState(false)
-  const [editingCutId, setEditingCutId] = useState<string | null>(null)
-  const [cutForm, setCutForm]           = useState<CutForm>(emptyCutForm())
+
+  // Batch-add cuts modal
+  const [cutBatchOpen, setCutBatchOpen] = useState(false)
+  const [cutRows, setCutRows]           = useState<CutRow[]>([emptyCutRow()])
+
+  // Single-cut edit modal
+  const [editingCut, setEditingCut] = useState<FurnitureSave['cuts'][0] | null>(null)
+  const [editCutForm, setEditCutForm] = useState<CutRow>(emptyCutRow())
+
+  // Lightbox
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
 
   const { data: resp, isLoading } = useQuery({
     queryKey: ['saves'],
@@ -79,13 +96,6 @@ const SavesPage = () => {
   const addCutMut = useMutation({
     mutationFn: ({ saveId, body }: { saveId: string; body: SaveCutRequest }) =>
       savesApi.addCut(saveId, body),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ['saves'] })
-      setSelectedSave(res.data.data)
-      setCutFormOpen(false)
-      setCutForm(emptyCutForm())
-      setEditingCutId(null)
-    },
   })
 
   const updateCutMut = useMutation({
@@ -94,15 +104,31 @@ const SavesPage = () => {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['saves'] })
       setSelectedSave(res.data.data)
-      setCutFormOpen(false)
-      setCutForm(emptyCutForm())
-      setEditingCutId(null)
+      setEditingCut(null)
     },
   })
 
   const removeCutMut = useMutation({
     mutationFn: ({ saveId, cutId }: { saveId: string; cutId: string }) =>
       savesApi.removeCut(saveId, cutId),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['saves'] })
+      setSelectedSave(res.data.data)
+    },
+  })
+
+  const uploadImageMut = useMutation({
+    mutationFn: ({ saveId, file }: { saveId: string; file: File }) =>
+      savesApi.uploadImage(saveId, file),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['saves'] })
+      setSelectedSave(res.data.data)
+    },
+  })
+
+  const deleteImageMut = useMutation({
+    mutationFn: ({ saveId, imageId }: { saveId: string; imageId: string }) =>
+      savesApi.deleteImage(saveId, imageId),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['saves'] })
       setSelectedSave(res.data.data)
@@ -117,7 +143,6 @@ const SavesPage = () => {
     return () => { setTitle(''); setActions(null) }
   }, [setTitle, setActions])
 
-  // When saves reload, sync selectedSave
   useEffect(() => {
     if (selectedSave && saves.length > 0) {
       const updated = saves.find((s) => s.id === selectedSave.id)
@@ -125,15 +150,14 @@ const SavesPage = () => {
     }
   }, [saves])
 
-  const openAddCut = () => {
-    setEditingCutId(null)
-    setCutForm(emptyCutForm())
-    setCutFormOpen(true)
+  const openBatchAdd = () => {
+    setCutRows([emptyCutRow()])
+    setCutBatchOpen(true)
   }
 
   const openEditCut = (cut: FurnitureSave['cuts'][0]) => {
-    setEditingCutId(cut.id)
-    setCutForm({
+    setEditingCut(cut)
+    setEditCutForm({
       materialName: cut.materialName,
       lengthMm: String(cut.lengthMm),
       widthMm: String(cut.widthMm),
@@ -141,32 +165,52 @@ const SavesPage = () => {
       quantity: String(cut.quantity),
       notes: cut.notes ?? '',
     })
-    setCutFormOpen(true)
   }
 
-  const handleCutSubmit = () => {
+  const handleBatchSave = async () => {
     if (!selectedSave) return
-    const body: SaveCutRequest = {
-      materialName: cutForm.materialName,
-      lengthMm: parseInt(cutForm.lengthMm, 10),
-      widthMm: parseInt(cutForm.widthMm, 10),
-      heightMm: cutForm.heightMm ? parseInt(cutForm.heightMm, 10) : undefined,
-      quantity: cutForm.quantity ? parseInt(cutForm.quantity, 10) : 1,
-      notes: cutForm.notes || undefined,
+    const validRows = cutRows.filter(isCutRowValid)
+    if (validRows.length === 0) return
+
+    let lastRes: Awaited<ReturnType<typeof savesApi.addCut>> | null = null
+    for (const row of validRows) {
+      const body: SaveCutRequest = {
+        materialName: row.materialName,
+        lengthMm: parseInt(row.lengthMm, 10),
+        widthMm: parseInt(row.widthMm, 10),
+        heightMm: row.heightMm ? parseInt(row.heightMm, 10) : undefined,
+        quantity: row.quantity ? parseInt(row.quantity, 10) : 1,
+        notes: row.notes || undefined,
+      }
+      lastRes = await addCutMut.mutateAsync({ saveId: selectedSave.id, body })
     }
-    if (editingCutId) {
-      updateCutMut.mutate({ saveId: selectedSave.id, cutId: editingCutId, body })
-    } else {
-      addCutMut.mutate({ saveId: selectedSave.id, body })
-    }
+    if (lastRes) setSelectedSave(lastRes.data.data)
+    queryClient.invalidateQueries({ queryKey: ['saves'] })
+    setCutBatchOpen(false)
+    setCutRows([emptyCutRow()])
   }
 
-  const cutFormValid =
-    cutForm.materialName.trim().length > 0 &&
-    !isNaN(parseInt(cutForm.lengthMm, 10)) &&
-    !isNaN(parseInt(cutForm.widthMm, 10)) &&
-    parseInt(cutForm.lengthMm, 10) > 0 &&
-    parseInt(cutForm.widthMm, 10) > 0
+  const handleEditCutSave = () => {
+    if (!selectedSave || !editingCut) return
+    const body: SaveCutRequest = {
+      materialName: editCutForm.materialName,
+      lengthMm: parseInt(editCutForm.lengthMm, 10),
+      widthMm: parseInt(editCutForm.widthMm, 10),
+      heightMm: editCutForm.heightMm ? parseInt(editCutForm.heightMm, 10) : undefined,
+      quantity: editCutForm.quantity ? parseInt(editCutForm.quantity, 10) : 1,
+      notes: editCutForm.notes || undefined,
+    }
+    updateCutMut.mutate({ saveId: selectedSave.id, cutId: editingCut.id, body })
+  }
+
+  const updateRow = (idx: number, field: keyof CutRow, val: string) => {
+    setCutRows((rows) => rows.map((r, i) => i === idx ? { ...r, [field]: val } : r))
+  }
+
+  const addRow = () => setCutRows((rows) => [...rows, emptyCutRow()])
+  const removeRow = (idx: number) => setCutRows((rows) => rows.filter((_, i) => i !== idx))
+
+  const batchValid = cutRows.some(isCutRowValid)
 
   return (
     <div className={styles.page}>
@@ -188,7 +232,7 @@ const SavesPage = () => {
             >
               <div className={styles.saveItemName}>{s.name}</div>
               <div className={styles.saveItemMeta}>
-                {s.cuts.length} ta kesim
+                {s.cuts.length} ta kesim · {(s.images ?? []).length}/3 rasm
               </div>
             </div>
           ))
@@ -236,11 +280,64 @@ const SavesPage = () => {
               </div>
             </div>
 
+            {/* Images section */}
+            <div className={styles.cutsSection} style={{ marginBottom: 16 }}>
+              <div className={styles.cutsHeader}>
+                <span className={styles.cutsTitle}>📸 Rasmlar ({(selectedSave.images ?? []).length}/3)</span>
+                {(selectedSave.images ?? []).length < 3 && (
+                  <>
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) uploadImageMut.mutate({ saveId: selectedSave.id, file })
+                        e.target.value = ''
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      loading={uploadImageMut.isPending}
+                      onClick={() => imageInputRef.current?.click()}
+                    >
+                      + Rasm yuklash
+                    </Button>
+                  </>
+                )}
+              </div>
+              <div className={styles.imageGrid}>
+                {(selectedSave.images ?? []).length === 0 ? (
+                  <p className={styles.noCuts}>Rasm yuklanmagan</p>
+                ) : (
+                  (selectedSave.images ?? []).map((img) => (
+                    <div key={img.id} className={styles.imageItem}>
+                      <img
+                        src={img.url}
+                        alt={img.originalFilename}
+                        className={styles.imageThumbnail}
+                        onClick={() => setLightboxUrl(img.url)}
+                      />
+                      <button
+                        type="button"
+                        className={styles.imageDelete}
+                        onClick={() => deleteImageMut.mutate({ saveId: selectedSave.id, imageId: img.id })}
+                        title="O'chirish"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
             {/* Cuts table */}
             <div className={styles.cutsSection}>
               <div className={styles.cutsHeader}>
                 <span className={styles.cutsTitle}>Kesimlar ro'yxati</span>
-                <Button size="sm" onClick={openAddCut}>+ Kesim qo'shish</Button>
+                <Button size="sm" onClick={openBatchAdd}>+ Kesim qo'shish</Button>
               </div>
 
               {selectedSave.cuts.length === 0 ? (
@@ -256,7 +353,7 @@ const SavesPage = () => {
                         <th>Material nomi</th>
                         <th>Bo'yi (mm)</th>
                         <th>Eni (mm)</th>
-                        <th>Balandligi (mm)</th>
+                        <th>Qalinligi (mm)</th>
                         <th>Soni</th>
                         <th>Izoh</th>
                         <th></th>
@@ -377,30 +474,130 @@ const SavesPage = () => {
         </div>
       </Modal>
 
-      {/* Add / edit cut modal */}
+      {/* Batch add cuts modal */}
       <Modal
-        isOpen={cutFormOpen}
-        onClose={() => { setCutFormOpen(false); setCutForm(emptyCutForm()); setEditingCutId(null) }}
-        title={editingCutId ? 'Kesimni tahrirlash' : 'Kesim qo\'shish'}
+        isOpen={cutBatchOpen}
+        onClose={() => { setCutBatchOpen(false); setCutRows([emptyCutRow()]) }}
+        title="Kesim qo'shish"
+      >
+        <div className={styles.batchForm}>
+          {cutRows.map((row, idx) => (
+            <div key={idx} className={styles.batchRow}>
+              <div className={styles.batchRowHeader}>
+                <span className={styles.batchRowNum}>{idx + 1}</span>
+                {cutRows.length > 1 && (
+                  <button
+                    type="button"
+                    className={styles.removeRowBtn}
+                    onClick={() => removeRow(idx)}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              <div className={styles.batchRowFields}>
+                <div className={styles.batchFieldWide}>
+                  <label className={styles.label}>Material nomi *</label>
+                  <input
+                    className={styles.input}
+                    placeholder="LDSP, MDF, DSP..."
+                    value={row.materialName}
+                    onChange={(e) => updateRow(idx, 'materialName', e.target.value)}
+                  />
+                </div>
+                <div className={styles.dimRow}>
+                  <div className={styles.dimField}>
+                    <label className={styles.label}>Bo'yi (mm) *</label>
+                    <input
+                      className={styles.input}
+                      type="number"
+                      placeholder="2400"
+                      value={row.lengthMm}
+                      onChange={(e) => updateRow(idx, 'lengthMm', e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.dimField}>
+                    <label className={styles.label}>Eni (mm) *</label>
+                    <input
+                      className={styles.input}
+                      type="number"
+                      placeholder="600"
+                      value={row.widthMm}
+                      onChange={(e) => updateRow(idx, 'widthMm', e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.dimField}>
+                    <label className={styles.label}>Qalinligi (mm)</label>
+                    <input
+                      className={styles.input}
+                      type="number"
+                      placeholder="18"
+                      value={row.heightMm}
+                      onChange={(e) => updateRow(idx, 'heightMm', e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.dimField}>
+                    <label className={styles.label}>Soni</label>
+                    <input
+                      className={styles.input}
+                      type="number"
+                      min={1}
+                      value={row.quantity}
+                      onChange={(e) => updateRow(idx, 'quantity', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className={styles.label}>Izoh</label>
+                  <input
+                    className={styles.input}
+                    placeholder="Ixtiyoriy..."
+                    value={row.notes}
+                    onChange={(e) => updateRow(idx, 'notes', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+
+          <button type="button" className={styles.addRowBtn} onClick={addRow}>
+            + Yana bir kesim qo'shish
+          </button>
+
+          <div className={styles.formActions}>
+            <Button
+              variant="primary"
+              disabled={!batchValid || addCutMut.isPending}
+              onClick={handleBatchSave}
+            >
+              {addCutMut.isPending ? 'Saqlanmoqda...' : `${cutRows.filter(isCutRowValid).length} ta kesimni saqlash`}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit single cut modal */}
+      <Modal
+        isOpen={!!editingCut}
+        onClose={() => setEditingCut(null)}
+        title="Kesimni tahrirlash"
       >
         <div className={styles.form}>
           <label className={styles.label}>Material nomi *</label>
           <input
             className={styles.input}
-            placeholder="Masalan: LDSP, MDF, DSP, Yog'och..."
-            value={cutForm.materialName}
-            onChange={(e) => setCutForm((f) => ({ ...f, materialName: e.target.value }))}
+            placeholder="Masalan: LDSP, MDF, DSP..."
+            value={editCutForm.materialName}
+            onChange={(e) => setEditCutForm((f) => ({ ...f, materialName: e.target.value }))}
           />
-
           <div className={styles.dimRow}>
             <div className={styles.dimField}>
               <label className={styles.label}>Bo'yi (mm) *</label>
               <input
                 className={styles.input}
                 type="number"
-                placeholder="2400"
-                value={cutForm.lengthMm}
-                onChange={(e) => setCutForm((f) => ({ ...f, lengthMm: e.target.value }))}
+                value={editCutForm.lengthMm}
+                onChange={(e) => setEditCutForm((f) => ({ ...f, lengthMm: e.target.value }))}
               />
             </div>
             <div className={styles.dimField}>
@@ -408,9 +605,8 @@ const SavesPage = () => {
               <input
                 className={styles.input}
                 type="number"
-                placeholder="600"
-                value={cutForm.widthMm}
-                onChange={(e) => setCutForm((f) => ({ ...f, widthMm: e.target.value }))}
+                value={editCutForm.widthMm}
+                onChange={(e) => setEditCutForm((f) => ({ ...f, widthMm: e.target.value }))}
               />
             </div>
             <div className={styles.dimField}>
@@ -418,41 +614,52 @@ const SavesPage = () => {
               <input
                 className={styles.input}
                 type="number"
-                placeholder="18"
-                value={cutForm.heightMm}
-                onChange={(e) => setCutForm((f) => ({ ...f, heightMm: e.target.value }))}
+                value={editCutForm.heightMm}
+                onChange={(e) => setEditCutForm((f) => ({ ...f, heightMm: e.target.value }))}
               />
             </div>
           </div>
-
-          <label className={styles.label}>Soni *</label>
+          <label className={styles.label}>Soni</label>
           <input
             className={styles.input}
             type="number"
             min={1}
-            value={cutForm.quantity}
-            onChange={(e) => setCutForm((f) => ({ ...f, quantity: e.target.value }))}
+            value={editCutForm.quantity}
+            onChange={(e) => setEditCutForm((f) => ({ ...f, quantity: e.target.value }))}
           />
-
-          <label className={styles.label}>Izoh (ixtiyoriy)</label>
+          <label className={styles.label}>Izoh</label>
           <input
             className={styles.input}
-            placeholder="Qo'shimcha ma'lumot..."
-            value={cutForm.notes}
-            onChange={(e) => setCutForm((f) => ({ ...f, notes: e.target.value }))}
+            placeholder="Ixtiyoriy..."
+            value={editCutForm.notes}
+            onChange={(e) => setEditCutForm((f) => ({ ...f, notes: e.target.value }))}
           />
-
           <div className={styles.formActions}>
             <Button
               variant="primary"
-              disabled={!cutFormValid || addCutMut.isPending || updateCutMut.isPending}
-              onClick={handleCutSubmit}
+              disabled={!isCutRowValid(editCutForm) || updateCutMut.isPending}
+              onClick={handleEditCutSave}
             >
-              {(addCutMut.isPending || updateCutMut.isPending) ? 'Saqlanmoqda...' : 'Saqlash'}
+              {updateCutMut.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
             </Button>
           </div>
         </div>
       </Modal>
+
+      {/* Lightbox */}
+      {lightboxUrl && (
+        <div
+          className={styles.lightboxOverlay}
+          onClick={() => setLightboxUrl(null)}
+        >
+          <img
+            src={lightboxUrl}
+            className={styles.lightboxImage}
+            alt="rasm"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   )
 }

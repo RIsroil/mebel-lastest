@@ -21,6 +21,7 @@ public class FurnitureSaveResponse {
     private boolean active;
     private LocalDateTime createdAt;
     private List<SaveCutResponse> cuts;
+    private List<ImageInfo> images;
 
     @Data
     @Builder
@@ -34,5 +35,17 @@ public class FurnitureSaveResponse {
         private Integer heightMm;
         private Integer quantity;
         private String notes;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ImageInfo {
+        private UUID id;
+        private String url;
+        private String originalFilename;
+        private boolean primary;
+        private short sortOrder;
     }
 }

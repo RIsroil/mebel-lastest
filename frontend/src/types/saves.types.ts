@@ -8,6 +8,14 @@ export interface SaveCut {
   notes: string | null
 }
 
+export interface SaveImage {
+  id: string
+  url: string
+  originalFilename: string
+  primary: boolean
+  sortOrder: number
+}
+
 export interface FurnitureSave {
   id: string
   name: string
@@ -15,6 +23,7 @@ export interface FurnitureSave {
   active: boolean
   createdAt: string
   cuts: SaveCut[]
+  images: SaveImage[]
 }
 
 export interface FurnitureSaveRequest {

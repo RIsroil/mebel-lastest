@@ -1,10 +1,13 @@
 package project.mebel.saves;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import project.mebel.common.enums.UserRole;
 import project.mebel.exception.ApiException;
+import project.mebel.minio.MinioStorageService;
 import project.mebel.saves.dto.FurnitureSaveRequest;
 import project.mebel.saves.dto.FurnitureSaveResponse;
 import project.mebel.saves.dto.SaveCutRequest;
@@ -20,8 +23,16 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FurnitureSaveServiceImpl implements FurnitureSaveService {
 
+    @Value("${app.base-url}")
+    private String appBaseUrl;
+
+    private static final int MAX_IMAGES_PER_SAVE = 3;
+    private static final String IMAGE_API_PATH = "/api/saves/%s/images/%s/raw";
+
     private final FurnitureSaveRepository saveRepo;
     private final SaveCutRepository cutRepo;
+    private final SaveImageRepository imageRepo;
+    private final MinioStorageService minioStorageService;
     private final Utils utils;
 
     @Override
@@ -133,6 +144,83 @@ public class FurnitureSaveServiceImpl implements FurnitureSaveService {
         return toResponse(save, cutRepo.findAllBySaveIdOrderByCreatedAtAsc(saveId));
     }
 
+    @Override
+    @Transactional
+    public FurnitureSaveResponse uploadImage(UUID saveId, MultipartFile file, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        FurnitureSaveEntity save = findSave(saveId, owner.getWorkshopId());
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw ApiException.badRequest("invalid.image.type");
+        }
+
+        long existingCount = imageRepo.countBySaveId(saveId);
+        if (existingCount >= MAX_IMAGES_PER_SAVE) {
+            throw ApiException.badRequest("save.image.limit.reached");
+        }
+
+        MinioStorageService.StoredFurnitureImage stored = minioStorageService.saveFurnitureImage(saveId, file);
+
+        SaveImageEntity image = SaveImageEntity.builder()
+                .saveId(saveId)
+                .minioBucket(stored.minioBucket())
+                .minioObjectKey(stored.minioObjectKey())
+                .originalFilename(file.getOriginalFilename() != null ? file.getOriginalFilename() : "image")
+                .mimeType(contentType)
+                .fileSizeBytes(file.getSize())
+                .sortOrder((short) existingCount)
+                .primary(existingCount == 0)
+                .storedPath(stored.storedPath())
+                .build();
+        image.setCreatedBy(owner.getId());
+        imageRepo.save(image);
+
+        return toResponse(save, cutRepo.findAllBySaveIdOrderByCreatedAtAsc(saveId));
+    }
+
+    @Override
+    @Transactional
+    public FurnitureSaveResponse deleteImage(UUID saveId, UUID imageId, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        FurnitureSaveEntity save = findSave(saveId, owner.getWorkshopId());
+
+        SaveImageEntity image = imageRepo.findById(imageId)
+                .filter(img -> img.getSaveId().equals(saveId))
+                .orElseThrow(() -> ApiException.notFound("image.not.found"));
+
+        minioStorageService.deleteFurnitureStoredFile(
+                image.getStoredPath(), image.getMinioBucket(), image.getMinioObjectKey());
+
+        boolean wasPrimary = image.isPrimary();
+        image.setDeletedAt(LocalDateTime.now());
+        image.setDeletedBy(owner.getId());
+        imageRepo.save(image);
+
+        if (wasPrimary) {
+            imageRepo.findAllBySaveId(saveId).stream()
+                    .findFirst()
+                    .ifPresent(first -> {
+                        first.setPrimary(true);
+                        imageRepo.save(first);
+                    });
+        }
+
+        return toResponse(save, cutRepo.findAllBySaveIdOrderByCreatedAtAsc(saveId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ImageData serveImage(UUID saveId, UUID imageId) {
+        SaveImageEntity image = imageRepo.findById(imageId)
+                .filter(img -> img.getSaveId().equals(saveId))
+                .orElseThrow(() -> ApiException.notFound("image.not.found"));
+
+        byte[] bytes = minioStorageService.getFurnitureImageBytes(
+                image.getStoredPath(), image.getMinioBucket(), image.getMinioObjectKey());
+        return new ImageData(bytes, image.getMimeType());
+    }
+
     private FurnitureSaveEntity findSave(UUID id, UUID workshopId) {
         return saveRepo.findByIdAndWorkshopId(id, workshopId)
                 .orElseThrow(() -> ApiException.notFound("furniture.save.not.found"));
@@ -158,6 +246,16 @@ public class FurnitureSaveServiceImpl implements FurnitureSaveService {
                         .build())
                 .toList();
 
+        List<FurnitureSaveResponse.ImageInfo> imageInfos = imageRepo.findAllBySaveId(s.getId()).stream()
+                .map(img -> FurnitureSaveResponse.ImageInfo.builder()
+                        .id(img.getId())
+                        .url(appBaseUrl + String.format(IMAGE_API_PATH, s.getId(), img.getId()))
+                        .originalFilename(img.getOriginalFilename())
+                        .primary(img.isPrimary())
+                        .sortOrder(img.getSortOrder())
+                        .build())
+                .toList();
+
         return FurnitureSaveResponse.builder()
                 .id(s.getId())
                 .name(s.getName())
@@ -165,6 +263,7 @@ public class FurnitureSaveServiceImpl implements FurnitureSaveService {
                 .active(s.isActive())
                 .createdAt(s.getCreatedAt())
                 .cuts(cutResponses)
+                .images(imageInfos)
                 .build();
     }
 }
