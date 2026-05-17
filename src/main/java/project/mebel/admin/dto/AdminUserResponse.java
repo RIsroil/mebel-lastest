@@ -32,6 +32,7 @@ public class AdminUserResponse {
     private BigDecimal dailyRate;
     private BigDecimal dailyHoursTarget;
     private BigDecimal dailySalary;
+    private BigDecimal monthlySalary;
     private BigDecimal commissionPct;
     private boolean hybridPay;
     private LocalDateTime createdAt;

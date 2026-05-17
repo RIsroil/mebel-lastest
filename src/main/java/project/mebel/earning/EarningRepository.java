@@ -2,6 +2,8 @@ package project.mebel.earning;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import project.mebel.common.enums.EarnType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -23,4 +25,25 @@ public interface EarningRepository extends JpaRepository<EarningEntity, UUID> {
     Optional<EarningEntity> findByAttendanceId(UUID attendanceId);
 
     List<EarningEntity> findAllByAttendanceIdIn(List<UUID> attendanceIds);
+
+    Optional<EarningEntity> findByWorkerIdAndEarnTypeAndPaidFalse(UUID workerId, EarnType earnType);
+
+    // Oylik ishchilar uchun: doim unpaid MONTHLY_WAGE qatorni ko'rsatish + sanaga mos boshqa turdagilarni
+    @Query("SELECT e FROM EarningEntity e WHERE e.workshopId = :workshopId AND " +
+           "((e.earnType = :monthlyType AND e.paid = false) OR " +
+           "(e.earnDate >= :from AND e.earnDate <= :to))")
+    List<EarningEntity> findWorkshopEarningsIncludingMonthly(
+            @Param("workshopId") UUID workshopId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to,
+            @Param("monthlyType") EarnType monthlyType);
+
+    @Query("SELECT e FROM EarningEntity e WHERE e.workerId = :workerId AND " +
+           "((e.earnType = :monthlyType AND e.paid = false) OR " +
+           "(e.earnDate >= :from AND e.earnDate <= :to))")
+    List<EarningEntity> findWorkerEarningsIncludingMonthly(
+            @Param("workerId") UUID workerId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to,
+            @Param("monthlyType") EarnType monthlyType);
 }

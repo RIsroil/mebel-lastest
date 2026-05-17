@@ -17,16 +17,25 @@ import StatCard from '@/components/ui/StatCard'
 import styles from './EarningsPage.module.css'
 
 const EARN_LABELS: Record<EarnType, string> = {
-  DAILY_WAGE:  'Kunlik',
-  HOURLY_WAGE: 'Soatlik',
-  COMMISSION:  'Komissiya',
-  BONUS:       'Bonus',
+  DAILY_WAGE:   'Kunlik',
+  HOURLY_WAGE:  'Soatlik',
+  MONTHLY_WAGE: 'Oylik',
+  COMMISSION:   'Komissiya',
+  BONUS:        'Bonus',
 }
 const EARN_CLASS: Record<EarnType, string> = {
-  DAILY_WAGE:  'earnDaily',
-  HOURLY_WAGE: 'earnHourly',
-  COMMISSION:  'earnComm',
-  BONUS:       'earnBonus',
+  DAILY_WAGE:   'earnDaily',
+  HOURLY_WAGE:  'earnHourly',
+  MONTHLY_WAGE: 'earnMonthly',
+  COMMISSION:   'earnComm',
+  BONUS:        'earnBonus',
+}
+
+function monthlyMeta(e: { daysWorked: number | null; daysInMonth: number | null }) {
+  const came = e.daysWorked ?? 0
+  const total = e.daysInMonth ?? 30
+  const left  = Math.max(0, total - came)
+  return { came, left }
 }
 
 const firstOfMonth = (): string => {
@@ -192,6 +201,51 @@ const EarningsPage = () => {
           <div className={styles.empty}>Daromad yozuvlari topilmadi</div>
         )}
         {earnings.map((e) => {
+          if (e.earnType === 'MONTHLY_WAGE') {
+            const { came, left } = monthlyMeta(e)
+            return (
+              <div key={e.id} className={styles.earnCard}>
+                <div className={styles.earnCardTop}>
+                  <div className={styles.earnCardLeft}>
+                    <span className={styles.earnCardName}>{e.workerName}</span>
+                    <span className={styles.earnCardDate}>
+                      {came} kun keldi / {left} kun qoldi
+                    </span>
+                  </div>
+                  <span className={`${styles.earnBadge} ${styles[EARN_CLASS[e.earnType]]}`}>
+                    {EARN_LABELS[e.earnType]}
+                  </span>
+                </div>
+                <div className={styles.earnCardMid}>
+                  <span className={styles.earnCardHours}>
+                    Oylik: {e.monthlySalary != null ? formatNumber(e.monthlySalary) : '—'} so'm
+                  </span>
+                  <span className={styles.earnCardTotal}>{formatNumber(e.totalAmount)} so'm</span>
+                </div>
+                <div className={styles.earnCardBottom}>
+                  <div className={styles.earnCardStatus}>
+                    {e.paid
+                      ? <span className={styles.paidIcon}>✓</span>
+                      : <span className={styles.unpaidIcon}>✗</span>}
+                    {e.paid && e.paidAt && (
+                      <span className={styles.paidDate}>{formatDate(e.paidAt)}</span>
+                    )}
+                  </div>
+                  {!e.paid && (
+                    <button
+                      type="button"
+                      className={styles.payBtn}
+                      disabled={payMut.isPending}
+                      onClick={() => payMut.mutate(e.id)}
+                    >
+                      ✓ To'lash
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          }
+
           const canOverride = (e.earnType === 'DAILY_WAGE' || e.earnType === 'HOURLY_WAGE')
             && e.attendanceId != null
           return (
@@ -266,6 +320,50 @@ const EarningsPage = () => {
           </thead>
           <tbody>
             {earnings.map((e) => {
+              if (e.earnType === 'MONTHLY_WAGE') {
+                const { came, left } = monthlyMeta(e)
+                return (
+                  <tr key={e.id}>
+                    <td className={styles.workerName}>{e.workerName}</td>
+                    <td className={styles.dateCell}>
+                      <span className={styles.monthlyDays}>
+                        {came} kun keldi / {left} kun qoldi
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`${styles.earnBadge} ${styles[EARN_CLASS[e.earnType]]}`}>
+                        {EARN_LABELS[e.earnType]}
+                      </span>
+                    </td>
+                    <td className={styles.hoursCell}>—</td>
+                    <td className={styles.rateCell}>
+                      {e.monthlySalary != null ? formatNumber(e.monthlySalary) : '—'}
+                    </td>
+                    <td className={styles.totalCell}>{formatNumber(e.totalAmount)}</td>
+                    <td>
+                      {e.paid
+                        ? <span className={styles.paidIcon}>✓</span>
+                        : <span className={styles.unpaidIcon}>✗</span>}
+                    </td>
+                    <td>
+                      {!e.paid && (
+                        <button
+                          type="button"
+                          className={styles.payBtn}
+                          disabled={payMut.isPending}
+                          onClick={() => payMut.mutate(e.id)}
+                        >
+                          ✓ To'lash
+                        </button>
+                      )}
+                      {e.paid && e.paidAt && (
+                        <span className={styles.paidDate}>{formatDate(e.paidAt)}</span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              }
+
               const isOvertime = e.hoursWorked != null && e.hoursTarget != null
                 && e.hoursWorked > e.hoursTarget
               const overtimeH = isOvertime

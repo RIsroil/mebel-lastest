@@ -27,4 +27,5 @@ public class UserResponse {
     private PayType payType;
     private BigDecimal dailyHoursTarget;
     private BigDecimal dailySalary;
+    private BigDecimal monthlySalary;
 }

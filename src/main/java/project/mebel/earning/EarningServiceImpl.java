@@ -34,7 +34,7 @@ public class EarningServiceImpl implements EarningService {
     @Transactional(readOnly = true)
     public List<EarningResponse> getMyEarnings(LocalDate from, LocalDate to, Principal principal) {
         UserEntity worker = requireWorker(principal);
-        return earningRepo.findAllByWorkerIdAndEarnDateBetween(worker.getId(), from, to)
+        return earningRepo.findWorkerEarningsIncludingMonthly(worker.getId(), from, to, EarnType.MONTHLY_WAGE)
                 .stream().map(e -> toResponse(e, displayName(worker))).toList();
     }
 
@@ -46,7 +46,7 @@ public class EarningServiceImpl implements EarningService {
                 .filter(u -> owner.getWorkshopId().equals(u.getWorkshopId()))
                 .orElseThrow(() -> ApiException.notFound("worker.not.found"));
 
-        return earningRepo.findAllByWorkerIdAndEarnDateBetween(workerId, from, to)
+        return earningRepo.findWorkerEarningsIncludingMonthly(workerId, from, to, EarnType.MONTHLY_WAGE)
                 .stream().map(e -> toResponse(e, displayName(worker))).toList();
     }
 
@@ -54,7 +54,7 @@ public class EarningServiceImpl implements EarningService {
     @Transactional(readOnly = true)
     public List<EarningResponse> getWorkshopEarnings(LocalDate from, LocalDate to, Principal principal) {
         UserEntity owner = requireOwner(principal);
-        return earningRepo.findAllByWorkshopIdAndEarnDateBetween(owner.getWorkshopId(), from, to)
+        return earningRepo.findWorkshopEarningsIncludingMonthly(owner.getWorkshopId(), from, to, EarnType.MONTHLY_WAGE)
                 .stream().map(e -> {
                     String name = userRepo.findById(e.getWorkerId())
                             .map(this::displayName)
@@ -177,6 +177,9 @@ public class EarningServiceImpl implements EarningService {
                 .attendanceId(e.getAttendanceId())
                 .furnitureOrderId(e.getFurnitureOrderId())
                 .commissionAmount(e.getCommissionAmount())
+                .monthlySalary(e.getMonthlySalary())
+                .periodStart(e.getPeriodStart())
+                .daysInMonth(e.getDaysInMonth())
                 .build();
     }
 }

@@ -163,6 +163,7 @@ public class AuthServiceImpl implements AuthService {
                 .payType(request.getPayType())
                 .dailyHoursTarget(dailyHoursTarget)
                 .dailySalary(request.getDailySalary())
+                .monthlySalary(request.getMonthlySalary())
                 .build();
 
         worker.setCreatedBy(owner.getId());
@@ -213,6 +214,7 @@ public class AuthServiceImpl implements AuthService {
                 .payType(u.getPayType())
                 .dailyHoursTarget(u.getDailyHoursTarget())
                 .dailySalary(u.getDailySalary())
+                .monthlySalary(u.getMonthlySalary())
                 .build();
     }
 

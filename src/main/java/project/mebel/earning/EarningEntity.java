@@ -66,6 +66,15 @@ public class EarningEntity extends MutableAuditEntity {
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "monthly_salary", precision = 14, scale = 2)
+    private BigDecimal monthlySalary;
+
+    @Column(name = "period_start")
+    private LocalDate periodStart;
+
+    @Column(name = "days_in_month")
+    private Integer daysInMonth;
+
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 

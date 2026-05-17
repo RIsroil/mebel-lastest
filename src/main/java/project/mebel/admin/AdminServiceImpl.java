@@ -136,6 +136,7 @@ public class AdminServiceImpl implements AdminService {
                         ? request.getDailyHoursTarget()
                         : new java.math.BigDecimal("8.0"))
                 .dailySalary(request.getDailySalary())
+                .monthlySalary(request.getMonthlySalary())
                 .commissionPct(request.getCommissionPct())
                 .hybridPay(request.isHybridPay())
                 .build();
@@ -184,6 +185,7 @@ public class AdminServiceImpl implements AdminService {
         if (request.getDailyRate() != null) user.setDailyRate(request.getDailyRate());
         if (request.getDailyHoursTarget() != null) user.setDailyHoursTarget(request.getDailyHoursTarget());
         if (request.getDailySalary() != null) user.setDailySalary(request.getDailySalary());
+        if (request.getMonthlySalary() != null) user.setMonthlySalary(request.getMonthlySalary());
         if (request.getCommissionPct() != null) user.setCommissionPct(request.getCommissionPct());
         if (request.getHybridPay() != null) user.setHybridPay(request.getHybridPay());
         if (request.getNewPassword() != null && !request.getNewPassword().isBlank()) {
@@ -308,6 +310,7 @@ public class AdminServiceImpl implements AdminService {
                 .dailyRate(u.getDailyRate())
                 .dailyHoursTarget(u.getDailyHoursTarget())
                 .dailySalary(u.getDailySalary())
+                .monthlySalary(u.getMonthlySalary())
                 .commissionPct(u.getCommissionPct())
                 .hybridPay(u.isHybridPay())
                 .createdAt(u.getCreatedAt())

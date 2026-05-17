@@ -38,5 +38,6 @@
     <include file="changes/031-add-updated-columns-to-save-images.xml" relativeToChangelogFile="true"/>
     <include file="changes/032-increase-financial-column-precision.xml" relativeToChangelogFile="true"/>
     <include file="changes/033-fix-financial-log-null-worker-name.xml" relativeToChangelogFile="true"/>
+    <include file="changes/034-add-monthly-wage.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

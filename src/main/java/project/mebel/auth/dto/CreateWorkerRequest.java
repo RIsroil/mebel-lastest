@@ -23,4 +23,6 @@ public class CreateWorkerRequest {
     private BigDecimal dailyHoursTarget;
 
     private BigDecimal dailySalary;
+
+    private BigDecimal monthlySalary;
 }

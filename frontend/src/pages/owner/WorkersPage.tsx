@@ -56,6 +56,7 @@ const schema = z.object({
   payType:          z.enum(['DAILY','MONTHLY']),
   dailyHoursTarget: z.coerce.number().min(1).max(24),
   dailySalary:      z.coerce.number().min(0),
+  monthlySalary:    z.coerce.number().min(0),
 })
 type FormData = z.infer<typeof schema>
 
@@ -65,6 +66,7 @@ const updateSchema = z.object({
   payType:          z.enum(['DAILY','MONTHLY']),
   dailyHoursTarget: z.coerce.number().min(1).max(24),
   dailySalary:      z.coerce.number().min(0),
+  monthlySalary:    z.coerce.number().min(0),
   commissionPct:    z.coerce.number().min(0).max(100).optional(),
 })
 type UpdateFormData = z.infer<typeof updateSchema>
@@ -150,7 +152,7 @@ const WorkersPage = () => {
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<FormData>({
     resolver:      zodResolver(schema) as Resolver<FormData>,
-    defaultValues: { payType: 'DAILY', dailyHoursTarget: 8, dailySalary: 0 },
+    defaultValues: { payType: 'DAILY', dailyHoursTarget: 8, dailySalary: 0, monthlySalary: 0 },
   })
 
   useEffect(() => {
@@ -228,6 +230,7 @@ const WorkersPage = () => {
       payType:          worker.payType ?? 'DAILY',
       dailyHoursTarget: worker.dailyHoursTarget ?? 8,
       dailySalary:      worker.dailySalary ?? 0,
+      monthlySalary:    worker.monthlySalary ?? 0,
       commissionPct:    worker.commissionPct ?? 0,
     })
     setEditTarget(worker)
@@ -246,6 +249,7 @@ const WorkersPage = () => {
       payType:          data.payType,
       dailyHoursTarget: data.dailyHoursTarget,
       dailySalary:      data.dailySalary,
+      monthlySalary:    data.monthlySalary,
     })
   }
 
@@ -510,6 +514,15 @@ const WorkersPage = () => {
               />
             </div>
           </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Oylik maosh (UZS)</label>
+            <input
+              className={styles.formInput}
+              type="number"
+              placeholder="3000000"
+              {...register('monthlySalary')}
+            />
+          </div>
 
           <div className={styles.formActions}>
             <Button type="button" variant="ghost" size="sm" onClick={handleClose}>
@@ -574,6 +587,10 @@ const WorkersPage = () => {
                 <label className={styles.formLabel}>Kunlik maosh (UZS)</label>
                 <input className={styles.formInput} type="number" min={0} {...editForm.register('dailySalary')} />
               </div>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Oylik maosh (UZS)</label>
+              <input className={styles.formInput} type="number" min={0} placeholder="3000000" {...editForm.register('monthlySalary')} />
             </div>
 
             <div className={styles.formGroup}>

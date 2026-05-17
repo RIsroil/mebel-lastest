@@ -1,4 +1,4 @@
-export type EarnType = 'DAILY_WAGE' | 'HOURLY_WAGE' | 'COMMISSION' | 'BONUS'
+export type EarnType = 'DAILY_WAGE' | 'HOURLY_WAGE' | 'MONTHLY_WAGE' | 'COMMISSION' | 'BONUS'
 
 export interface EarningResponse {
   id: string
@@ -21,6 +21,9 @@ export interface EarningResponse {
   description: string | null
   paid: boolean
   paidAt: string | null
+  monthlySalary: number | null
+  periodStart: string | null
+  daysInMonth: number | null
 }
 
 export interface BonusRequest {

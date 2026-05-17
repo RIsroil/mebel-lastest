@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="034-add-monthly-wage-enum" author="Isroil" dbms="postgresql">
+        <sql>ALTER TYPE earn_type ADD VALUE IF NOT EXISTS 'MONTHLY_WAGE'</sql>
+    </changeSet>
+
+    <changeSet id="034-add-monthly-salary-to-users" author="Isroil">
+        <addColumn tableName="users">
+            <column name="monthly_salary" type="DECIMAL(14,2)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="034-add-monthly-fields-to-earnings" author="Isroil">
+        <addColumn tableName="earnings">
+            <column name="monthly_salary" type="DECIMAL(14,2)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="period_start" type="DATE">
+                <constraints nullable="true"/>
+            </column>
+            <column name="days_in_month" type="INTEGER">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

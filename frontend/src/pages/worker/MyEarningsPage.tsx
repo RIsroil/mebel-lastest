@@ -10,16 +10,18 @@ import Badge from '@/components/ui/Badge'
 import styles from './MyEarningsPage.module.css'
 
 const EARN_LABELS: Record<EarnType, string> = {
-  DAILY_WAGE:  'Kunlik',
-  HOURLY_WAGE: 'Soatlik',
-  COMMISSION:  'Komissiya',
-  BONUS:       'Bonus',
+  DAILY_WAGE:   'Kunlik',
+  HOURLY_WAGE:  'Soatlik',
+  MONTHLY_WAGE: 'Oylik',
+  COMMISSION:   'Komissiya',
+  BONUS:        'Bonus',
 }
 const EARN_CLASS: Record<EarnType, string> = {
-  DAILY_WAGE:  'earnDaily',
-  HOURLY_WAGE: 'earnHourly',
-  COMMISSION:  'earnComm',
-  BONUS:       'earnBonus',
+  DAILY_WAGE:   'earnDaily',
+  HOURLY_WAGE:  'earnHourly',
+  MONTHLY_WAGE: 'earnMonthly',
+  COMMISSION:   'earnComm',
+  BONUS:        'earnBonus',
 }
 
 const DAYS = ['Yak', 'Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh']

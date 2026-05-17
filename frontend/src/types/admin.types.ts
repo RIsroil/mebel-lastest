@@ -17,6 +17,7 @@ export interface AdminUserResponse {
   dailyRate: number | null
   dailyHoursTarget: number | null
   dailySalary: number | null
+  monthlySalary: number | null
   commissionPct: number | null
   hybridPay: boolean
   createdAt: string
@@ -32,6 +33,7 @@ export interface CreateAdminUserRequest {
   payType?: PayType
   dailyHoursTarget?: number
   dailySalary?: number
+  monthlySalary?: number
   commissionPct?: number
   hybridPay?: boolean
 }
@@ -45,6 +47,7 @@ export interface UpdateAdminUserRequest {
   payType?: PayType
   dailyHoursTarget?: number
   dailySalary?: number
+  monthlySalary?: number
   commissionPct?: number
   hybridPay?: boolean
   newPassword?: string

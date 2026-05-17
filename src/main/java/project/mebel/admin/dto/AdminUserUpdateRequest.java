@@ -25,6 +25,7 @@ public class AdminUserUpdateRequest {
     private BigDecimal dailyRate;
     private BigDecimal dailyHoursTarget;
     private BigDecimal dailySalary;
+    private BigDecimal monthlySalary;
     private BigDecimal commissionPct;
     private Boolean hybridPay;
     private String newPassword;

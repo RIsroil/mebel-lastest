@@ -83,6 +83,9 @@ public class UserEntity extends SoftDeleteEntity implements UserDetails {
     @Column(name = "daily_salary", precision = 12, scale = 2)
     private BigDecimal dailySalary;
 
+    @Column(name = "monthly_salary", precision = 14, scale = 2)
+    private BigDecimal monthlySalary;
+
     @Column(name = "commission_pct", precision = 5, scale = 2)
     private BigDecimal commissionPct;
 

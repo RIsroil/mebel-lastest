@@ -1,7 +1,10 @@
 package project.mebel.attendance;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,4 +23,12 @@ public interface DailyAttendanceRepository extends JpaRepository<DailyAttendance
 
     // Cron job uchun: muddat o'tgan, lock bo'lmagan yozuvlar
     List<DailyAttendanceEntity> findAllByHoursLockedFalseAndHoursDeadlineBefore(LocalDateTime deadline);
+
+    // Oylik ishchi uchun: period ichida necha kuni hoursWorked > 0 bo'lgan (idempotent hisoblash)
+    @Query("SELECT COUNT(a) FROM DailyAttendanceEntity a WHERE a.userId = :userId " +
+           "AND a.workDate >= :from AND a.workDate <= :to AND a.hoursWorked > :zero")
+    long countWorkedDays(@Param("userId") UUID userId,
+                         @Param("from") LocalDate from,
+                         @Param("to") LocalDate to,
+                         @Param("zero") BigDecimal zero);
 }

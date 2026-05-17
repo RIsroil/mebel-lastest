@@ -496,7 +496,7 @@ const OrderDetailPage = () => {
             {order.assignedWorkers.length === 0 && (
               <p className={styles.empty}>Ishchi biriktirilmagan</p>
             )}
-            {availableWorkers.length > 0 && (
+            {availableWorkers.length > 0 && order.status !== 'SOLD' && order.status !== 'CANCELLED' && (
               <Button
                 variant="ghost"
                 size="sm"

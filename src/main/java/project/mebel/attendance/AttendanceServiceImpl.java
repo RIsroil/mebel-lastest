@@ -473,41 +473,29 @@ public class AttendanceServiceImpl implements AttendanceService {
     // Attendance ga tegishli earning ni yaratadi yoki mavjudini yangilaydi.
     // createdBy = null bo'lsa scheduler tomonidan chaqirilgan.
     private void upsertEarning(DailyAttendanceEntity attendance, UserEntity worker, UUID actorId) {
+        // Oylik ishchi uchun alohida kumulyativ logika
+        if (worker.getPayType() == PayType.MONTHLY) {
+            upsertMonthlyEarning(attendance, worker, actorId);
+            return;
+        }
+
+        // Kunlik ishchi uchun: har attendance uchun alohida qator
         BigDecimal hours = attendance.getHoursWorked();
         BigDecimal target = worker.getDailyHoursTarget();
-
-        EarnType earnType;
-        BigDecimal snapshotDailyRate;
-        BigDecimal snapshotHourlyRate;
-        BigDecimal baseAmount;
-
-        if (worker.getPayType() == PayType.DAILY) {
-            snapshotHourlyRate = null;
-            earnType = EarnType.DAILY_WAGE;
-            snapshotDailyRate = worker.getDailySalary();
-            // Necha soat ishlagan bo'lsa shuncha ulushi (target soat=to'liq kun).
-            // Ortiqcha soat (hours > target) ko'rsatiladi lekin to'lovga qo'shilmaydi.
-            BigDecimal billableHours = hours.min(target);
-            baseAmount = billableHours.divide(target, 4, RoundingMode.HALF_UP)
-                    .multiply(worker.getDailySalary())
-                    .setScale(2, RoundingMode.HALF_UP);
-        } else {
-            snapshotDailyRate = null;
-            // MONTHLY → soatbay hisob
-            earnType = EarnType.HOURLY_WAGE;
-            snapshotHourlyRate = worker.getHourlyRate() != null ? worker.getHourlyRate() : BigDecimal.ZERO;
-            baseAmount = hours.multiply(snapshotHourlyRate).setScale(2, RoundingMode.HALF_UP);
-        }
+        BigDecimal snapshotDailyRate = worker.getDailySalary();
+        // Necha soat ishlagan bo'lsa shuncha ulushi (target soat=to'liq kun).
+        // Ortiqcha soat (hours > target) ko'rsatiladi lekin to'lovga qo'shilmaydi.
+        BigDecimal billableHours = hours.min(target);
+        BigDecimal baseAmount = billableHours.divide(target, 4, RoundingMode.HALF_UP)
+                .multiply(worker.getDailySalary())
+                .setScale(2, RoundingMode.HALF_UP);
 
         earningRepo.findByAttendanceId(attendance.getId()).ifPresentOrElse(
                 existing -> {
-                    // Mavjud bo'lsa → yangilash (owner override holati)
                     existing.setHoursWorked(hours);
                     existing.setHoursTarget(target);
                     existing.setDailyRate(snapshotDailyRate);
-                    existing.setHourlyRate(snapshotHourlyRate);
                     existing.setBaseAmount(baseAmount);
-                    // Komissiya allaqachon to'langan bo'lsa o'zgartirmaymiz
                     if (!existing.isPaid()) {
                         existing.setTotalAmount(baseAmount.add(
                                 existing.getCommissionAmount() != null ? existing.getCommissionAmount() : BigDecimal.ZERO));
@@ -520,14 +508,12 @@ public class AttendanceServiceImpl implements AttendanceService {
                             .workerId(worker.getId())
                             .workshopId(worker.getWorkshopId())
                             .earnDate(attendance.getWorkDate())
-                            .earnType(earnType)
+                            .earnType(EarnType.DAILY_WAGE)
                             .attendanceId(attendance.getId())
                             .hoursWorked(hours)
                             .hoursTarget(target)
-                            .hourlyRate(snapshotHourlyRate)
                             .daysWorked(BigDecimal.ONE)
                             .dailyRate(snapshotDailyRate)
-                            // Hybrid bo'lsa commissionPct snapshot qilinadi, amount mebel tugatilganida qo'shiladi
                             .commissionPct(worker.isHybridPay() ? worker.getCommissionPct() : null)
                             .commissionAmount(null)
                             .baseAmount(baseAmount)
@@ -537,6 +523,54 @@ public class AttendanceServiceImpl implements AttendanceService {
                     earningRepo.save(earning);
                 }
         );
+    }
+
+    // Oylik ishchi: bitta to'lanmagan MONTHLY_WAGE qatori bo'ladi, har kuni yangilanadi.
+    private void upsertMonthlyEarning(DailyAttendanceEntity attendance, UserEntity worker, UUID actorId) {
+        BigDecimal monthlySalary = worker.getMonthlySalary() != null ? worker.getMonthlySalary() : BigDecimal.ZERO;
+        LocalDate today = attendance.getWorkDate();
+
+        earningRepo.findByWorkerIdAndEarnTypeAndPaidFalse(worker.getId(), EarnType.MONTHLY_WAGE)
+                .ifPresentOrElse(
+                        existing -> {
+                            // Kelgan kunlarni qayta sanash (idempotent — double count yo'q)
+                            long daysWorked = attendanceRepo.countWorkedDays(
+                                    worker.getId(), existing.getPeriodStart(), today, BigDecimal.ZERO);
+                            int daysInMonth = existing.getDaysInMonth();
+                            BigDecimal amount = daysInMonth > 0
+                                    ? monthlySalary.multiply(BigDecimal.valueOf(daysWorked))
+                                                   .divide(BigDecimal.valueOf(daysInMonth), 2, RoundingMode.HALF_UP)
+                                    : BigDecimal.ZERO;
+                            existing.setDaysWorked(BigDecimal.valueOf(daysWorked));
+                            existing.setMonthlySalary(monthlySalary);
+                            existing.setBaseAmount(amount);
+                            existing.setTotalAmount(amount);
+                            existing.setEarnDate(today);
+                            existing.setUpdatedBy(actorId);
+                            earningRepo.save(existing);
+                        },
+                        () -> {
+                            // Yangi to'lov sikli boshlandi
+                            int daysInMonth = today.lengthOfMonth();
+                            BigDecimal perDay = daysInMonth > 0
+                                    ? monthlySalary.divide(BigDecimal.valueOf(daysInMonth), 4, RoundingMode.HALF_UP)
+                                    : BigDecimal.ZERO;
+                            EarningEntity earning = EarningEntity.builder()
+                                    .workerId(worker.getId())
+                                    .workshopId(worker.getWorkshopId())
+                                    .earnDate(today)
+                                    .earnType(EarnType.MONTHLY_WAGE)
+                                    .monthlySalary(monthlySalary)
+                                    .periodStart(today)
+                                    .daysInMonth(daysInMonth)
+                                    .daysWorked(BigDecimal.ONE)
+                                    .baseAmount(perDay)
+                                    .totalAmount(perDay)
+                                    .build();
+                            earning.setCreatedBy(actorId);
+                            earningRepo.save(earning);
+                        }
+                );
     }
 
     private UserEntity requireWorker(Principal principal) {

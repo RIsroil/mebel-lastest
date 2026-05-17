@@ -24,6 +24,7 @@ export interface CreateWorkerRequest {
   payType: PayType
   dailyHoursTarget: number
   dailySalary: number
+  monthlySalary?: number
 }
 
 export interface UserProfile {
@@ -38,6 +39,7 @@ export interface UserProfile {
   payType: PayType | null
   dailyHoursTarget: number | null
   dailySalary: number | null
+  monthlySalary: number | null
 }
 
 export interface UpdateProfileRequest {

@@ -30,4 +30,7 @@ public class EarningResponse {
     private UUID attendanceId;
     private UUID furnitureOrderId;
     private BigDecimal commissionAmount;
+    private BigDecimal monthlySalary;
+    private LocalDate periodStart;
+    private Integer daysInMonth;
 }
