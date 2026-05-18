@@ -605,34 +605,36 @@ const OrderDetailPage = () => {
                   </button>
                 )}
               </div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Material *</label>
-                <select
-                  className={styles.formSelect}
-                  value={row.warehouseItemId}
-                  onChange={(e) =>
-                    setMaterialRows((r) => r.map((m, i) => i === idx ? { ...m, warehouseItemId: e.target.value } : m))
-                  }
-                >
-                  <option value="">Tanlang...</option>
-                  {items.filter((i) => i.active).map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name} ({item.quantity} {item.unitType})
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => { setNewItemForRowIdx(idx) }}
-                  style={{
-                    marginTop: 4, background: 'none', border: 'none',
-                    color: 'var(--accent)', fontSize: 12, cursor: 'pointer',
-                    padding: '2px 0', textAlign: 'left',
-                  }}
-                >
-                  + Omborxonada yo'q? Yangi material qo'shish
-                </button>
-              </div>
+              {idx === 0 && (
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Material *</label>
+                  <select
+                    className={styles.formSelect}
+                    value={row.warehouseItemId}
+                    onChange={(e) =>
+                      setMaterialRows((r) => r.map((m, i) => i === idx ? { ...m, warehouseItemId: e.target.value } : m))
+                    }
+                  >
+                    <option value="">Tanlang...</option>
+                    {items.filter((i) => i.active).map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} ({item.quantity} {item.unitType})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => { setNewItemForRowIdx(idx) }}
+                    style={{
+                      marginTop: 4, background: 'none', border: 'none',
+                      color: 'var(--accent)', fontSize: 12, cursor: 'pointer',
+                      padding: '2px 0', textAlign: 'left',
+                    }}
+                  >
+                    + Omborxonada yo'q? Yangi material qo'shish
+                  </button>
+                </div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Miqdor *</label>
@@ -709,7 +711,14 @@ const OrderDetailPage = () => {
 
           <button
             type="button"
-            onClick={() => setMaterialRows((r) => [...r, emptyMaterialRow()])}
+            onClick={() => {
+              const firstMaterialId = materialRows[0]?.warehouseItemId || ''
+              const newRow = emptyMaterialRow()
+              if (firstMaterialId) {
+                newRow.warehouseItemId = firstMaterialId
+              }
+              setMaterialRows((r) => [...r, newRow])
+            }}
             style={{
               width: '100%', padding: 10,
               border: '1.5px dashed var(--border)', borderRadius: 8,
