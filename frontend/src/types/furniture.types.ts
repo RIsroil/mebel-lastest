@@ -5,11 +5,15 @@ export interface AssignedWorker {
   workerId: string
   workerName: string | null
   assignedAt: string | null
+  unassignedAt: string | null
   commissionPct: number | null
   active: boolean
   daysWorked: number
   wageCost: number
   commissionCost: number
+  workerMonthlySalary: number | null
+  otherAssignmentsCount: number
+  workerPayType: string | null
 }
 
 export interface MaterialUsage {

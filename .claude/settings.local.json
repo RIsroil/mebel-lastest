@@ -36,7 +36,11 @@
       "Bash(timeout 40 bash -c 'cd /mnt/c/Users/isroi/IdeaProjects/mebel-lastest && tail -f target/spring-boot-application.log 2>/dev/null | grep -E \"Started|error|ERROR|Exception\" &  sleep 40 ; pkill -P $$ tail')",
       "Bash(docker-compose down *)",
       "Bash(docker-compose build *)",
-      "Bash(docker-compose up *)"
+      "Bash(docker-compose up *)",
+      "Bash(./mvnw clean *)",
+      "Bash(timeout 45 ./mvnw spring-boot:run)",
+      "Bash(Start-Sleep -Seconds 10)",
+      "Bash(curl -s http://localhost:9060/api/auth/me)"
     ]
   }
 }

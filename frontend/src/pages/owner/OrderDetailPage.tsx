@@ -5,7 +5,7 @@ import { useTopbar } from '@/context/TopbarContext'
 import { furnitureApi } from '@/api/furniture.api'
 import { warehouseApi } from '@/api/warehouse.api'
 import { adminApi } from '@/api/admin.api'
-import type { FurnitureStatus } from '@/types/furniture.types'
+import type { FurnitureStatus, AssignedWorker } from '@/types/furniture.types'
 import type { UnitType } from '@/types/warehouse.types'
 import { formatNumber } from '@/utils/formatMoney'
 import { formatDate, formatDateTime } from '@/utils/formatDate'
@@ -13,6 +13,7 @@ import Badge from '@/components/ui/Badge'
 import Avatar from '@/components/ui/Avatar'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
+import WorkerEarningsDetailModal from '@/components/modals/WorkerEarningsDetailModal'
 import styles from './OrderDetailPage.module.css'
 
 interface MaterialRow {
@@ -63,6 +64,7 @@ const OrderDetailPage = () => {
   const [assignWorkerData, setAssignWorkerData] = useState<{ workerId: string; commissionPct: string } | null>(null)
   const [lightboxUrl,      setLightboxUrl]      = useState<string | null>(null)
   const [confirmDelete,    setConfirmDelete]    = useState<{ usageId: string; itemName: string } | null>(null)
+  const [selectedWorker,   setSelectedWorker]   = useState<AssignedWorker | null>(null)
 
   // Yangi material (warehouse item) yaratish uchun
   const [newItemForRowIdx, setNewItemForRowIdx] = useState<number | null>(null)
@@ -463,7 +465,12 @@ const OrderDetailPage = () => {
           <div className={styles.infoCard}>
             <div className={styles.infoCardTitle}>👷 Biriktirilgan ishchilar</div>
             {order.assignedWorkers.map((w) => (
-              <div key={w.workerId} className={styles.workerItem}>
+              <div
+                key={w.workerId}
+                className={styles.workerItem}
+                style={{ cursor: 'pointer' }}
+                onClick={() => setSelectedWorker(w)}
+              >
                 <Avatar name={w.workerName} role="WORKER" size="sm" />
                 <div style={{ flex: 1 }}>
                   <div className={styles.workerName}>{w.workerName ?? '—'}</div>
@@ -490,7 +497,10 @@ const OrderDetailPage = () => {
                 <Button
                   variant="danger"
                   size="sm"
-                  onClick={() => removeWorkerMutation.mutate(w.workerId)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    removeWorkerMutation.mutate(w.workerId)
+                  }}
                 >
                   ✕
                 </Button>
@@ -1015,6 +1025,13 @@ const OrderDetailPage = () => {
           </div>
         </div>
       </Modal>
+
+      <WorkerEarningsDetailModal
+        isOpen={selectedWorker !== null}
+        onClose={() => setSelectedWorker(null)}
+        worker={selectedWorker}
+        orderNumber={order?.orderNumber}
+      />
     </div>
   )
 }

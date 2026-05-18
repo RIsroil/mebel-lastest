@@ -42,11 +42,15 @@ public class FurnitureOrderResponse {
         private UUID workerId;
         private String workerName;
         private LocalDateTime assignedAt;
+        private LocalDateTime unassignedAt;
         private BigDecimal commissionPct;
         private boolean active;
         private Integer daysWorked;
         private BigDecimal wageCost;
         private BigDecimal commissionCost;
+        private BigDecimal workerMonthlySalary;
+        private Integer otherAssignmentsCount;
+        private String workerPayType;
     }
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor

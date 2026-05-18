@@ -698,16 +698,31 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                         }
                     }
 
+                    int otherAssignmentsCount = 0;
+                    if (worker != null) {
+                        // Count active assignments for this worker on same date (excluding current assignment)
+                        otherAssignmentsCount = (int) assignments.stream()
+                                .filter(ass -> ass.getWorkerId().equals(a.getWorkerId())
+                                        && ass.isActive()
+                                        && !ass.getId().equals(a.getId())
+                                        && ass.getAssignedAt().toLocalDate().equals(a.getAssignedAt().toLocalDate()))
+                                .count();
+                    }
+
                     return FurnitureOrderResponse.AssignedWorkerResponse.builder()
                             .assignmentId(a.getId())
                             .workerId(a.getWorkerId())
                             .workerName(workerName)
                             .assignedAt(a.getAssignedAt())
+                            .unassignedAt(a.getUnassignedAt())
                             .commissionPct(a.getCommissionPct())
                             .active(a.isActive())
                             .daysWorked(daysWorked)
                             .wageCost(wageCost)
                             .commissionCost(commissionCost)
+                            .workerMonthlySalary(worker != null ? worker.getMonthlySalary() : null)
+                            .otherAssignmentsCount(otherAssignmentsCount)
+                            .workerPayType(worker != null ? worker.getPayType().name() : null)
                             .build();
                 }).toList();
 
