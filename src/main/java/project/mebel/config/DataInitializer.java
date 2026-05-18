@@ -234,8 +234,10 @@ public class DataInitializer implements CommandLineRunner {
 		recalcOrderCost(order1);
 
 		// Assign workers with commission
-		addAssignment(order1.getId(), worker1.getId(), owner.getId(), order1Start, BigDecimal.valueOf(5));
-		addAssignment(order1.getId(), worker2.getId(), owner.getId(), order1Start.plusDays(1), BigDecimal.valueOf(4));
+		addAssignment(order1.getId(), worker1.getId(), owner.getId(), order1Start,
+			BigDecimal.valueOf(5), BigDecimal.valueOf(5), BigDecimal.valueOf(1_500_000));
+		addAssignment(order1.getId(), worker2.getId(), owner.getId(), order1Start.plusDays(1),
+			BigDecimal.valueOf(4), BigDecimal.valueOf(5), BigDecimal.valueOf(1_250_000));
 
 		// Order 2: SOLD - Living Room Sofa
 		LocalDateTime order2Start = LocalDateTime.now().minusDays(28);
@@ -270,9 +272,12 @@ public class DataInitializer implements CommandLineRunner {
 		recalcOrderCost(order2);
 
 		// Assign all workers
-		addAssignment(order2.getId(), worker1.getId(), owner.getId(), order2Start, BigDecimal.valueOf(5));
-		addAssignment(order2.getId(), worker2.getId(), owner.getId(), order2Start.plusDays(1), BigDecimal.valueOf(4));
-		addAssignment(order2.getId(), worker3.getId(), owner.getId(), order2Start.plusDays(3), BigDecimal.valueOf(3));
+		addAssignment(order2.getId(), worker1.getId(), owner.getId(), order2Start,
+			BigDecimal.valueOf(5), BigDecimal.valueOf(8), BigDecimal.valueOf(2_400_000));
+		addAssignment(order2.getId(), worker2.getId(), owner.getId(), order2Start.plusDays(1),
+			BigDecimal.valueOf(4), BigDecimal.valueOf(8), BigDecimal.valueOf(2_000_000));
+		addAssignment(order2.getId(), worker3.getId(), owner.getId(), order2Start.plusDays(3),
+			BigDecimal.valueOf(3), BigDecimal.valueOf(4), BigDecimal.valueOf(909_091));
 
 		// Create commission earnings for order2 (sold)
 		BigDecimal commission1 = BigDecimal.valueOf(13_200_000)
@@ -321,9 +326,12 @@ public class DataInitializer implements CommandLineRunner {
 		recalcOrderCost(order3);
 
 		// Assign all workers
-		addAssignment(order3.getId(), worker1.getId(), owner.getId(), order3Start, BigDecimal.valueOf(5));
-		addAssignment(order3.getId(), worker2.getId(), owner.getId(), order3Start.plusDays(1), BigDecimal.valueOf(4));
-		addAssignment(order3.getId(), worker3.getId(), owner.getId(), order3Start.plusDays(2), BigDecimal.valueOf(3));
+		addAssignment(order3.getId(), worker1.getId(), owner.getId(), order3Start,
+			BigDecimal.valueOf(5), BigDecimal.valueOf(5), BigDecimal.valueOf(1_500_000));
+		addAssignment(order3.getId(), worker2.getId(), owner.getId(), order3Start.plusDays(1),
+			BigDecimal.valueOf(4), BigDecimal.valueOf(4), BigDecimal.valueOf(1_000_000));
+		addAssignment(order3.getId(), worker3.getId(), owner.getId(), order3Start.plusDays(2),
+			BigDecimal.valueOf(3), BigDecimal.valueOf(3), BigDecimal.valueOf(681_818));
 
 		// Order 4: DRAFT - Kitchen Cabinet System
 		LocalDateTime order4Start = LocalDateTime.now().minusDays(2);
@@ -545,12 +553,15 @@ public class DataInitializer implements CommandLineRunner {
 		orderRepo.save(order);
 	}
 
-	private void addAssignment(UUID orderId, UUID workerId, UUID ownerId, LocalDateTime at, BigDecimal commPct) {
+	private void addAssignment(UUID orderId, UUID workerId, UUID ownerId, LocalDateTime at,
+							  BigDecimal commPct, BigDecimal daysWorked, BigDecimal allocatedCost) {
 		FurnitureAssignmentEntity assignment = FurnitureAssignmentEntity.builder()
 				.furnitureOrderId(orderId)
 				.workerId(workerId)
 				.assignedAt(at)
 				.commissionPct(commPct)
+				.daysWorked(daysWorked)
+				.allocatedLaborCost(allocatedCost)
 				.active(true)
 				.build();
 		assignment.setCreatedBy(ownerId);

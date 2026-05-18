@@ -115,31 +115,29 @@ const MaterialDialog = ({
               )}
             </div>
 
-            {/* Material name + unit selector row — only in first row */}
-            {idx === 0 && (
-              <div className={styles.nameRow}>
-                <div className={styles.nameField}>
-                  <label className={styles.label}>Material nomi *</label>
-                  <input
-                    className={styles.input}
-                    placeholder="LDSP, MDF, DSP, Yog'och..."
-                    value={form.materialName}
-                    onChange={(e) => updateForm(idx, 'materialName', e.target.value)}
-                  />
-                </div>
-                <div className={styles.unitField}>
-                  <label className={styles.label}>O'lchov</label>
-                  <select
-                    className={styles.select}
-                    value={form.unit}
-                    onChange={(e) => updateForm(idx, 'unit', e.target.value)}
-                  >
-                    <option value="mm">mm</option>
-                    <option value="cm">cm</option>
-                  </select>
-                </div>
+            {/* Material name + unit selector row — all rows */}
+            <div className={styles.nameRow}>
+              <div className={styles.nameField}>
+                <label className={styles.label}>Material nomi *</label>
+                <input
+                  className={styles.input}
+                  placeholder="LDSP, MDF, DSP, Yog'och..."
+                  value={form.materialName}
+                  onChange={(e) => updateForm(idx, 'materialName', e.target.value)}
+                />
               </div>
-            )}
+              <div className={styles.unitField}>
+                <label className={styles.label}>O'lchov</label>
+                <select
+                  className={styles.select}
+                  value={form.unit}
+                  onChange={(e) => updateForm(idx, 'unit', e.target.value)}
+                >
+                  <option value="mm">mm</option>
+                  <option value="cm">cm</option>
+                </select>
+              </div>
+            </div>
 
             {/* Dimensions row */}
             <div className={styles.dimRow}>

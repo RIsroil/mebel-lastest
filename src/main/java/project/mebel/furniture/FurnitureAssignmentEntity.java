@@ -37,6 +37,12 @@ public class FurnitureAssignmentEntity extends MutableAuditEntity {
     @Column(name = "commission_pct", precision = 5, scale = 2)
     private BigDecimal commissionPct;
 
+    @Column(name = "days_worked", precision = 4, scale = 2)
+    private BigDecimal daysWorked;
+
+    @Column(name = "allocated_labor_cost", precision = 14, scale = 2)
+    private BigDecimal allocatedLaborCost;
+
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 }
