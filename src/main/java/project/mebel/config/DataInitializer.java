@@ -55,7 +55,7 @@ public class DataInitializer implements CommandLineRunner {
 	}
 
 	private void seedAllData() {
-		String pwd = passwordEncoder.encode("password123");
+		String pwd = passwordEncoder.encode("test123");
 
 		// ════════════════════════════════════════════════════════════════
 		// 1. ADMIN
