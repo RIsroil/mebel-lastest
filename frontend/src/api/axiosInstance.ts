@@ -22,16 +22,9 @@ api.interceptors.request.use((config) => {
 
   if (token) config.headers.Authorization = `Bearer ${token}`
 
-  // Map frontend language codes to backend locale codes
-  const languageMap: Record<string, string> = {
-    'uz': 'uz',
-    'ru': 'ru',
-    'en': 'en',
-    'uz-cyrillic': 'uz_CYRILLIC',
-  }
-
-  const locale = languageMap[language] || 'uz'
-  config.headers['Accept-Language'] = locale
+  // Add language as query parameter for locale resolution
+  if (!config.params) config.params = {}
+  config.params.lang = language
 
   return config
 })

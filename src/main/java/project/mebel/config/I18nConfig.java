@@ -4,19 +4,35 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.web.servlet.LocaleResolver;
-import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
+import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
+import org.springframework.web.servlet.i18n.SessionLocaleResolver;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.Locale;
 
 @Configuration
-public class I18nConfig {
+public class I18nConfig implements WebMvcConfigurer {
 
   @Bean
   public LocaleResolver localeResolver() {
-    AcceptHeaderLocaleResolver resolver = new AcceptHeaderLocaleResolver();
+    SessionLocaleResolver resolver = new SessionLocaleResolver();
     // Default locale — Uzbek
     resolver.setDefaultLocale(new Locale("uz"));
     return resolver;
+  }
+
+  @Bean
+  public LocaleChangeInterceptor localeChangeInterceptor() {
+    LocaleChangeInterceptor interceptor = new LocaleChangeInterceptor();
+    // Accept language from 'lang' request parameter or Accept-Language header
+    interceptor.setParamName("lang");
+    return interceptor;
+  }
+
+  @Override
+  public void addInterceptors(InterceptorRegistry registry) {
+    registry.addInterceptor(localeChangeInterceptor());
   }
 
   @Bean
@@ -26,7 +42,7 @@ public class I18nConfig {
     messageSource.setDefaultEncoding("UTF-8");
     // Cache messages for 1 hour (3600 seconds)
     messageSource.setCacheSeconds(3600);
-    // Support variants like uz_CYRILLIC
+    // Don't fallback to system locale
     messageSource.setFallbackToSystemLocale(false);
     return messageSource;
   }

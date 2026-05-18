@@ -160,6 +160,18 @@ const Sidebar = ({ isOpen, onClose }: Props) => {
           <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
           <span>{theme === 'dark' ? "Yorug' rejim" : "Qorong'u rejim"}</span>
         </button>
+
+        {/* Logout button — prominent */}
+        <button
+          className={styles.logoutBtn}
+          onClick={handleLogout}
+          title="Chiqish"
+          type="button"
+          style={{ margin: '8px 0' }}
+        >
+          ⏻ Chiqish
+        </button>
+
         <div className={styles.userRow}>
           <Avatar
             name={user.fullName || user.username}
@@ -172,14 +184,6 @@ const Sidebar = ({ isOpen, onClose }: Props) => {
             </div>
             <div className={styles.userRole}>{ROLE_LABEL[user.role]}</div>
           </div>
-          <button
-            className={styles.logoutBtn}
-            onClick={handleLogout}
-            title="Chiqish"
-            type="button"
-          >
-            ⏻
-          </button>
         </div>
       </div>
     </nav>
