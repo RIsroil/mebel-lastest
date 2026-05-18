@@ -29,7 +29,8 @@
       "Bash(dir \"C:\\\\Users\\\\isroi\\\\IdeaProjects\\\\mebel-lastest\\\\src\\\\main\\\\resources\\\\db\\\\changelog\\\\changes\")",
       "Bash(dir C:\\\\Users\\\\isroi\\\\IdeaProjects\\\\mebel-lastest\\\\src\\\\main\\\\java\\\\project\\\\mebel\\\\saves *)",
       "Bash(Select-Object -Property FullName, PSIsContainer)",
-      "Bash(./mvnw compile *)"
+      "Bash(./mvnw compile *)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")"
     ]
   }
 }

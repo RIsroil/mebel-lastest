@@ -541,23 +541,26 @@
   }
 
   .table {
-    min-width: 0;
+    min-width: 500px;
     width: 100%;
     font-size: 12px;
   }
 
   .table th, .table td {
-    padding: 8px 8px;
+    padding: 10px 8px;
+    font-size: 12px;
   }
 
-  /* Mobile: hide #, Balandligi, Izoh columns (keep Material, Bo'yi, Eni, Soni, actions) */
+  /* Mobile: hide # and Izoh columns — show Material, Bo'yi, Eni, Balandligi, Soni, Actions */
   .table th:nth-child(1),
   .table td:nth-child(1),
-  .table th:nth-child(5),
-  .table td:nth-child(5),
   .table th:nth-child(7),
   .table td:nth-child(7) {
     display: none;
+  }
+
+  .nameCell {
+    min-width: 100px;
   }
 
   /* Image grid smaller on mobile */

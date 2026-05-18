@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import { useTheme } from '@/hooks/useTheme'
 import Avatar from '@/components/ui/Avatar'
+import LanguageToggle from '@/components/ui/LanguageToggle'
 import styles from './Sidebar.module.css'
 import { cn } from '@/utils/cn'
 
@@ -49,6 +50,7 @@ const OWNER_NAV: NavSection[] = [
 const WORKER_NAV_BUTTON: NavSection[] = [
   {
     items: [
+      { to: '/my-tasks',     icon: '📌', label: 'Mening vazifalarim' },
       { to: '/check-in',     icon: '📅', label: 'Kirish / Chiqish' },
       { to: '/submit-hours', icon: '⏱️', label: 'Soatlarni topshirish' },
       { to: '/my-earnings',  icon: '💰', label: 'Mening maoshim' },
@@ -59,6 +61,7 @@ const WORKER_NAV_BUTTON: NavSection[] = [
 const WORKER_NAV_MANUAL: NavSection[] = [
   {
     items: [
+      { to: '/my-tasks',          icon: '📌', label: 'Mening vazifalarim' },
       { to: '/weekly-attendance', icon: '📋', label: 'Haftalik davomat' },
       { to: '/my-earnings',       icon: '💰', label: 'Mening maoshim' },
     ],
@@ -147,6 +150,7 @@ const Sidebar = ({ isOpen, onClose }: Props) => {
       ))}
 
       <div className={styles.bottom}>
+        <LanguageToggle />
         <button
           type="button"
           className={styles.themeToggle}
