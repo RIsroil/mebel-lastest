@@ -3,6 +3,7 @@ import type { AxiosRequestConfig } from 'axios'
 import type { ApiResponse } from '@/types/common.types'
 import type { TokenPair } from '@/types/auth.types'
 import { useAuthStore } from '@/store/auth.store'
+import { useLanguageStore } from '@/store/language.store'
 
 const api = axios.create({
   baseURL: '/',
@@ -14,10 +15,24 @@ const AUTH_ONLY_PATHS = ['/api/auth/login', '/api/auth/register', '/api/auth/ref
 const isAuthOnlyPath = (url?: string) =>
   AUTH_ONLY_PATHS.some((p) => url?.includes(p))
 
-// ── Request interceptor — har so'rovga Bearer token qo'shadi ─────────────────
+// ── Request interceptor — har so'rovga Bearer token va language qo'shadi ─────
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
+  const language = useLanguageStore.getState().language
+
   if (token) config.headers.Authorization = `Bearer ${token}`
+
+  // Map frontend language codes to backend locale codes
+  const languageMap: Record<string, string> = {
+    'uz': 'uz',
+    'ru': 'ru',
+    'en': 'en',
+    'uz-cyrillic': 'uz_CYRILLIC',
+  }
+
+  const locale = languageMap[language] || 'uz'
+  config.headers['Accept-Language'] = locale
+
   return config
 })
 
