@@ -35,6 +35,9 @@ const itemSchema = z.object({
   unitType:          z.enum(['PIECE','KG','GRAM','LITRE','ML','METER','CM','M2','M3']),
   sku:               z.string().optional(),
   minQuantityAlert:  z.coerce.number().min(0).optional(),
+  lengthMm:          z.coerce.number().optional(),
+  widthMm:           z.coerce.number().optional(),
+  heightMm:          z.coerce.number().optional(),
 })
 type ItemForm = z.infer<typeof itemSchema>
 
@@ -421,6 +424,42 @@ const WarehousePage = () => {
                 className={styles.formInput}
                 placeholder="Qo'shimcha ma'lumot"
                 {...itemForm.register('description')}
+              />
+            </div>
+          </div>
+
+          {/* Dimension fields */}
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+              📐 O'lchami (mm, ixtiyoriy)
+            </div>
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Bo'yi</label>
+                <input
+                  className={styles.formInput}
+                  type="number"
+                  placeholder="2400"
+                  {...itemForm.register('lengthMm')}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Eni</label>
+                <input
+                  className={styles.formInput}
+                  type="number"
+                  placeholder="600"
+                  {...itemForm.register('widthMm')}
+                />
+              </div>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Balandligi</label>
+              <input
+                className={styles.formInput}
+                type="number"
+                placeholder="18"
+                {...itemForm.register('heightMm')}
               />
             </div>
           </div>

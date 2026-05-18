@@ -19,6 +19,9 @@ interface MaterialRow {
   warehouseItemId: string
   quantityUsed: string
   notes: string
+  lengthMm?: string
+  widthMm?: string
+  heightMm?: string
 }
 
 const emptyMaterialRow = (): MaterialRow => ({ warehouseItemId: '', quantityUsed: '', notes: '' })
@@ -654,6 +657,51 @@ const OrderDetailPage = () => {
                       setMaterialRows((r) => r.map((m, i) => i === idx ? { ...m, notes: e.target.value } : m))
                     }
                   />
+                </div>
+              </div>
+
+              {/* Dimension fields */}
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                  📐 O'lchami (ixtiyoriy)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Bo'yi (mm)</label>
+                    <input
+                      className={styles.formInput}
+                      type="number"
+                      placeholder="2400"
+                      value={row.lengthMm || ''}
+                      onChange={(e) =>
+                        setMaterialRows((r) => r.map((m, i) => i === idx ? { ...m, lengthMm: e.target.value } : m))
+                      }
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Eni (mm)</label>
+                    <input
+                      className={styles.formInput}
+                      type="number"
+                      placeholder="600"
+                      value={row.widthMm || ''}
+                      onChange={(e) =>
+                        setMaterialRows((r) => r.map((m, i) => i === idx ? { ...m, widthMm: e.target.value } : m))
+                      }
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Balandligi (mm)</label>
+                    <input
+                      className={styles.formInput}
+                      type="number"
+                      placeholder="18"
+                      value={row.heightMm || ''}
+                      onChange={(e) =>
+                        setMaterialRows((r) => r.map((m, i) => i === idx ? { ...m, heightMm: e.target.value } : m))
+                      }
+                    />
+                  </div>
                 </div>
               </div>
             </div>
