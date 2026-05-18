@@ -2,7 +2,6 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import { useTheme } from '@/hooks/useTheme'
 import Avatar from '@/components/ui/Avatar'
-import LanguageToggle from '@/components/ui/LanguageToggle'
 import styles from './Sidebar.module.css'
 import { cn } from '@/utils/cn'
 
@@ -150,7 +149,6 @@ const Sidebar = ({ isOpen, onClose }: Props) => {
       ))}
 
       <div className={styles.bottom}>
-        <LanguageToggle />
         <button
           type="button"
           className={styles.themeToggle}

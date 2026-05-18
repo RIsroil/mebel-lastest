@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type Language = 'uz' | 'ru' | 'en' | 'uz-cyrillic'
+export type Language = 'uz'
 
 interface LanguageState {
   language: Language
@@ -9,10 +9,6 @@ interface LanguageState {
 }
 
 const getDefaultLanguage = (): Language => {
-  const stored = localStorage.getItem('mebel-language')
-  if (stored === 'uz' || stored === 'ru' || stored === 'en' || stored === 'uz-cyrillic') {
-    return stored
-  }
   return 'uz'
 }
 
