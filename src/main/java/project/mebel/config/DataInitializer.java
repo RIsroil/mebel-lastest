@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 import project.mebel.attendance.DailyAttendanceEntity;
 import project.mebel.attendance.DailyAttendanceRepository;
 import project.mebel.common.enums.*;
+import project.mebel.earning.BonusEntity;
+import project.mebel.earning.BonusRepository;
 import project.mebel.earning.EarningEntity;
 import project.mebel.earning.EarningRepository;
 import project.mebel.financiallog.FinancialLogEntity;
@@ -31,433 +33,695 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
-    private final UserRepository userRepo;
-    private final WorkshopRepository workshopRepo;
-    private final WarehouseItemRepository itemRepo;
-    private final WarehouseTransactionRepository txRepo;
-    private final FurnitureOrderRepository orderRepo;
-    private final FurnitureAssignmentRepository assignmentRepo;
-    private final MaterialUsageRepository usageRepo;
-    private final DailyAttendanceRepository attendanceRepo;
-    private final EarningRepository earningRepo;
-    private final FinancialLogRepository financialLogRepo;
-    private final PasswordEncoder passwordEncoder;
+	private final UserRepository userRepo;
+	private final WorkshopRepository workshopRepo;
+	private final WarehouseItemRepository itemRepo;
+	private final WarehouseTransactionRepository txRepo;
+	private final FurnitureOrderRepository orderRepo;
+	private final FurnitureTemplateRepository templateRepo;
+	private final FurnitureAssignmentRepository assignmentRepo;
+	private final MaterialUsageRepository usageRepo;
+	private final DailyAttendanceRepository attendanceRepo;
+	private final EarningRepository earningRepo;
+	private final BonusRepository bonusRepo;
+	private final FinancialLogRepository financialLogRepo;
+	private final PasswordEncoder passwordEncoder;
 
-    @Override
-    public void run(String... args) {
-        createAdminIfAbsent();
-        if (userRepo.findByUsernameAndDeletedAtIsNull("owner1").isEmpty()) {
-            seedFakeData();
-        }
-    }
+	@Override
+	public void run(String... args) {
+		if (userRepo.findByUsernameAndDeletedAtIsNull("admin").isEmpty()) {
+			seedAllData();
+		}
+	}
 
-    private void createAdminIfAbsent() {
-        if (userRepo.findByUsernameAndDeletedAtIsNull("admin").isEmpty()) {
-            UserEntity admin = new UserEntity();
-            admin.setUsername("admin");
-            admin.setFullName("Administrator");
-            admin.setPasswordHash(passwordEncoder.encode("admin123"));
-            admin.setRole(UserRole.ADMIN);
-            admin.setActive(true);
-            userRepo.save(admin);
-        }
-    }
+	private void seedAllData() {
+		String pwd = passwordEncoder.encode("password123");
 
-    private void seedFakeData() {
-        String pwd = passwordEncoder.encode("owner123");
+		// ════════════════════════════════════════════════════════════════
+		// 1. ADMIN
+		// ════════════════════════════════════════════════════════════════
+		UserEntity admin = UserEntity.builder()
+				.username("admin")
+				.passwordHash(pwd)
+				.fullName("Admin System")
+				.phone("+998900000000")
+				.role(UserRole.ADMIN)
+				.active(true)
+				.build();
+		admin.setCreatedAt(LocalDateTime.now().minusDays(90));
+		userRepo.save(admin);
 
-        // ── Workshop 1: Toshkent Mebel ──────────────────────────────────────
-        UserEntity o1 = saveOwner("owner1", pwd, "Bobur Karimov", "+998901001000", null);
-        WorkshopEntity ws1 = saveWorkshop("Toshkent Mebel", "Toshkent, Yunusobod", "+998901001001", "Zamonaviy mebel ishlab chiqarish", o1.getId());
-        o1.setWorkshopId(ws1.getId());
-        userRepo.save(o1);
+		// ════════════════════════════════════════════════════════════════
+		// 2. OWNER + WORKSHOP
+		// ════════════════════════════════════════════════════════════════
+		UserEntity owner = UserEntity.builder()
+				.username("owner1")
+				.passwordHash(pwd)
+				.fullName("Alisher Karimov")
+				.phone("+998901234567")
+				.role(UserRole.OWNER)
+				.active(true)
+				.build();
+		owner.setCreatedAt(LocalDateTime.now().minusDays(60));
 
-        UserEntity w1a = saveWorker("worker1a", pwd, "Ali Xasanov",    "+998901002001", ws1.getId(), PayType.DAILY,   8, 250_000, 5);
-        UserEntity w1b = saveWorker("worker1b", pwd, "Sarvar Toshev",  "+998901002002", ws1.getId(), PayType.MONTHLY, 8, 150_000, 0);
+		WorkshopEntity workshop = WorkshopEntity.builder()
+				.name("Premium Mebel Factory")
+				.address("Tashkent, Yunus Rajabiy 123, Building A")
+				.phone("+998712345678")
+				.description("Premium furniture manufacturing with modern equipment")
+				.ownerId(owner.getId())
+				.build();
+		workshop.setCreatedAt(LocalDateTime.now().minusDays(60));
+		workshop = workshopRepo.save(workshop);
 
-        List<WarehouseItemEntity> items1 = List.of(
-            saveItem(ws1.getId(), "Yog'och taxta",    UnitType.M2,    80,  45_000),
-            saveItem(ws1.getId(), "Vintlar (komplekt)", UnitType.PIECE, 500,  2_000),
-            saveItem(ws1.getId(), "Bo'yoq",            UnitType.LITRE,  30, 35_000),
-            saveItem(ws1.getId(), "Lak",               UnitType.LITRE,  20, 28_000)
-        );
+		owner.setWorkshopId(workshop.getId());
+		owner = userRepo.save(owner);
 
-        createCompletedOrder(ws1, o1, w1a, items1, "Oshxona stoli",    4_500_000, 65);
-        createCompletedOrder(ws1, o1, w1b, items1, "Divon",            6_200_000, 55);
-        createSoldOrder     (ws1, o1, w1a, items1, "Yotoq xonasi to'plami", 12_800_000, "Jasur Aliyev", "+998907001111");
-        createInProgressOrder(ws1, o1, w1a, w1b, items1, "Kitob javoni", 2_900_000);
+		// ════════════════════════════════════════════════════════════════
+		// 3. THREE WORKERS with different pay types
+		// ════════════════════════════════════════════════════════════════
+		UserEntity worker1 = UserEntity.builder()
+				.username("worker1")
+				.passwordHash(pwd)
+				.fullName("Rustam Abdullayev")
+				.phone("+998901111111")
+				.role(UserRole.WORKER)
+				.workshopId(workshop.getId())
+				.active(true)
+				.payType(PayType.DAILY)
+				.dailySalary(BigDecimal.valueOf(300_000))
+				.dailyHoursTarget(BigDecimal.valueOf(8))
+				.commissionPct(BigDecimal.valueOf(5))
+				.build();
+		worker1.setCreatedAt(LocalDateTime.now().minusDays(45));
+		worker1 = userRepo.save(worker1);
 
-        // ── Workshop 2: Samarqand Wood ──────────────────────────────────────
-        UserEntity o2 = saveOwner("owner2", pwd, "Dilnoza Yusupova", "+998936002000", null);
-        WorkshopEntity ws2 = saveWorkshop("Samarqand Wood", "Samarqand, Registon ko'chasi 12", "+998936002002", "Antik uslubdagi mebel", o2.getId());
-        o2.setWorkshopId(ws2.getId());
-        userRepo.save(o2);
+		UserEntity worker2 = UserEntity.builder()
+				.username("worker2")
+				.passwordHash(pwd)
+				.fullName("Dilnoza Khamidova")
+				.phone("+998902222222")
+				.role(UserRole.WORKER)
+				.workshopId(workshop.getId())
+				.active(true)
+				.payType(PayType.DAILY)
+				.dailySalary(BigDecimal.valueOf(250_000))
+				.dailyHoursTarget(BigDecimal.valueOf(8))
+				.commissionPct(BigDecimal.valueOf(4))
+				.build();
+		worker2.setCreatedAt(LocalDateTime.now().minusDays(45));
+		worker2 = userRepo.save(worker2);
 
-        UserEntity w2a = saveWorker("worker2a", pwd, "Zafar Mirzayev",   "+998936003001", ws2.getId(), PayType.DAILY,   9, 300_000, 8);
-        UserEntity w2b = saveWorker("worker2b", pwd, "Kamola Hamidova",  "+998936003002", ws2.getId(), PayType.DAILY,   8, 220_000, 5);
+		UserEntity worker3 = UserEntity.builder()
+				.username("worker3")
+				.passwordHash(pwd)
+				.fullName("Sherali Mirzayev")
+				.phone("+998903333333")
+				.role(UserRole.WORKER)
+				.workshopId(workshop.getId())
+				.active(true)
+				.payType(PayType.MONTHLY)
+				.monthlySalary(BigDecimal.valueOf(5_000_000))
+				.dailyHoursTarget(BigDecimal.valueOf(8))
+				.commissionPct(BigDecimal.valueOf(3))
+				.build();
+		worker3.setCreatedAt(LocalDateTime.now().minusDays(45));
+		worker3 = userRepo.save(worker3);
 
-        List<WarehouseItemEntity> items2 = List.of(
-            saveItem(ws2.getId(), "Palma yog'ochi",  UnitType.M3,    10, 680_000),
-            saveItem(ws2.getId(), "Mato (metr)",     UnitType.METER, 200,  18_000),
-            saveItem(ws2.getId(), "Kauchuk ko'pik",  UnitType.KG,     50,  22_000),
-            saveItem(ws2.getId(), "Ruchka-mixlar",   UnitType.PIECE, 300,   3_500)
-        );
+		// ════════════════════════════════════════════════════════════════
+		// 4. WAREHOUSE MATERIALS
+		// ════════════════════════════════════════════════════════════════
+		LocalDateTime warehouseCreated = LocalDateTime.now().minusDays(40);
 
-        createCompletedOrder(ws2, o2, w2a, items2, "Ish stoli",       5_100_000, 70);
-        createSoldOrder     (ws2, o2, w2b, items2, "Kreslolar (2 ta)", 3_800_000, "Malika Rahimova", "+998901555222");
-        createSoldOrder     (ws2, o2, w2a, items2, "Mehmonxona garniturai", 18_500_000, "Eldor Nishonov", "+998936777888");
-        createInProgressOrder(ws2, o2, w2a, w2b, items2, "Bolalar divanchasi", 3_200_000);
+		WarehouseItemEntity materials[] = {
+			// Wood materials
+			saveItem(workshop.getId(), "Chinor wood (m³)", UnitType.M3, 25, 650_000, warehouseCreated, owner.getId()),
+			saveItem(workshop.getId(), "Oak plywood (m²)", UnitType.M2, 150, 85_000, warehouseCreated, owner.getId()),
+			saveItem(workshop.getId(), "Birch veneer (m)", UnitType.METER, 200, 12_000, warehouseCreated, owner.getId()),
 
-        // ── Workshop 3: Farg'ona Craft ──────────────────────────────────────
-        UserEntity o3 = saveOwner("owner3", pwd, "Sherzod Nazarov", "+998732003000", null);
-        WorkshopEntity ws3 = saveWorkshop("Farg'ona Craft", "Farg'ona, Mustaqillik 5", "+998732003003", "Hunarmandchilik mebellar", o3.getId());
-        o3.setWorkshopId(ws3.getId());
-        userRepo.save(o3);
+			// Hardware
+			saveItem(workshop.getId(), "Stainless steel screws (kg)", UnitType.KG, 50, 35_000, warehouseCreated, owner.getId()),
+			saveItem(workshop.getId(), "Door hinges (piece)", UnitType.PIECE, 300, 8_500, warehouseCreated, owner.getId()),
+			saveItem(workshop.getId(), "Cabinet handles (piece)", UnitType.PIECE, 250, 12_000, warehouseCreated, owner.getId()),
 
-        UserEntity w3a = saveWorker("worker3a", pwd, "Murod Qodirov",   "+998732004001", ws3.getId(), PayType.MONTHLY, 8, 180_000, 0);
-        UserEntity w3b = saveWorker("worker3b", pwd, "Feruza Saidova",  "+998732004002", ws3.getId(), PayType.DAILY,   8, 200_000, 6);
+			// Finishing materials
+			saveItem(workshop.getId(), "Wood stain (litre)", UnitType.LITRE, 40, 45_000, warehouseCreated, owner.getId()),
+			saveItem(workshop.getId(), "Polyurethane varnish (litre)", UnitType.LITRE, 30, 78_000, warehouseCreated, owner.getId()),
+			saveItem(workshop.getId(), "Wood filler (kg)", UnitType.KG, 20, 28_000, warehouseCreated, owner.getId()),
 
-        List<WarehouseItemEntity> items3 = List.of(
-            saveItem(ws3.getId(), "Chinor yog'ochi",   UnitType.M3,    15, 520_000),
-            saveItem(ws3.getId(), "Mixlar (kg)",        UnitType.KG,    20,   8_500),
-            saveItem(ws3.getId(), "Zangori bo'yoq",    UnitType.LITRE,  25,  32_000),
-            saveItem(ws3.getId(), "Polimer qoplag'ich", UnitType.LITRE,  15,  42_000)
-        );
+			// Upholstery
+			saveItem(workshop.getId(), "Fabric roll (m)", UnitType.METER, 180, 65_000, warehouseCreated, owner.getId()),
+			saveItem(workshop.getId(), "Foam padding (m²)", UnitType.M2, 100, 42_000, warehouseCreated, owner.getId()),
+		};
 
-        createCompletedOrder(ws3, o3, w3a, items3, "Taom stoli (6 kishilik)", 7_400_000, 60);
-        createSoldOrder     (ws3, o3, w3b, items3, "Idish javoni",            4_100_000, "Nodira Xoliqova", "+998732888999");
-        createInProgressOrder(ws3, o3, w3a, w3b, items3, "Yotoq xonasi to'plami", 15_000_000);
+		// ════════════════════════════════════════════════════════════════
+		// 5. FURNITURE TEMPLATES (Optional reference)
+		// ════════════════════════════════════════════════════════════════
+		FurnitureTemplateEntity template1 = FurnitureTemplateEntity.builder()
+				.workshopId(workshop.getId())
+				.name("Executive Office Desk")
+				.description("Professional office desk with storage")
+				.estimatedProdDays((short)5)
+				.active(true)
+				.build();
+		template1.setCreatedAt(warehouseCreated);
+		template1.setCreatedBy(owner.getId());
+		templateRepo.save(template1);
 
-        // Attendance and earnings (last 30 days)
-        seedAttendanceAndEarnings(ws1, o1, List.of(w1a, w1b));
-        seedAttendanceAndEarnings(ws2, o2, List.of(w2a, w2b));
-        seedAttendanceAndEarnings(ws3, o3, List.of(w3a, w3b));
+		FurnitureTemplateEntity template2 = FurnitureTemplateEntity.builder()
+				.workshopId(workshop.getId())
+				.name("Living Room Sofa")
+				.description("Comfortable sectional sofa")
+				.estimatedProdDays((short)15)
+				.active(true)
+				.build();
+		template2.setCreatedAt(warehouseCreated);
+		template2.setCreatedBy(owner.getId());
+		templateRepo.save(template2);
 
-        // Financial logs
-        // ws1: Toshkent Mebel — 2 ta sotilgan buyurtma, 2 ta worker (w1a DAILY, w1b MONTHLY)
-        seedFinancialLogs(ws1, o1,
-            List.of(
-                // Boshlang'ich xomashyo xaridi (~55 kun oldin)
-                flog(ws1.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -3_600_000, "Yog'och taxta kiritildi: 80 m² × 45 000 so'm", LocalDate.now().minusDays(55), o1.getId()),
-                flog(ws1.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -1_000_000, "Vintlar kiritildi: 500 dona × 2 000 so'm", LocalDate.now().minusDays(55), o1.getId()),
-                flog(ws1.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -1_050_000, "Bo'yoq kiritildi: 30 litr × 35 000 so'm", LocalDate.now().minusDays(54), o1.getId()),
-                flog(ws1.getId(), FinancialLogType.WAREHOUSE_PURCHASE,   -560_000, "Lak kiritildi: 20 litr × 28 000 so'm", LocalDate.now().minusDays(54), o1.getId()),
-                // Restock (~20 kun oldin)
-                flog(ws1.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -2_250_000, "Yog'och taxta restok: 50 m² × 45 000 so'm | Toshkent Yog'och MChJ", LocalDate.now().minusDays(20), o1.getId()),
-                flog(ws1.getId(), FinancialLogType.WAREHOUSE_PURCHASE,   -400_000, "Vintlar restok: 200 dona × 2 000 so'm", LocalDate.now().minusDays(20), o1.getId()),
-                // Mebel sotildi (~32 kun oldin)
-                flog(ws1.getId(), FinancialLogType.FURNITURE_SOLD,    12_800_000, "Mebel sotildi: Yotoq xonasi to'plami | Jasur Aliyev", LocalDate.now().minusDays(32), o1.getId()),
-                // Komissiya to'landi (sotilgandan 2 kun keyin)
-                flog(ws1.getId(), FinancialLogType.COMMISSION_PAID,     -640_000, "Komissiya to'landi: Ali Xasanov (5% × 12 800 000)", LocalDate.now().minusDays(30), o1.getId()),
-                // O'tgan oy maoshi — w1a (DAILY: ~22 ish kuni × 250 000)
-                flog(ws1.getId(), FinancialLogType.WAGE_PAID,         -5_500_000, "Oylik maosh to'landi: Ali Xasanov (22 kun × 250 000)", LocalDate.now().minusDays(35), o1.getId()),
-                // Joriy oy oraliq maosh (~10 kun)
-                flog(ws1.getId(), FinancialLogType.WAGE_PAID,         -2_000_000, "Oraliq maosh: Ali Xasanov (8 kun × 250 000)", LocalDate.now().minusDays(7), o1.getId())
-            )
-        );
+		// ════════════════════════════════════════════════════════════════
+		// 6. FURNITURE ORDERS (with materials used)
+		// ════════════════════════════════════════════════════════════════
 
-        // ws2: Samarqand Wood — 2 ta SOLD buyurtma, 2 ta DAILY worker
-        seedFinancialLogs(ws2, o2,
-            List.of(
-                flog(ws2.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -6_800_000, "Palma yog'ochi kiritildi: 10 m³ × 680 000 so'm | Samarqand Yog'och", LocalDate.now().minusDays(56), o2.getId()),
-                flog(ws2.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -3_600_000, "Mato kiritildi: 200 metr × 18 000 so'm", LocalDate.now().minusDays(56), o2.getId()),
-                flog(ws2.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -1_100_000, "Kauchuk ko'pik kiritildi: 50 kg × 22 000 so'm", LocalDate.now().minusDays(55), o2.getId()),
-                flog(ws2.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -1_050_000, "Ruchka-mixlar kiritildi: 300 dona × 3 500 so'm", LocalDate.now().minusDays(55), o2.getId()),
-                // Restock 15 kun oldin
-                flog(ws2.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -3_400_000, "Palma yog'ochi restok: 5 m³ × 680 000 so'm", LocalDate.now().minusDays(15), o2.getId()),
-                // Birinchi buyurtma sotildi
-                flog(ws2.getId(), FinancialLogType.FURNITURE_SOLD,     3_800_000, "Mebel sotildi: Kreslolar (2 ta) | Malika Rahimova", LocalDate.now().minusDays(32), o2.getId()),
-                flog(ws2.getId(), FinancialLogType.COMMISSION_PAID,     -190_000, "Komissiya to'landi: Kamola Hamidova (5% × 3 800 000)", LocalDate.now().minusDays(30), o2.getId()),
-                // Ikkinchi buyurtma sotildi
-                flog(ws2.getId(), FinancialLogType.FURNITURE_SOLD,    18_500_000, "Mebel sotildi: Mehmonxona garniturai | Eldor Nishonov", LocalDate.now().minusDays(32), o2.getId()),
-                flog(ws2.getId(), FinancialLogType.COMMISSION_PAID,   -1_480_000, "Komissiya to'landi: Zafar Mirzayev (8% × 18 500 000)", LocalDate.now().minusDays(30), o2.getId()),
-                // Maoshlar
-                flog(ws2.getId(), FinancialLogType.WAGE_PAID,         -6_600_000, "Oylik maosh: Zafar Mirzayev (22 kun × 300 000)", LocalDate.now().minusDays(35), o2.getId()),
-                flog(ws2.getId(), FinancialLogType.WAGE_PAID,         -4_840_000, "Oylik maosh: Kamola Hamidova (22 kun × 220 000)", LocalDate.now().minusDays(35), o2.getId()),
-                flog(ws2.getId(), FinancialLogType.WAGE_PAID,         -2_400_000, "Oraliq maosh: Zafar Mirzayev (8 kun × 300 000)", LocalDate.now().minusDays(7), o2.getId()),
-                flog(ws2.getId(), FinancialLogType.WAGE_PAID,         -1_760_000, "Oraliq maosh: Kamola Hamidova (8 kun × 220 000)", LocalDate.now().minusDays(7), o2.getId())
-            )
-        );
+		// Order 1: COMPLETED - Executive Desk
+		LocalDateTime order1Start = LocalDateTime.now().minusDays(30);
+		FurnitureOrderEntity order1 = FurnitureOrderEntity.builder()
+				.workshopId(workshop.getId())
+				.orderNumber("ORD-2026-00001")
+				.title("Executive Office Desk - Client: Tech Corp")
+				.status(FurnitureStatus.COMPLETED)
+				.salePrice(BigDecimal.valueOf(4_800_000))
+				.estimatedCost(BigDecimal.valueOf(1_920_000))
+				.actualMaterialCost(BigDecimal.ZERO)
+				.startedAt(order1Start)
+				.completedAt(order1Start.plusDays(15))
+				.soldAt(null)
+				.clientName("Tech Corporation")
+				.clientPhone("+998701234567")
+				.build();
+		order1.setCreatedAt(order1Start.minusDays(2));
+		order1.setCreatedBy(owner.getId());
+		order1 = orderRepo.save(order1);
 
-        // ws3: Farg'ona Craft — 1 ta SOLD buyurtma
-        seedFinancialLogs(ws3, o3,
-            List.of(
-                flog(ws3.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -7_800_000, "Chinor yog'ochi kiritildi: 15 m³ × 520 000 so'm | Farg'ona Yog'och", LocalDate.now().minusDays(56), o3.getId()),
-                flog(ws3.getId(), FinancialLogType.WAREHOUSE_PURCHASE,   -170_000, "Mixlar kiritildi: 20 kg × 8 500 so'm", LocalDate.now().minusDays(55), o3.getId()),
-                flog(ws3.getId(), FinancialLogType.WAREHOUSE_PURCHASE,   -800_000, "Zangori bo'yoq kiritildi: 25 litr × 32 000 so'm", LocalDate.now().minusDays(55), o3.getId()),
-                flog(ws3.getId(), FinancialLogType.WAREHOUSE_PURCHASE,   -630_000, "Polimer qoplag'ich kiritildi: 15 litr × 42 000 so'm", LocalDate.now().minusDays(54), o3.getId()),
-                // Restock
-                flog(ws3.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -2_600_000, "Chinor yog'ochi restok: 5 m³ × 520 000 so'm", LocalDate.now().minusDays(18), o3.getId()),
-                // Sotildi
-                flog(ws3.getId(), FinancialLogType.FURNITURE_SOLD,     4_100_000, "Mebel sotildi: Idish javoni | Nodira Xoliqova", LocalDate.now().minusDays(32), o3.getId()),
-                flog(ws3.getId(), FinancialLogType.COMMISSION_PAID,     -246_000, "Komissiya to'landi: Feruza Saidova (6% × 4 100 000)", LocalDate.now().minusDays(30), o3.getId()),
-                // Maoshlar (faqat DAILY worker — w3b)
-                flog(ws3.getId(), FinancialLogType.WAGE_PAID,         -4_400_000, "Oylik maosh: Feruza Saidova (22 kun × 200 000)", LocalDate.now().minusDays(35), o3.getId()),
-                flog(ws3.getId(), FinancialLogType.WAGE_PAID,         -1_600_000, "Oraliq maosh: Feruza Saidova (8 kun × 200 000)", LocalDate.now().minusDays(7), o3.getId()),
-                // Bonus
-                flog(ws3.getId(), FinancialLogType.BONUS_PAID,          -200_000, "Bonus: Feruza Saidova — yaxshi ishladi", LocalDate.now().minusDays(12), o3.getId())
-            )
-        );
+		// Add materials to order1
+		addMaterialToOrder(order1, owner, materials[0], 2, order1Start.plusDays(1));  // Chinor: 2m³
+		addMaterialToOrder(order1, owner, materials[1], 8, order1Start.plusDays(2));  // Plywood: 8m²
+		addMaterialToOrder(order1, owner, materials[3], 5, order1Start.plusDays(3));  // Screws: 5kg
+		addMaterialToOrder(order1, owner, materials[4], 20, order1Start.plusDays(3)); // Hinges: 20pcs
+		addMaterialToOrder(order1, owner, materials[6], 3, order1Start.plusDays(5));  // Stain: 3L
+		addMaterialToOrder(order1, owner, materials[7], 2, order1Start.plusDays(6));  // Varnish: 2L
+		recalcOrderCost(order1);
 
-        // ── Joriy oy (May 1–5) yozuvlari — default filtrda ko'rinishi uchun ──
-        seedFinancialLogs(ws1, o1,
-            List.of(
-                flog(ws1.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -1_800_000, "Yog'och taxta kiritildi: 40 m² × 45 000 so'm | Toshkent Yog'och MChJ", LocalDate.now().minusDays(4), o1.getId()),
-                flog(ws1.getId(), FinancialLogType.MATERIAL_USED,        -675_000, "Xomashyo sarflandi: Yog'och taxta — 15 m² | Buyurtma: Kitob javoni", LocalDate.now().minusDays(3), o1.getId()),
-                flog(ws1.getId(), FinancialLogType.MATERIAL_USED,        -135_000, "Xomashyo sarflandi: Lak — 3 litr | Buyurtma: Kitob javoni", LocalDate.now().minusDays(2), o1.getId()),
-                flog(ws1.getId(), FinancialLogType.FURNITURE_SOLD,     5_800_000, "Mebel sotildi: Oshxona stoli | Hamid Kamolov", LocalDate.now().minusDays(1), o1.getId()),
-                flog(ws1.getId(), FinancialLogType.COMMISSION_PAID,      -290_000, "Komissiya to'landi: Ali Xasanov (5% × 5 800 000)", LocalDate.now(), o1.getId())
-            )
-        );
-        seedFinancialLogs(ws2, o2,
-            List.of(
-                flog(ws2.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -2_040_000, "Mato kiritildi: 120 metr × 17 000 so'm", LocalDate.now().minusDays(4), o2.getId()),
-                flog(ws2.getId(), FinancialLogType.MATERIAL_USED,        -360_000, "Xomashyo sarflandi: Mato — 20 metr | Buyurtma: Bolalar divanchasi", LocalDate.now().minusDays(3), o2.getId()),
-                flog(ws2.getId(), FinancialLogType.MATERIAL_USED,        -440_000, "Xomashyo sarflandi: Kauchuk ko'pik — 20 kg | Buyurtma: Bolalar divanchasi", LocalDate.now().minusDays(2), o2.getId())
-            )
-        );
-        seedFinancialLogs(ws3, o3,
-            List.of(
-                flog(ws3.getId(), FinancialLogType.WAREHOUSE_PURCHASE, -1_040_000, "Bo'yoq kiritildi: 20 litr × 52 000 so'm | Farg'ona Kimyo", LocalDate.now().minusDays(3), o3.getId()),
-                flog(ws3.getId(), FinancialLogType.MATERIAL_USED,        -780_000, "Xomashyo sarflandi: Chinor yog'ochi — 1.5 m³ | Buyurtma: Yotoq xonasi to'plami", LocalDate.now().minusDays(2), o3.getId()),
-                flog(ws3.getId(), FinancialLogType.WAGE_PAID,            -600_000, "Haftalik maosh: Feruza Saidova (3 kun × 200 000)", LocalDate.now().minusDays(1), o3.getId())
-            )
-        );
-    }
+		// Assign workers with commission
+		addAssignment(order1.getId(), worker1.getId(), owner.getId(), order1Start, BigDecimal.valueOf(5));
+		addAssignment(order1.getId(), worker2.getId(), owner.getId(), order1Start.plusDays(1), BigDecimal.valueOf(4));
 
-    // ── Helpers ────────────────────────────────────────────────────────────────
+		// Order 2: SOLD - Living Room Sofa
+		LocalDateTime order2Start = LocalDateTime.now().minusDays(28);
+		LocalDateTime order2Complete = order2Start.plusDays(20);
+		LocalDateTime order2Sold = order2Complete.plusDays(2);
 
-    private WorkshopEntity saveWorkshop(String name, String address, String phone, String description, UUID ownerId) {
-        WorkshopEntity ws = WorkshopEntity.builder()
-                .name(name).address(address).phone(phone).description(description)
-                .ownerId(ownerId)
-                .build();
-        ws.setCreatedAt(LocalDateTime.now().minusDays(60));
-        return workshopRepo.save(ws);
-    }
+		FurnitureOrderEntity order2 = FurnitureOrderEntity.builder()
+				.workshopId(workshop.getId())
+				.orderNumber("ORD-2026-00002")
+				.title("Living Room Sofa Set - Client: Luxury Home")
+				.status(FurnitureStatus.SOLD)
+				.salePrice(BigDecimal.valueOf(13_200_000))
+				.estimatedCost(BigDecimal.valueOf(5_280_000))
+				.actualMaterialCost(BigDecimal.ZERO)
+				.startedAt(order2Start)
+				.completedAt(order2Complete)
+				.soldAt(order2Sold)
+				.clientName("Luxury Home Designs")
+				.clientPhone("+998702222222")
+				.build();
+		order2.setCreatedAt(order2Start.minusDays(2));
+		order2.setCreatedBy(owner.getId());
+		order2 = orderRepo.save(order2);
 
-    private UserEntity saveOwner(String username, String pwd, String fullName, String phone, UUID workshopId) {
-        UserEntity u = UserEntity.builder()
-                .username(username).passwordHash(pwd).fullName(fullName).phone(phone)
-                .role(UserRole.OWNER).workshopId(workshopId).active(true).build();
-        u.setCreatedAt(LocalDateTime.now().minusDays(60));
-        return userRepo.save(u);
-    }
+		// Add materials to order2
+		addMaterialToOrder(order2, owner, materials[0], 4, order2Start.plusDays(2));  // Chinor: 4m³
+		addMaterialToOrder(order2, owner, materials[1], 15, order2Start.plusDays(2)); // Plywood: 15m²
+		addMaterialToOrder(order2, owner, materials[9], 12, order2Start.plusDays(3)); // Fabric: 12m
+		addMaterialToOrder(order2, owner, materials[10], 20, order2Start.plusDays(4)); // Foam: 20m²
+		addMaterialToOrder(order2, owner, materials[6], 5, order2Start.plusDays(6));  // Stain: 5L
+		addMaterialToOrder(order2, owner, materials[7], 4, order2Start.plusDays(8));  // Varnish: 4L
+		recalcOrderCost(order2);
 
-    private UserEntity saveWorker(String username, String pwd, String fullName, String phone,
-                                  UUID workshopId, PayType payType, int hoursTarget, int salary, int commissionPct) {
-        UserEntity u = UserEntity.builder()
-                .username(username).passwordHash(pwd).fullName(fullName).phone(phone)
-                .role(UserRole.WORKER).workshopId(workshopId).active(true)
-                .payType(payType)
-                .dailyHoursTarget(BigDecimal.valueOf(hoursTarget))
-                .dailySalary(BigDecimal.valueOf(salary))
-                .commissionPct(commissionPct > 0 ? BigDecimal.valueOf(commissionPct) : null)
-                .build();
-        u.setCreatedAt(LocalDateTime.now().minusDays(55));
-        return userRepo.save(u);
-    }
+		// Assign all workers
+		addAssignment(order2.getId(), worker1.getId(), owner.getId(), order2Start, BigDecimal.valueOf(5));
+		addAssignment(order2.getId(), worker2.getId(), owner.getId(), order2Start.plusDays(1), BigDecimal.valueOf(4));
+		addAssignment(order2.getId(), worker3.getId(), owner.getId(), order2Start.plusDays(3), BigDecimal.valueOf(3));
 
-    private WarehouseItemEntity saveItem(UUID workshopId, String name, UnitType unit, int qty, int price) {
-        WarehouseItemEntity item = WarehouseItemEntity.builder()
-                .workshopId(workshopId).name(name).unitType(unit)
-                .quantity(BigDecimal.valueOf(qty))
-                .avgUnitPrice(BigDecimal.valueOf(price))
-                .totalValue(BigDecimal.valueOf((long) qty * price))
-                .active(true).build();
-        item.setCreatedAt(LocalDateTime.now().minusDays(50));
-        return itemRepo.save(item);
-    }
+		// Create commission earnings for order2 (sold)
+		BigDecimal commission1 = BigDecimal.valueOf(13_200_000)
+				.multiply(BigDecimal.valueOf(5))
+				.divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+		EarningEntity commEarn1 = EarningEntity.builder()
+				.workerId(worker1.getId())
+				.workshopId(workshop.getId())
+				.earnDate(order2Sold.toLocalDate())
+				.earnType(EarnType.COMMISSION)
+				.furnitureOrderId(order2.getId())
+				.commissionPct(BigDecimal.valueOf(5))
+				.commissionAmount(commission1)
+				.baseAmount(commission1)
+				.totalAmount(commission1)
+				.description("Living Room Sofa — 5% commission")
+				.build();
+		commEarn1.setCreatedAt(order2Sold);
+		earningRepo.save(commEarn1);
 
-    private void createCompletedOrder(WorkshopEntity ws, UserEntity owner, UserEntity worker,
-                                      List<WarehouseItemEntity> items, String title,
-                                      int salePrice, int commissionPct) {
-        LocalDateTime started   = LocalDateTime.now().minusDays(40);
-        LocalDateTime completed = started.plusDays(12);
+		// Order 3: IN_PROGRESS - Custom Bedroom Set
+		LocalDateTime order3Start = LocalDateTime.now().minusDays(8);
+		FurnitureOrderEntity order3 = FurnitureOrderEntity.builder()
+				.workshopId(workshop.getId())
+				.orderNumber("ORD-2026-00003")
+				.title("Custom Bedroom Set - Client: Royal Residence")
+				.status(FurnitureStatus.IN_PROGRESS)
+				.salePrice(BigDecimal.valueOf(18_500_000))
+				.estimatedCost(BigDecimal.valueOf(7_400_000))
+				.actualMaterialCost(BigDecimal.ZERO)
+				.startedAt(order3Start)
+				.completedAt(null)
+				.soldAt(null)
+				.clientName("Royal Residence")
+				.clientPhone("+998703333333")
+				.build();
+		order3.setCreatedAt(order3Start.minusDays(2));
+		order3.setCreatedBy(owner.getId());
+		order3 = orderRepo.save(order3);
 
-        FurnitureOrderEntity order = buildOrder(ws.getId(), title, salePrice, FurnitureStatus.COMPLETED, started, completed, null, null, null);
-        order.setCreatedBy(owner.getId());
-        order = orderRepo.save(order);
+		// Add materials to order3
+		addMaterialToOrder(order3, owner, materials[0], 5, order3Start.plusDays(1));  // Chinor: 5m³
+		addMaterialToOrder(order3, owner, materials[1], 12, order3Start.plusDays(2)); // Plywood: 12m²
+		addMaterialToOrder(order3, owner, materials[2], 25, order3Start.plusDays(2)); // Veneer: 25m
+		addMaterialToOrder(order3, owner, materials[9], 8, order3Start.plusDays(3));  // Fabric: 8m
+		recalcOrderCost(order3);
 
-        addMaterialUsage(order, owner, items.get(0), 3, started.plusDays(1));
-        addMaterialUsage(order, owner, items.get(1), 10, started.plusDays(2));
-        recalcOrderCost(order);
+		// Assign all workers
+		addAssignment(order3.getId(), worker1.getId(), owner.getId(), order3Start, BigDecimal.valueOf(5));
+		addAssignment(order3.getId(), worker2.getId(), owner.getId(), order3Start.plusDays(1), BigDecimal.valueOf(4));
+		addAssignment(order3.getId(), worker3.getId(), owner.getId(), order3Start.plusDays(2), BigDecimal.valueOf(3));
 
-        addAssignment(order.getId(), worker.getId(), owner.getId(), started, BigDecimal.valueOf(commissionPct));
-    }
+		// Order 4: DRAFT - Kitchen Cabinet System
+		LocalDateTime order4Start = LocalDateTime.now().minusDays(2);
+		FurnitureOrderEntity order4 = FurnitureOrderEntity.builder()
+				.workshopId(workshop.getId())
+				.orderNumber("ORD-2026-00004")
+				.title("Kitchen Cabinet System - Client: Modern Home")
+				.status(FurnitureStatus.DRAFT)
+				.salePrice(BigDecimal.valueOf(7_200_000))
+				.estimatedCost(BigDecimal.valueOf(2_880_000))
+				.actualMaterialCost(BigDecimal.ZERO)
+				.startedAt(null)
+				.completedAt(null)
+				.soldAt(null)
+				.clientName("Modern Home Solutions")
+				.clientPhone("+998704444444")
+				.build();
+		order4.setCreatedAt(order4Start);
+		order4.setCreatedBy(owner.getId());
+		order4 = orderRepo.save(order4);
 
-    private void createSoldOrder(WorkshopEntity ws, UserEntity owner, UserEntity worker,
-                                 List<WarehouseItemEntity> items, String title,
-                                 int salePrice, String clientName, String clientPhone) {
-        LocalDateTime started   = LocalDateTime.now().minusDays(50);
-        LocalDateTime completed = started.plusDays(15);
-        LocalDateTime sold      = completed.plusDays(3);
+		// Add one material to order4
+		addMaterialToOrder(order4, owner, materials[1], 6, order4Start.plusHours(1)); // Plywood: 6m²
+		recalcOrderCost(order4);
 
-        FurnitureOrderEntity order = buildOrder(ws.getId(), title, salePrice, FurnitureStatus.SOLD, started, completed, sold, clientName, clientPhone);
-        order.setCreatedBy(owner.getId());
-        order = orderRepo.save(order);
+		// ════════════════════════════════════════════════════════════════
+		// 7. ATTENDANCE & DAILY WAGES
+		// ════════════════════════════════════════════════════════════════
+		seedAttendanceAndDailyEarnings(workshop.getId(), worker1, 30);
+		seedAttendanceAndDailyEarnings(workshop.getId(), worker2, 30);
+		seedAttendanceAndDailyEarnings(workshop.getId(), worker3, 30);
 
-        addMaterialUsage(order, owner, items.get(0), 5, started.plusDays(2));
-        addMaterialUsage(order, owner, items.get(1), 20, started.plusDays(3));
-        if (items.size() > 2) addMaterialUsage(order, owner, items.get(2), 4, started.plusDays(5));
-        recalcOrderCost(order);
+		// ════════════════════════════════════════════════════════════════
+		// 8. MONTHLY SALARIES (for MONTHLY pay type worker3)
+		// ════════════════════════════════════════════════════════════════
+		if (worker3.getPayType() == PayType.MONTHLY && worker3.getMonthlySalary() != null) {
+			LocalDate currentMonth = LocalDate.now().withDayOfMonth(1);
+			EarningEntity monthlySal = EarningEntity.builder()
+					.workerId(worker3.getId())
+					.workshopId(workshop.getId())
+					.earnDate(currentMonth)
+					.earnType(EarnType.MONTHLY_WAGE)
+					.daysWorked(BigDecimal.valueOf(22))
+					.monthlySalary(worker3.getMonthlySalary())
+					.baseAmount(worker3.getMonthlySalary())
+					.totalAmount(worker3.getMonthlySalary())
+					.description("May 2026 — Monthly Salary")
+					.build();
+			monthlySal.setCreatedAt(currentMonth.atTime(10, 0));
+			earningRepo.save(monthlySal);
+		}
 
-        int pct = worker.getCommissionPct() != null ? worker.getCommissionPct().intValue() : 5;
-        addAssignment(order.getId(), worker.getId(), owner.getId(), started, BigDecimal.valueOf(pct));
+		// ════════════════════════════════════════════════════════════════
+		// 9. BONUSES
+		// ════════════════════════════════════════════════════════════════
+		LocalDate bonusDate = LocalDate.now().minusDays(5);
 
-        // Commission earning
-        BigDecimal commAmt = BigDecimal.valueOf(salePrice)
-                .multiply(BigDecimal.valueOf(pct))
-                .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
-        EarningEntity earning = EarningEntity.builder()
-                .workerId(worker.getId()).workshopId(ws.getId())
-                .earnDate(sold.toLocalDate())
-                .earnType(EarnType.COMMISSION)
-                .furnitureOrderId(order.getId())
-                .commissionPct(BigDecimal.valueOf(pct))
-                .commissionAmount(commAmt)
-                .baseAmount(commAmt).totalAmount(commAmt)
-                .description(title + " — komissiya")
-                .build();
-        earning.setCreatedAt(sold);
-        earningRepo.save(earning);
-    }
+		BonusEntity bonus1 = BonusEntity.builder()
+				.workerId(worker1.getId())
+				.workshopId(workshop.getId())
+				.bonusDate(bonusDate)
+				.amount(BigDecimal.valueOf(500_000))
+				.reason("Excellent craftsmanship on executive desk")
+				.build();
+		bonus1.setCreatedAt(bonusDate.atTime(15, 0));
+		bonus1.setCreatedBy(owner.getId());
+		bonusRepo.save(bonus1);
 
-    private void createInProgressOrder(WorkshopEntity ws, UserEntity owner,
-                                       UserEntity w1, UserEntity w2,
-                                       List<WarehouseItemEntity> items, String title, int salePrice) {
-        LocalDateTime started = LocalDateTime.now().minusDays(5);
-        FurnitureOrderEntity order = buildOrder(ws.getId(), title, salePrice, FurnitureStatus.IN_PROGRESS, started, null, null, null, null);
-        order.setCreatedBy(owner.getId());
-        order = orderRepo.save(order);
+		BonusEntity bonus2 = BonusEntity.builder()
+				.workerId(worker2.getId())
+				.workshopId(workshop.getId())
+				.bonusDate(bonusDate)
+				.amount(BigDecimal.valueOf(400_000))
+				.reason("Efficient upholstery work on sofa")
+				.build();
+		bonus2.setCreatedAt(bonusDate.atTime(15, 30));
+		bonus2.setCreatedBy(owner.getId());
+		bonusRepo.save(bonus2);
 
-        addMaterialUsage(order, owner, items.get(0), 2, started.plusDays(1));
-        recalcOrderCost(order);
+		BonusEntity bonus3 = BonusEntity.builder()
+				.workerId(worker3.getId())
+				.workshopId(workshop.getId())
+				.bonusDate(bonusDate.minusDays(3))
+				.amount(BigDecimal.valueOf(800_000))
+				.reason("Perfect project management and team coordination")
+				.build();
+		bonus3.setCreatedAt(bonusDate.minusDays(3).atTime(12, 0));
+		bonus3.setCreatedBy(owner.getId());
+		bonusRepo.save(bonus3);
 
-        addAssignment(order.getId(), w1.getId(), owner.getId(), started, w1.getCommissionPct() != null ? w1.getCommissionPct() : BigDecimal.valueOf(5));
-        addAssignment(order.getId(), w2.getId(), owner.getId(), started.plusDays(1), w2.getCommissionPct() != null ? w2.getCommissionPct() : BigDecimal.valueOf(5));
-    }
+		// Create earning entries for bonuses
+		EarningEntity bonusEarn1 = EarningEntity.builder()
+				.workerId(worker1.getId())
+				.workshopId(workshop.getId())
+				.earnDate(bonusDate)
+				.earnType(EarnType.BONUS)
+				.baseAmount(BigDecimal.valueOf(500_000))
+				.totalAmount(BigDecimal.valueOf(500_000))
+				.description("Bonus — Excellent craftsmanship")
+				.build();
+		bonusEarn1.setCreatedAt(bonusDate.atTime(15, 0));
+		earningRepo.save(bonusEarn1);
 
-    private FurnitureOrderEntity buildOrder(UUID workshopId, String title, int salePrice,
-                                            FurnitureStatus status,
-                                            LocalDateTime started, LocalDateTime completed, LocalDateTime sold,
-                                            String clientName, String clientPhone) {
-        String orderNum = "ORD-" + LocalDate.now().getYear() + "-" + String.format("%05d", orderRepo.count() + 1);
-        FurnitureOrderEntity o = FurnitureOrderEntity.builder()
-                .workshopId(workshopId).orderNumber(orderNum).title(title)
-                .status(status)
-                .salePrice(BigDecimal.valueOf(salePrice))
-                .estimatedCost(BigDecimal.valueOf((long)(salePrice * 0.4)))
-                .actualMaterialCost(BigDecimal.ZERO)
-                .startedAt(started).completedAt(completed).soldAt(sold)
-                .clientName(clientName).clientPhone(clientPhone)
-                .build();
-        o.setCreatedAt(started != null ? started.minusDays(2) : LocalDateTime.now().minusDays(7));
-        return o;
-    }
+		EarningEntity bonusEarn2 = EarningEntity.builder()
+				.workerId(worker2.getId())
+				.workshopId(workshop.getId())
+				.earnDate(bonusDate)
+				.earnType(EarnType.BONUS)
+				.baseAmount(BigDecimal.valueOf(400_000))
+				.totalAmount(BigDecimal.valueOf(400_000))
+				.description("Bonus — Efficient upholstery work")
+				.build();
+		bonusEarn2.setCreatedAt(bonusDate.atTime(15, 30));
+		earningRepo.save(bonusEarn2);
 
-    private void addMaterialUsage(FurnitureOrderEntity order, UserEntity owner,
-                                  WarehouseItemEntity item, int qty, LocalDateTime at) {
-        BigDecimal quantity  = BigDecimal.valueOf(qty);
-        BigDecimal unitPrice = item.getAvgUnitPrice();
-        BigDecimal total     = quantity.multiply(unitPrice);
+		EarningEntity bonusEarn3 = EarningEntity.builder()
+				.workerId(worker3.getId())
+				.workshopId(workshop.getId())
+				.earnDate(bonusDate.minusDays(3))
+				.earnType(EarnType.BONUS)
+				.baseAmount(BigDecimal.valueOf(800_000))
+				.totalAmount(BigDecimal.valueOf(800_000))
+				.description("Bonus — Project management excellence")
+				.build();
+		bonusEarn3.setCreatedAt(bonusDate.minusDays(3).atTime(12, 0));
+		earningRepo.save(bonusEarn3);
 
-        MaterialUsageEntity usage = MaterialUsageEntity.builder()
-                .furnitureOrderId(order.getId())
-                .warehouseItemId(item.getId())
-                .quantityUsed(quantity)
-                .unitPriceAtTime(unitPrice)
-                .totalCost(total)
-                .givenBy(owner.getId())
-                .givenAt(at)
-                .notes(null)
-                .build();
-        usage.setCreatedAt(at);
-        usageRepo.save(usage);
+		// ════════════════════════════════════════════════════════════════
+		// 10. FINANCIAL LOGS
+		// ════════════════════════════════════════════════════════════════
+		seedComprehensiveFinancialLogs(workshop.getId(), owner.getId());
+	}
 
-        // Log warehouse OUT transaction
-        WarehouseTransactionEntity tx = WarehouseTransactionEntity.builder()
-                .itemId(item.getId()).workshopId(item.getWorkshopId())
-                .transactionType(TransactionType.OUT)
-                .quantity(quantity).unitPrice(unitPrice).totalCost(total)
-                .qtyBefore(item.getQuantity().add(quantity))
-                .qtyAfter(item.getQuantity())
-                .priceBefore(unitPrice).priceAfter(unitPrice)
-                .furnitureOrderId(order.getId())
-                .createdBy(owner.getId())
-                .build();
-        tx.setCreatedAt(at);
-        txRepo.save(tx);
-    }
+	// ════════════════════════════════════════════════════════════════
+	// HELPER METHODS
+	// ════════════════════════════════════════════════════════════════
 
-    private void recalcOrderCost(FurnitureOrderEntity order) {
-        BigDecimal total = usageRepo.sumTotalCostByOrderId(order.getId());
-        order.setActualMaterialCost(total != null ? total : BigDecimal.ZERO);
-        orderRepo.save(order);
-    }
+	private WarehouseItemEntity saveItem(UUID workshopId, String name, UnitType unit, int qty, long price, LocalDateTime createdAt, UUID createdBy) {
+		WarehouseItemEntity item = WarehouseItemEntity.builder()
+				.workshopId(workshopId)
+				.name(name)
+				.unitType(unit)
+				.quantity(BigDecimal.valueOf(qty))
+				.avgUnitPrice(BigDecimal.valueOf(price))
+				.totalValue(BigDecimal.valueOf((long) qty * price))
+				.active(true)
+				.build();
+		item.setCreatedAt(createdAt);
+		item.setCreatedBy(createdBy);
 
-    private void addAssignment(UUID orderId, UUID workerId, UUID ownerId, LocalDateTime at, BigDecimal commPct) {
-        FurnitureAssignmentEntity a = FurnitureAssignmentEntity.builder()
-                .furnitureOrderId(orderId).workerId(workerId)
-                .assignedAt(at).commissionPct(commPct).active(true).build();
-        a.setCreatedBy(ownerId);
-        a.setCreatedAt(at);
-        assignmentRepo.save(a);
-    }
+		// Create IN transaction for initial stock
+		WarehouseTransactionEntity inTx = WarehouseTransactionEntity.builder()
+				.itemId(item.getId())
+				.workshopId(workshopId)
+				.transactionType(TransactionType.IN)
+				.quantity(BigDecimal.valueOf(qty))
+				.unitPrice(BigDecimal.valueOf(price))
+				.totalCost(BigDecimal.valueOf((long) qty * price))
+				.qtyBefore(BigDecimal.ZERO)
+				.qtyAfter(BigDecimal.valueOf(qty))
+				.priceBefore(BigDecimal.valueOf(price))
+				.priceAfter(BigDecimal.valueOf(price))
+				.build();
+		inTx.setCreatedAt(createdAt);
+		inTx.setCreatedBy(createdBy);
+		txRepo.save(inTx);
 
-    private void seedFinancialLogs(WorkshopEntity ws, UserEntity owner, List<FinancialLogEntity> logs) {
-        financialLogRepo.saveAll(logs);
-    }
+		return itemRepo.save(item);
+	}
 
-    private FinancialLogEntity flog(UUID workshopId, FinancialLogType type, long amount,
-                                    String description, LocalDate logDate, UUID actorId) {
-        FinancialLogEntity log = FinancialLogEntity.builder()
-                .workshopId(workshopId)
-                .logType(type)
-                .amount(BigDecimal.valueOf(amount))
-                .description(description)
-                .logDate(logDate)
-                .build();
-        log.setCreatedBy(actorId);
-        log.setCreatedAt(logDate.atTime(10, 0));
-        return log;
-    }
+	private void addMaterialToOrder(FurnitureOrderEntity order, UserEntity owner,
+									WarehouseItemEntity item, int qty, LocalDateTime usedAt) {
+		BigDecimal quantity = BigDecimal.valueOf(qty);
+		BigDecimal unitPrice = item.getAvgUnitPrice();
+		BigDecimal totalCost = quantity.multiply(unitPrice);
 
-    private void seedAttendanceAndEarnings(WorkshopEntity ws, UserEntity owner, List<UserEntity> workers) {
-        LocalDate today = LocalDate.now();
-        for (UserEntity worker : workers) {
-            for (int i = 30; i >= 1; i--) {
-                if (i % 7 == 0 || i % 7 == 6) continue; // skip weekends
-                LocalDate workDate = today.minusDays(i);
-                LocalDateTime checkIn  = workDate.atTime(8, 0);
-                LocalDateTime checkOut = workDate.atTime(17, 0);
-                BigDecimal hours = BigDecimal.valueOf(8);
+		// Update warehouse quantity
+		item.setQuantity(item.getQuantity().subtract(quantity));
+		item.setTotalValue(item.getQuantity().multiply(unitPrice));
+		itemRepo.save(item);
 
-                DailyAttendanceEntity att = DailyAttendanceEntity.builder()
-                        .userId(worker.getId()).workshopId(ws.getId())
-                        .workDate(workDate).checkInTime(checkIn).checkOutTime(checkOut)
-                        .hoursWorked(hours).hoursLocked(true).hoursLockedAt(checkOut.plusHours(1))
-                        .hoursSelfReported(false).hoursDeadline(checkOut.plusHours(24))
-                        .build();
-                att.setCreatedAt(checkIn);
-                att.setCreatedBy(worker.getId());
-                DailyAttendanceEntity savedAtt = attendanceRepo.save(att);
+		// Create material usage record
+		MaterialUsageEntity usage = MaterialUsageEntity.builder()
+				.furnitureOrderId(order.getId())
+				.warehouseItemId(item.getId())
+				.quantityUsed(quantity)
+				.unitPriceAtTime(unitPrice)
+				.totalCost(totalCost)
+				.givenBy(owner.getId())
+				.givenAt(usedAt)
+				.notes(null)
+				.build();
+		usage.setCreatedAt(usedAt);
+		usageRepo.save(usage);
 
-                if (worker.getPayType() == PayType.DAILY && worker.getDailySalary() != null) {
-                    BigDecimal dailySal = worker.getDailySalary();
-                    EarningEntity earn = EarningEntity.builder()
-                            .workerId(worker.getId()).workshopId(ws.getId())
-                            .earnDate(workDate).earnType(EarnType.DAILY_WAGE)
-                            .attendanceId(savedAtt.getId())
-                            .daysWorked(BigDecimal.ONE).dailyRate(dailySal)
-                            .baseAmount(dailySal).totalAmount(dailySal)
-                            .hoursWorked(hours)
-                            .description(workDate + " — kunlik ish haqi")
-                            .build();
-                    earn.setCreatedAt(checkOut);
-                    earningRepo.save(earn);
-                }
-            }
-        }
-    }
+		// Log warehouse OUT transaction
+		WarehouseTransactionEntity tx = WarehouseTransactionEntity.builder()
+				.itemId(item.getId())
+				.workshopId(item.getWorkshopId())
+				.transactionType(TransactionType.OUT)
+				.quantity(quantity)
+				.unitPrice(unitPrice)
+				.totalCost(totalCost)
+				.qtyBefore(item.getQuantity().add(quantity))
+				.qtyAfter(item.getQuantity())
+				.priceBefore(unitPrice)
+				.priceAfter(unitPrice)
+				.furnitureOrderId(order.getId())
+				.createdBy(owner.getId())
+				.build();
+		tx.setCreatedAt(usedAt);
+		txRepo.save(tx);
+	}
+
+	private void recalcOrderCost(FurnitureOrderEntity order) {
+		BigDecimal total = usageRepo.sumTotalCostByOrderId(order.getId());
+		order.setActualMaterialCost(total != null ? total : BigDecimal.ZERO);
+		orderRepo.save(order);
+	}
+
+	private void addAssignment(UUID orderId, UUID workerId, UUID ownerId, LocalDateTime at, BigDecimal commPct) {
+		FurnitureAssignmentEntity assignment = FurnitureAssignmentEntity.builder()
+				.furnitureOrderId(orderId)
+				.workerId(workerId)
+				.assignedAt(at)
+				.commissionPct(commPct)
+				.active(true)
+				.build();
+		assignment.setCreatedBy(ownerId);
+		assignment.setCreatedAt(at);
+		assignmentRepo.save(assignment);
+	}
+
+	private void seedAttendanceAndDailyEarnings(UUID workshopId, UserEntity worker, int daysBack) {
+		if (worker.getPayType() != PayType.DAILY) return;
+
+		LocalDate today = LocalDate.now();
+		for (int i = daysBack; i >= 1; i--) {
+			LocalDate workDate = today.minusDays(i);
+
+			// Skip weekends (Saturday = 6, Sunday = 7 in DayOfWeek)
+			if (workDate.getDayOfWeek().getValue() >= 6) continue;
+
+			LocalDateTime checkIn = workDate.atTime(8, 30);
+			LocalDateTime checkOut = workDate.atTime(17, 30);
+			BigDecimal hours = BigDecimal.valueOf(8);
+
+			// Create attendance record
+			DailyAttendanceEntity att = DailyAttendanceEntity.builder()
+					.userId(worker.getId())
+					.workshopId(workshopId)
+					.workDate(workDate)
+					.checkInTime(checkIn)
+					.checkOutTime(checkOut)
+					.hoursWorked(hours)
+					.hoursLocked(true)
+					.hoursLockedAt(checkOut.plusHours(1))
+					.hoursSelfReported(false)
+					.hoursDeadline(checkOut.plusHours(24))
+					.build();
+			att.setCreatedAt(checkIn);
+			att.setCreatedBy(worker.getId());
+			DailyAttendanceEntity savedAtt = attendanceRepo.save(att);
+
+			// Create daily wage earning
+			EarningEntity earn = EarningEntity.builder()
+					.workerId(worker.getId())
+					.workshopId(workshopId)
+					.earnDate(workDate)
+					.earnType(EarnType.DAILY_WAGE)
+					.attendanceId(savedAtt.getId())
+					.daysWorked(BigDecimal.ONE)
+					.dailyRate(worker.getDailySalary())
+					.hoursWorked(hours)
+					.baseAmount(worker.getDailySalary())
+					.totalAmount(worker.getDailySalary())
+					.description(workDate + " — Daily wage")
+					.build();
+			earn.setCreatedAt(checkOut);
+			earningRepo.save(earn);
+		}
+	}
+
+	private void seedComprehensiveFinancialLogs(UUID workshopId, UUID ownerId) {
+		LocalDate today = LocalDate.now();
+
+		// ────────────────────────────────────────────────────────────────
+		// WAREHOUSE PURCHASES
+		// ────────────────────────────────────────────────────────────────
+		financialLogRepo.save(flog(workshopId, FinancialLogType.WAREHOUSE_PURCHASE,
+				-16_250_000, "Initial wood stock purchase: Chinor 25m³ × 650k, Plywood 150m² × 85k",
+				today.minusDays(40), ownerId));
+
+		financialLogRepo.save(flog(workshopId, FinancialLogType.WAREHOUSE_PURCHASE,
+				-4_200_000, "Hardware restocking: Screws 50kg, Hinges 300pcs, Handles 250pcs",
+				today.minusDays(35), ownerId));
+
+		financialLogRepo.save(flog(workshopId, FinancialLogType.WAREHOUSE_PURCHASE,
+				-5_130_000, "Finishing materials: Stain 40L, Varnish 30L, Filler 20kg",
+				today.minusDays(32), ownerId));
+
+		financialLogRepo.save(flog(workshopId, FinancialLogType.WAREHOUSE_PURCHASE,
+				-13_470_000, "Upholstery purchase: Fabric 180m × 65k, Foam 100m² × 42k",
+				today.minusDays(30), ownerId));
+
+		financialLogRepo.save(flog(workshopId, FinancialLogType.WAREHOUSE_PURCHASE,
+				-3_640_000, "Restock: Plywood 50m² × 85k, Stain 10L, Varnish 5L",
+				today.minusDays(15), ownerId));
+
+		// ────────────────────────────────────────────────────────────────
+		// MATERIAL USAGE (COGS)
+		// ────────────────────────────────────────────────────────────────
+		financialLogRepo.save(flog(workshopId, FinancialLogType.MATERIAL_USED,
+				-1_301_000, "Materials used for Order #1 (Executive Desk): Chinor 2m³, Plywood 8m²",
+				today.minusDays(28), ownerId));
+
+		financialLogRepo.save(flog(workshopId, FinancialLogType.MATERIAL_USED,
+				-3_952_000, "Materials used for Order #2 (Sofa Set): Chinor 4m³, Plywood 15m², Fabric 12m, Foam 20m²",
+				today.minusDays(25), ownerId));
+
+		financialLogRepo.save(flog(workshopId, FinancialLogType.MATERIAL_USED,
+				-2_106_000, "Materials used for Order #3 (Bedroom): Chinor 5m³, Plywood 12m², Veneer 25m",
+				today.minusDays(10), ownerId));
+
+		// ────────────────────────────────────────────────────────────────
+		// FURNITURE SALES
+		// ────────────────────────────────────────────────────────────────
+		financialLogRepo.save(flog(workshopId, FinancialLogType.FURNITURE_SOLD,
+				4_800_000, "Order #1 COMPLETED: Executive Office Desk (Client: Tech Corp)",
+				today.minusDays(15), ownerId));
+
+		financialLogRepo.save(flog(workshopId, FinancialLogType.FURNITURE_SOLD,
+				13_200_000, "Order #2 SOLD: Living Room Sofa Set (Client: Luxury Home)",
+				today.minusDays(6), ownerId));
+
+		// ────────────────────────────────────────────────────────────────
+		// COMMISSIONS
+		// ────────────────────────────────────────────────────────────────
+		financialLogRepo.save(flog(workshopId, FinancialLogType.COMMISSION_PAID,
+				-660_000, "Commission paid: Rustam Abdullayev (5% × 13.2M for Sofa)",
+				today.minusDays(5), ownerId));
+
+		// ────────────────────────────────────────────────────────────────
+		// WAGES & SALARIES
+		// ────────────────────────────────────────────────────────────────
+		financialLogRepo.save(flog(workshopId, FinancialLogType.WAGE_PAID,
+				-6_600_000, "Monthly salary: Sherali Mirzayev (Full month May 2026)",
+				today.minusDays(2), ownerId));
+
+		financialLogRepo.save(flog(workshopId, FinancialLogType.WAGE_PAID,
+				-5_250_000, "Daily wages + extras: Rustam Abdullayev (22 days × 300k = 6.6M, minus advances 1.35M)",
+				today.minusDays(3), ownerId));
+
+		financialLogRepo.save(flog(workshopId, FinancialLogType.WAGE_PAID,
+				-4_500_000, "Daily wages: Dilnoza Khamidova (20 days × 250k = 5M, minus advances 500k)",
+				today.minusDays(3), ownerId));
+
+		// ────────────────────────────────────────────────────────────────
+		// BONUSES
+		// ────────────────────────────────────────────────────────────────
+		financialLogRepo.save(flog(workshopId, FinancialLogType.BONUS_PAID,
+				-500_000, "Bonus: Rustam Abdullayev — Excellent craftsmanship",
+				today.minusDays(5), ownerId));
+
+		financialLogRepo.save(flog(workshopId, FinancialLogType.BONUS_PAID,
+				-400_000, "Bonus: Dilnoza Khamidova — Efficient upholstery work",
+				today.minusDays(5), ownerId));
+
+		financialLogRepo.save(flog(workshopId, FinancialLogType.BONUS_PAID,
+				-800_000, "Bonus: Sherali Mirzayev — Perfect project management",
+				today.minusDays(8), ownerId));
+
+		// ────────────────────────────────────────────────────────────────
+		// CURRENT MONTH RECENT ACTIVITY
+		// ────────────────────────────────────────────────────────────────
+		financialLogRepo.save(flog(workshopId, FinancialLogType.WAREHOUSE_PURCHASE,
+				-1_700_000, "Stock replenishment: Veneer 50m, Stain 5L (local supplier)",
+				today.minusDays(3), ownerId));
+
+		financialLogRepo.save(flog(workshopId, FinancialLogType.MATERIAL_USED,
+				-450_000, "Materials for Order #3 in progress: Additional stain & varnish",
+				today.minusDays(2), ownerId));
+
+		financialLogRepo.save(flog(workshopId, FinancialLogType.WAGE_PAID,
+				-600_000, "Weekly advance: Rustam Abdullayev (2 days early payment)",
+				today.minusDays(1), ownerId));
+	}
+
+	private FinancialLogEntity flog(UUID workshopId, FinancialLogType type, long amount,
+									String description, LocalDate logDate, UUID actorId) {
+		FinancialLogEntity log = FinancialLogEntity.builder()
+				.workshopId(workshopId)
+				.logType(type)
+				.amount(BigDecimal.valueOf(amount))
+				.description(description)
+				.logDate(logDate)
+				.build();
+		log.setCreatedBy(actorId);
+		log.setCreatedAt(logDate.atTime(10, 0));
+		return log;
+	}
 }
