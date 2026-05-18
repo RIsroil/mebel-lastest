@@ -83,13 +83,14 @@ public class DataInitializer implements CommandLineRunner {
 				.active(true)
 				.build();
 		owner.setCreatedAt(LocalDateTime.now().minusDays(60));
+		owner = userRepo.save(owner);  // SAVE FIRST
 
 		WorkshopEntity workshop = WorkshopEntity.builder()
 				.name("Premium Mebel Factory")
 				.address("Tashkent, Yunus Rajabiy 123, Building A")
 				.phone("+998712345678")
 				.description("Premium furniture manufacturing with modern equipment")
-				.ownerId(owner.getId())
+				.ownerId(owner.getId())  // NOW owner.getId() has value
 				.build();
 		workshop.setCreatedAt(LocalDateTime.now().minusDays(60));
 		workshop = workshopRepo.save(workshop);
