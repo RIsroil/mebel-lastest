@@ -473,10 +473,11 @@ public class DataInitializer implements CommandLineRunner {
 				.build();
 		item.setCreatedAt(createdAt);
 		item.setCreatedBy(createdBy);
+		item = itemRepo.save(item);  // SAVE FIRST to get valid ID
 
 		// Create IN transaction for initial stock
 		WarehouseTransactionEntity inTx = WarehouseTransactionEntity.builder()
-				.itemId(item.getId())
+				.itemId(item.getId())  // NOW item.getId() has value
 				.workshopId(workshopId)
 				.transactionType(TransactionType.IN)
 				.quantity(BigDecimal.valueOf(qty))
@@ -491,7 +492,7 @@ public class DataInitializer implements CommandLineRunner {
 		inTx.setCreatedBy(createdBy);
 		txRepo.save(inTx);
 
-		return itemRepo.save(item);
+		return item;
 	}
 
 	private void addMaterialToOrder(FurnitureOrderEntity order, UserEntity owner,

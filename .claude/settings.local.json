@@ -33,7 +33,10 @@
       "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
       "Bash(cd /d \"C:\\\\Users\\\\isroi\\\\IdeaProjects\\\\mebel-lastest\")",
       "Bash(mvn clean *)",
-      "Bash(timeout 40 bash -c 'cd /mnt/c/Users/isroi/IdeaProjects/mebel-lastest && tail -f target/spring-boot-application.log 2>/dev/null | grep -E \"Started|error|ERROR|Exception\" &  sleep 40 ; pkill -P $$ tail')"
+      "Bash(timeout 40 bash -c 'cd /mnt/c/Users/isroi/IdeaProjects/mebel-lastest && tail -f target/spring-boot-application.log 2>/dev/null | grep -E \"Started|error|ERROR|Exception\" &  sleep 40 ; pkill -P $$ tail')",
+      "Bash(docker-compose down *)",
+      "Bash(docker-compose build *)",
+      "Bash(docker-compose up *)"
     ]
   }
 }
