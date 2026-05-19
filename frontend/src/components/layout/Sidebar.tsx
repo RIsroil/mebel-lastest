@@ -1,4 +1,18 @@
 import { NavLink, useNavigate } from 'react-router-dom'
+import {
+  BarChart3,
+  Sofa,
+  Star,
+  Package,
+  Factory,
+  Users,
+  DollarSign,
+  FileText,
+  Bookmark,
+  Clock,
+  CheckCircle2,
+  Users as UsersIcon,
+} from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { useTheme } from '@/hooks/useTheme'
 import Avatar from '@/components/ui/Avatar'
@@ -12,7 +26,7 @@ interface Props {
 
 interface NavItem {
   to:     string
-  icon:   string
+  icon:   React.ReactNode
   label:  string
 }
 
@@ -24,24 +38,24 @@ interface NavSection {
 const OWNER_NAV: NavSection[] = [
   {
     items: [
-      { to: '/dashboard',  icon: '📊', label: 'Dashboard' },
-      { to: '/orders',     icon: '🛋️', label: 'Buyurtmalar' },
-      { to: '/saves',      icon: '⭐', label: 'Saves' },
-      { to: '/warehouse',  icon: '📦', label: 'Ombor' },
-      { to: '/workshops',  icon: '🏭', label: 'Korxonalar' },
+      { to: '/dashboard',  icon: <BarChart3 size={20} />, label: 'Dashboard' },
+      { to: '/orders',     icon: <Sofa size={20} />, label: 'Buyurtmalar' },
+      { to: '/saves',      icon: <Star size={20} />, label: 'Saves' },
+      { to: '/warehouse',  icon: <Package size={20} />, label: 'Ombor' },
+      { to: '/workshops',  icon: <Factory size={20} />, label: 'Korxonalar' },
     ],
   },
   {
     sectionLabel: 'Ishchilar',
     items: [
-      { to: '/workers',  icon: '👷', label: 'Workerlar' },
-      { to: '/earnings', icon: '💰', label: 'Maosh' },
+      { to: '/workers',  icon: <Users size={20} />, label: 'Workerlar' },
+      { to: '/earnings', icon: <DollarSign size={20} />, label: 'Maosh' },
     ],
   },
   {
     sectionLabel: 'Hisobot',
     items: [
-      { to: '/logs', icon: '📋', label: 'Moliyaviy jurnal' },
+      { to: '/logs', icon: <FileText size={20} />, label: 'Moliyaviy jurnal' },
     ],
   },
 ]
@@ -49,10 +63,10 @@ const OWNER_NAV: NavSection[] = [
 const WORKER_NAV_BUTTON: NavSection[] = [
   {
     items: [
-      { to: '/my-tasks',     icon: '📌', label: 'Mening vazifalarim' },
-      { to: '/check-in',     icon: '📅', label: 'Kirish / Chiqish' },
-      { to: '/submit-hours', icon: '⏱️', label: 'Soatlarni topshirish' },
-      { to: '/my-earnings',  icon: '💰', label: 'Mening maoshim' },
+      { to: '/my-tasks',     icon: <Bookmark size={20} />, label: 'Mening vazifalarim' },
+      { to: '/check-in',     icon: <CheckCircle2 size={20} />, label: 'Kirish / Chiqish' },
+      { to: '/submit-hours', icon: <Clock size={20} />, label: 'Soatlarni topshirish' },
+      { to: '/my-earnings',  icon: <DollarSign size={20} />, label: 'Mening maoshim' },
     ],
   },
 ]
@@ -60,9 +74,9 @@ const WORKER_NAV_BUTTON: NavSection[] = [
 const WORKER_NAV_MANUAL: NavSection[] = [
   {
     items: [
-      { to: '/my-tasks',          icon: '📌', label: 'Mening vazifalarim' },
-      { to: '/weekly-attendance', icon: '📋', label: 'Haftalik davomat' },
-      { to: '/my-earnings',       icon: '💰', label: 'Mening maoshim' },
+      { to: '/my-tasks',          icon: <Bookmark size={20} />, label: 'Mening vazifalarim' },
+      { to: '/weekly-attendance', icon: <FileText size={20} />, label: 'Haftalik davomat' },
+      { to: '/my-earnings',       icon: <DollarSign size={20} />, label: 'Mening maoshim' },
     ],
   },
 ]
@@ -70,7 +84,7 @@ const WORKER_NAV_MANUAL: NavSection[] = [
 const ADMIN_NAV: NavSection[] = [
   {
     items: [
-      { to: '/admin/users', icon: '👥', label: 'Foydalanuvchilar' },
+      { to: '/admin/users', icon: <UsersIcon size={20} />, label: 'Foydalanuvchilar' },
     ],
   },
 ]

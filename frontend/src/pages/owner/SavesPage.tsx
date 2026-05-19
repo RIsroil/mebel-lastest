@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Edit2, Trash2, Image as ImageIcon, X as XIcon } from 'lucide-react'
 import { useTopbar } from '@/context/TopbarContext'
 import { savesApi } from '@/api/saves.api'
 import type { FurnitureSave, SaveCutRequest } from '@/types/saves.types'
@@ -250,8 +251,9 @@ const SavesPage = () => {
                     setSaveName(selectedSave.name)
                     setSaveDesc(selectedSave.description ?? '')
                   }}
+                  title="Tahrirlash"
                 >
-                  ✏️
+                  <Edit2 size={18} />
                 </button>
                 <button
                   type="button"
@@ -261,8 +263,9 @@ const SavesPage = () => {
                       deleteMut.mutate(selectedSave.id)
                     }
                   }}
+                  title="O'chirish"
                 >
-                  🗑
+                  <Trash2 size={18} />
                 </button>
               </div>
             </div>
@@ -270,7 +273,10 @@ const SavesPage = () => {
             {/* Images section */}
             <div className={styles.cutsSection} style={{ marginBottom: 16 }}>
               <div className={styles.cutsHeader}>
-                <span className={styles.cutsTitle}>📸 Rasmlar ({(selectedSave.images ?? []).length}/3)</span>
+                <span className={styles.cutsTitle}>
+                  <ImageIcon size={16} style={{ display: 'inline-block', marginRight: 6 }} />
+                  Rasmlar ({(selectedSave.images ?? []).length}/3)
+                </span>
                 {(selectedSave.images ?? []).length < 3 && (
                   <>
                     <input
@@ -312,7 +318,7 @@ const SavesPage = () => {
                         onClick={() => deleteImageMut.mutate({ saveId: selectedSave.id, imageId: img.id })}
                         title="O'chirish"
                       >
-                        ✕
+                        <XIcon size={14} />
                       </button>
                     </div>
                   ))
@@ -364,8 +370,9 @@ const SavesPage = () => {
                                 type="button"
                                 className={styles.rowBtn}
                                 onClick={() => openEditCut(cut)}
+                                title="Tahrirlash"
                               >
-                                ✏️
+                                <Edit2 size={14} />
                               </button>
                               <button
                                 type="button"
@@ -376,8 +383,9 @@ const SavesPage = () => {
                                   }
                                 }}
                                 disabled={removeCutMut.isPending}
+                                title="O'chirish"
                               >
-                                ✕
+                                <XIcon size={14} />
                               </button>
                             </div>
                           </td>

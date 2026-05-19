@@ -43,7 +43,8 @@
       "Bash(curl -s http://localhost:9060/api/auth/me)",
       "Bash(Write-Output \"Checking dev server status...\")",
       "Bash(xargs ls -la)",
-      "Bash(grep -E \"\\\\.\\(tsx|css\\)$\")"
+      "Bash(grep -E \"\\\\.\\(tsx|css\\)$\")",
+      "Bash(npm install *)"
     ]
   }
 }

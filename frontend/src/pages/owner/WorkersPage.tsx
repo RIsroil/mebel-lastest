@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import type { Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Calendar, Edit2, Trash2 } from 'lucide-react'
 import { useTopbar } from '@/context/TopbarContext'
 import { authApi } from '@/api/auth.api'
 import { adminApi } from '@/api/admin.api'
@@ -324,7 +325,11 @@ const WorkersPage = () => {
                 </td>
                 <td>{worker.dailyHoursTarget != null ? `${worker.dailyHoursTarget} soat` : '—'}</td>
                 <td className={styles.salary}>
-                  {worker.dailySalary != null ? formatNumber(worker.dailySalary) : '—'}
+                  {worker.payType === 'MONTHLY' && worker.monthlySalary != null
+                    ? formatNumber(Math.round(worker.monthlySalary / 30))
+                    : worker.dailySalary != null
+                      ? formatNumber(worker.dailySalary)
+                      : '—'}
                 </td>
                 <td>
                   {worker.blocked
@@ -341,7 +346,7 @@ const WorkersPage = () => {
                       title="Davomat"
                       onClick={() => openAttendance(worker)}
                     >
-                      📅
+                      <Calendar size={18} />
                     </button>
                     <button
                       type="button"
@@ -349,7 +354,7 @@ const WorkersPage = () => {
                       title="Tahrirlash"
                       onClick={() => openEdit(worker)}
                     >
-                      ✎
+                      <Edit2 size={18} />
                     </button>
                     <button
                       type="button"
@@ -357,7 +362,7 @@ const WorkersPage = () => {
                       title="O'chirish"
                       onClick={() => setDeleteTarget(worker)}
                     >
-                      🗑
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 </td>
@@ -401,7 +406,11 @@ const WorkersPage = () => {
             </div>
             <div className={styles.workerCardMid}>
               <span className={styles.workerCardSalary}>
-                {worker.dailySalary != null ? formatNumber(worker.dailySalary) : '—'} so'm/kun
+                {worker.payType === 'MONTHLY' && worker.monthlySalary != null
+                  ? formatNumber(Math.round(worker.monthlySalary / 30))
+                  : worker.dailySalary != null
+                    ? formatNumber(worker.dailySalary)
+                    : '—'} so'm/kun
               </span>
               {worker.payType && (
                 <span className={cn(styles.payBadge, worker.payType === 'DAILY' ? styles.payDaily : styles.payMonthly)}>
@@ -416,7 +425,7 @@ const WorkersPage = () => {
                 title="Davomat"
                 onClick={() => openAttendance(worker)}
               >
-                📅
+                <Calendar size={18} />
               </button>
               <button
                 type="button"
@@ -424,7 +433,7 @@ const WorkersPage = () => {
                 title="Tahrirlash"
                 onClick={() => openEdit(worker)}
               >
-                ✎
+                <Edit2 size={18} />
               </button>
               <button
                 type="button"
@@ -432,7 +441,7 @@ const WorkersPage = () => {
                 title="O'chirish"
                 onClick={() => setDeleteTarget(worker)}
               >
-                🗑
+                <Trash2 size={18} />
               </button>
             </div>
           </div>

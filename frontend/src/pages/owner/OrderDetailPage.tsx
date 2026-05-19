@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Image as ImageIcon, Trash2, X as XIcon, User, TrendingUp, Wrench, Plus, Minus } from 'lucide-react'
 import { useTopbar } from '@/context/TopbarContext'
 import { furnitureApi } from '@/api/furniture.api'
 import { warehouseApi } from '@/api/warehouse.api'
@@ -274,7 +275,7 @@ const OrderDetailPage = () => {
           {/* Materials table */}
           <div className={styles.tableCard}>
             <div className={styles.tableHeader}>
-              <span className={styles.tableTitle}>🔩 Sarflangan materiallar</span>
+              <span className={styles.tableTitle}><Wrench size={18} style={{ display: 'inline-block', marginRight: 8 }} />Sarflangan materiallar</span>
               {order.status === 'IN_PROGRESS' && (
                 <Button size="sm" onClick={() => setShowAddMaterial(true)}>
                   + Material qo'shish
@@ -334,7 +335,7 @@ const OrderDetailPage = () => {
                             disabled={removeMaterialMutation.isPending}
                             onClick={() => setConfirmDelete({ usageId: m.id, itemName: m.itemName ?? '—' })}
                           >
-                            🗑
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
@@ -361,7 +362,7 @@ const OrderDetailPage = () => {
           {/* Images section */}
           <div className={styles.tableCard}>
             <div className={styles.tableHeader}>
-              <span className={styles.tableTitle}>📸 Tayyor mahsulot rasmlari</span>
+              <span className={styles.tableTitle}><ImageIcon size={18} style={{ display: 'inline-block', marginRight: 8 }} />Tayyor mahsulot rasmlari</span>
               {(order.images ?? []).length < 3 && order.status !== 'CANCELLED' && (
                 <>
                   <input
@@ -403,7 +404,7 @@ const OrderDetailPage = () => {
                       onClick={() => deleteImageMutation.mutate(img.id)}
                       title="O'chirish"
                     >
-                      ✕
+                      <XIcon size={16} />
                     </button>
                   </div>
                 ))
@@ -416,7 +417,7 @@ const OrderDetailPage = () => {
         <div className={styles.rightCol}>
           {/* Order info */}
           <div className={styles.infoCard}>
-            <div className={styles.infoCardTitle}>📋 Buyurtma ma'lumoti</div>
+            <div className={styles.infoCardTitle} style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span>📋</span> Buyurtma ma'lumoti</div>
             <div className={styles.infoRow}>
               <span className={styles.infoKey}>Mebel</span>
               <span className={styles.infoVal}>{order.title}</span>
@@ -463,7 +464,7 @@ const OrderDetailPage = () => {
 
           {/* Workers */}
           <div className={styles.infoCard}>
-            <div className={styles.infoCardTitle}>👷 Biriktirilgan ishchilar</div>
+            <div className={styles.infoCardTitle} style={{ display: 'flex', alignItems: 'center', gap: 8 }}><User size={18} /> Biriktirilgan ishchilar</div>
             {order.assignedWorkers.map((w) => (
               <div
                 key={w.workerId}
@@ -523,7 +524,7 @@ const OrderDetailPage = () => {
 
           {/* Profitability */}
           <div className={styles.infoCard}>
-            <div className={styles.infoCardTitle}>📈 Foydalilik</div>
+            <div className={styles.infoCardTitle} style={{ display: 'flex', alignItems: 'center', gap: 8 }}><TrendingUp size={18} /> Foydalilik</div>
             <div className={styles.infoRow}>
               <span className={styles.infoKey}>Sotish narxi</span>
               <span className={styles.infoVal}>{formatNumber(order.salePrice)}</span>

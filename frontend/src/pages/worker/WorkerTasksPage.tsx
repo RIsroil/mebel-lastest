@@ -13,16 +13,19 @@ const WorkerTasksPage = () => {
   const { setTitle } = useTopbar()
 
   const { data: ordersResp, isLoading } = useQuery({
-    queryKey: ['workerOrders'],
+    queryKey: ['workerOrders', user?.id],
     queryFn: () => furnitureApi.orders.getAll(),
+    enabled: !!user?.id,
   })
 
   const orders = ordersResp?.data?.data ?? []
 
   // Filter orders assigned to current worker
-  const assignedOrders = orders.filter(
-    (order) => order.assignedWorkers?.some((w) => w.workerId === user?.id)
-  )
+  const assignedOrders = user?.id
+    ? orders.filter(
+        (order) => order.assignedWorkers?.some((w) => w.workerId === user.id)
+      )
+    : []
 
   useEffect(() => {
     setTitle("Men ishlaydigan buyurtmalar")
