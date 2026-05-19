@@ -68,8 +68,44 @@ public class WageCalculationService {
                 RoundingMode.HALF_UP
         );
 
+        // Agar bu 2+ assignment bo'lsa, oldingi barcha assignment'lar uchun log'larni yangilash kerak
+        if (activeAssignments.size() > 1) {
+            // Boshqa order'lar uchun mavjud log'larni yangilash (50% split'ga o'tkazish)
+            for (int i = 0; i < activeAssignments.size() - 1; i++) {
+                UUID otherOrderId = activeAssignments.get(i).getFurnitureOrderId();
+                List<EarningEntity> otherLogs = earningRepo.findByWorkerIdAndFurnitureOrderIdOrderByEarnDateAsc(workerId, otherOrderId);
+
+                for (EarningEntity log : otherLogs) {
+                    if (!log.isPaid()) {
+                        BigDecimal splitWage = dailyRate.divide(BigDecimal.TWO, 2, RoundingMode.HALF_UP);
+                        BigDecimal oldAmount = log.getTotalAmount();
+
+                        log.setBaseAmount(splitWage);
+                        log.setTotalAmount(splitWage);
+                        earningRepo.save(log);
+
+                        // Fark uchun financial log yozish (adjustment)
+                        BigDecimal difference = oldAmount.subtract(splitWage);
+                        if (difference.compareTo(BigDecimal.ZERO) != 0) {
+                            String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
+                            financialLogService.record(
+                                    workshopId,
+                                    FinancialLogType.WAGE_PAID,
+                                    difference, // Qaytarish (reverse)
+                                    "Yangi biriktirildi: wage split 50%",
+                                    workerId,
+                                    workerName,
+                                    log.getEarnDate(),
+                                    createdBy
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
         BigDecimal wageForLog;
-        if (assignmentIndex == 0) {
+        if (activeAssignments.size() <= 1) {
             // Birinchi assignment — full daily rate
             wageForLog = dailyRate;
         } else {
@@ -77,12 +113,12 @@ public class WageCalculationService {
             wageForLog = dailyRate.divide(BigDecimal.TWO, 2, RoundingMode.HALF_UP);
         }
 
-        // Earning log yaratish
+        // Yangi assignment uchun earning log yaratish
         EarningEntity earning = EarningEntity.builder()
                 .workerId(workerId)
                 .workshopId(workshopId)
                 .earnDate(today)
-                .earnType(assignmentIndex == 0 ? EarnType.DAILY_WAGE : EarnType.DAILY_WAGE)
+                .earnType(EarnType.DAILY_WAGE)
                 .baseAmount(wageForLog)
                 .totalAmount(wageForLog)
                 .monthlySalary(monthlySalary)
@@ -91,10 +127,10 @@ public class WageCalculationService {
                 .furnitureOrderId(orderId)
                 .build();
         earning.setCreatedBy(createdBy);
-        EarningEntity saved = earningRepo.save(earning);
+        earningRepo.save(earning);
 
         // Financial log'ga yozish
-        String logDesc = assignmentIndex == 0
+        String logDesc = activeAssignments.size() <= 1
                 ? "Oylik maosh (1-buyurtma): " + monthlySalary + " / " + daysInMonth + " = " + wageForLog
                 : "Oylik maosh (2+-buyurtma, 50% split): " + wageForLog;
 
