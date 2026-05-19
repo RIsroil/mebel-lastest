@@ -8,4 +8,9 @@ export const userApi = {
 
   updateMe: (body: UpdateProfileRequest) =>
     api.patch<ApiResponse<UserProfile>>('/users/update', body),
+
+  resetWorkerPassword: (workerId: string, newPassword: string) =>
+    api.put<ApiResponse<null>>(`/users/${workerId}/reset-password`, {
+      newPassword,
+    }),
 }
