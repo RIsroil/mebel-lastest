@@ -46,4 +46,13 @@ public interface EarningRepository extends JpaRepository<EarningEntity, UUID> {
             @Param("from") LocalDate from,
             @Param("to") LocalDate to,
             @Param("monthlyType") EarnType monthlyType);
+
+    Optional<EarningEntity> findByWorkerIdAndFurnitureOrderIdAndEarnDate(
+            UUID workerId,
+            UUID furnitureOrderId,
+            LocalDate earnDate);
+
+    List<EarningEntity> findByWorkerIdAndFurnitureOrderIdOrderByEarnDateAsc(
+            UUID workerId,
+            UUID furnitureOrderId);
 }

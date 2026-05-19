@@ -15,4 +15,6 @@ public interface FurnitureAssignmentRepository extends JpaRepository<FurnitureAs
     Optional<FurnitureAssignmentEntity> findByFurnitureOrderIdAndWorkerIdAndActiveTrue(UUID orderId, UUID workerId);
 
     List<FurnitureAssignmentEntity> findAllByWorkerIdAndActiveTrue(UUID workerId);
+
+    List<FurnitureAssignmentEntity> findByWorkerIdAndActiveTrueOrderByAssignedAtAsc(UUID workerId);
 }

@@ -14,6 +14,7 @@ import project.mebel.common.enums.TransactionType;
 import project.mebel.common.enums.UserRole;
 import project.mebel.earning.EarningEntity;
 import project.mebel.earning.EarningRepository;
+import project.mebel.earning.WageCalculationService;
 import project.mebel.exception.ApiException;
 import project.mebel.financiallog.FinancialLogService;
 import project.mebel.furniture.dto.*;
@@ -51,6 +52,7 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
     private final UserRepository userRepo;
     private final DailyAttendanceRepository attendanceRepo;
     private final FinancialLogService financialLogService;
+    private final WageCalculationService wageCalculationService;
     private final project.mebel.minio.MinioStorageService minioStorageService;
     private final Utils utils;
 
@@ -190,6 +192,14 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                 .build();
         assignment.setCreatedBy(owner.getId());
         assignmentRepo.save(assignment);
+
+        // Worker uchun wage log yaratish (oylik oyning boshidan)
+        wageCalculationService.createWageLogOnAssignment(
+                orderId,
+                worker.getId(),
+                owner.getWorkshopId(),
+                owner.getId()
+        );
 
         return toResponse(order);
     }
