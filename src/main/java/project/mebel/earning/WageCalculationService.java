@@ -101,7 +101,7 @@ public class WageCalculationService {
         String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
         financialLogService.record(
                 workshopId,
-                FinancialLogType.WAGE_USED,
+                FinancialLogType.WAGE_PAID,
                 wageForLog.negate(),
                 logDesc,
                 workerId,
@@ -164,7 +164,7 @@ public class WageCalculationService {
                             String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
                             financialLogService.record(
                                     workshopId,
-                                    FinancialLogType.WAGE_USED,
+                                    FinancialLogType.WAGE_PAID,
                                     previousLog.getTotalAmount(), // Positive (reverse)
                                     "Oldingi kunning log'i qaytarildi",
                                     workerId,
@@ -203,7 +203,7 @@ public class WageCalculationService {
             String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
             financialLogService.record(
                     workshopId,
-                    FinancialLogType.WAGE_USED,
+                    FinancialLogType.WAGE_PAID,
                     wageForLog.negate(),
                     logDesc,
                     workerId,

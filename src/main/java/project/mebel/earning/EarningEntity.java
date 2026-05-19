@@ -3,7 +3,7 @@ package project.mebel.earning;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import project.mebel.common.entity.MutableAuditEntity;
+import project.mebel.common.entity.SoftDeleteEntity;
 import project.mebel.common.enums.EarnType;
 
 import java.math.BigDecimal;
@@ -18,7 +18,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-public class EarningEntity extends MutableAuditEntity {
+public class EarningEntity extends SoftDeleteEntity {
 
     @Column(name = "worker_id", nullable = false)
     private UUID workerId;
