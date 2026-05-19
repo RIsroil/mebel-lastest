@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import project.mebel.common.enums.EarnType;
 import project.mebel.common.enums.FinancialLogType;
 import project.mebel.common.enums.UserRole;
+import project.mebel.audit.AuditLogService;
 import project.mebel.earning.dto.BonusRequest;
 import project.mebel.earning.dto.EarningResponse;
 import project.mebel.exception.ApiException;
@@ -31,6 +32,7 @@ public class EarningServiceImpl implements EarningService {
     private final BonusRepository bonusRepo;
     private final UserRepository userRepo;
     private final FinancialLogService financialLogService;
+    private final AuditLogService auditLogService;
     private final Utils utils;
 
     @Override
@@ -132,9 +134,14 @@ public class EarningServiceImpl implements EarningService {
             BigDecimal monthlySalary = sample.getMonthlySalary();
             Integer daysInMonth = sample.getDaysInMonth();
 
-            // Create aggregated response
+            // Collect all earning IDs for batch payment
+            List<UUID> earningIds = monthWages.stream()
+                    .map(EarningEntity::getId)
+                    .collect(Collectors.toList());
+
+            // Create aggregated response with real earning IDs
             EarningResponse agg = EarningResponse.builder()
-                    .id(UUID.randomUUID())
+                    .id(earningIds.get(0)) // Use first real ID as primary
                     .workerId(sample.getWorkerId())
                     .workerName(workerName)
                     .earnDate(entry.getKey())
@@ -150,6 +157,7 @@ public class EarningServiceImpl implements EarningService {
                     .daysInMonth(daysInMonth)
                     .paid(monthWages.stream().allMatch(EarningEntity::isPaid))
                     .paidAt(monthWages.stream().map(EarningEntity::getPaidAt).filter(Objects::nonNull).findFirst().orElse(null))
+                    .earningIds(earningIds) // Include all IDs for batch payment
                     .build();
             result.add(agg);
         }
@@ -190,7 +198,54 @@ public class EarningServiceImpl implements EarningService {
                 saved.getTotalAmount().negate(), desc, saved.getWorkerId(),
                 workerName, LocalDate.now(), owner.getId());
 
+        String ownerName = owner.getFullName() != null ? owner.getFullName() : owner.getUsername();
+        auditLogService.logEarningPaid(
+                saved.getId(), saved.getWorkerId(), workerName,
+                owner.getId(), ownerName, owner.getWorkshopId(),
+                saved.getTotalAmount().toPlainString());
+
         return toResponse(saved, workerName);
+    }
+
+    @Override
+    @Transactional
+    public List<EarningResponse> payEarnings(List<UUID> earningIds, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        List<EarningResponse> results = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (UUID earningId : earningIds) {
+            EarningEntity earning = earningRepo.findById(earningId)
+                    .filter(e -> e.getWorkshopId().equals(owner.getWorkshopId()))
+                    .orElse(null);
+
+            if (earning == null || earning.isPaid()) continue;
+
+            earning.setPaid(true);
+            earning.setPaidAt(now);
+            earning.setPaidBy(owner.getId());
+            earning.setUpdatedBy(owner.getId());
+
+            String workerName = userRepo.findById(earning.getWorkerId())
+                    .map(this::displayName)
+                    .orElse("—");
+            EarningEntity saved = earningRepo.save(earning);
+            results.add(toResponse(saved, workerName));
+        }
+
+        // Single financial log for batch payment
+        if (!results.isEmpty()) {
+            BigDecimal totalPaid = results.stream()
+                    .map(EarningResponse::getTotalAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            String desc = "Oylik maosh to'landi: " + results.size() + " kun, jami: " + totalPaid;
+            financialLogService.record(owner.getWorkshopId(), FinancialLogType.WAGE_PAID,
+                    totalPaid.negate(), desc, results.get(0).getWorkerId(),
+                    results.get(0).getWorkerName(), LocalDate.now(), owner.getId());
+        }
+
+        return results;
     }
 
     @Override

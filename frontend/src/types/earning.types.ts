@@ -24,6 +24,7 @@ export interface EarningResponse {
   monthlySalary: number | null
   periodStart: string | null
   daysInMonth: number | null
+  earningIds: string[] | null // For aggregated monthly wages
 }
 
 export interface BonusRequest {

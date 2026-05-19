@@ -18,5 +18,8 @@ public interface EarningService {
 
     EarningResponse payEarning(UUID earningId, Principal principal);
 
+    /** Batch payment for multiple earnings (e.g., monthly wages) */
+    List<EarningResponse> payEarnings(List<UUID> earningIds, Principal principal);
+
     EarningResponse addBonus(BonusRequest request, Principal principal);
 }

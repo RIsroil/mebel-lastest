@@ -85,6 +85,11 @@ const EarningsPage = () => {
     onSuccess:  () => queryClient.invalidateQueries({ queryKey: earningsKey }),
   })
 
+  const payBatchMut = useMutation({
+    mutationFn: (ids: string[]) => earningApi.markPaidBatch(ids),
+    onSuccess:  () => queryClient.invalidateQueries({ queryKey: earningsKey }),
+  })
+
   const bonusMut = useMutation({
     mutationFn: earningApi.addBonus,
     onSuccess:  () => { queryClient.invalidateQueries({ queryKey: earningsKey }); closeBonus() },
@@ -235,10 +240,18 @@ const EarningsPage = () => {
                     <button
                       type="button"
                       className={styles.payBtn}
-                      disabled={payMut.isPending}
-                      onClick={() => payMut.mutate(e.id)}
+                      disabled={payMut.isPending || payBatchMut.isPending}
+                      onClick={() => {
+                        // Use batch payment for monthly wages
+                        const ids = e.earningIds ?? [e.id]
+                        if (ids.length > 1) {
+                          payBatchMut.mutate(ids)
+                        } else {
+                          payMut.mutate(e.id)
+                        }
+                      }}
                     >
-                      ✓ To'lash
+                      ✓ To'lash ({e.earningIds?.length ?? 1} kun)
                     </button>
                   )}
                 </div>
@@ -350,10 +363,17 @@ const EarningsPage = () => {
                         <button
                           type="button"
                           className={styles.payBtn}
-                          disabled={payMut.isPending}
-                          onClick={() => payMut.mutate(e.id)}
+                          disabled={payMut.isPending || payBatchMut.isPending}
+                          onClick={() => {
+                            const ids = e.earningIds ?? [e.id]
+                            if (ids.length > 1) {
+                              payBatchMut.mutate(ids)
+                            } else {
+                              payMut.mutate(e.id)
+                            }
+                          }}
                         >
-                          ✓ To'lash
+                          ✓ To'lash ({e.earningIds?.length ?? 1})
                         </button>
                       )}
                       {e.paid && e.paidAt && (

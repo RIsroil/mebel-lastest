@@ -30,97 +30,42 @@ public class WageCalculationService {
 
     /**
      * Worker biriktirilganda wage log yaratish
-     * Agar bu birinchi assignment bo'lsa — full daily wage
-     * Agar 2+ assignment bo'lsa — split wage (50% daily rate)
+     * Har bir worker o'zining to'liq kunlik maoshini oladi (split yo'q)
      */
     @Transactional
     public void createWageLogOnAssignment(UUID orderId, UUID workerId, UUID workshopId, UUID createdBy) {
         UserEntity worker = userRepo.findById(workerId)
                 .orElseThrow(() -> new IllegalArgumentException("Worker not found"));
 
-        // Worker uchun barcha active assignments'ni tekshirish
-        List<FurnitureAssignmentEntity> activeAssignments = assignmentRepo
-                .findByWorkerIdAndActiveTrueOrderByAssignedAtAsc(workerId);
-
-        int assignmentIndex = 0;
-        for (int i = 0; i < activeAssignments.size(); i++) {
-            if (activeAssignments.get(i).getFurnitureOrderId().equals(orderId)) {
-                assignmentIndex = i;
-                break;
-            }
-        }
-
         LocalDate today = LocalDate.now();
         YearMonth currentMonth = YearMonth.from(today);
         int daysInMonth = currentMonth.lengthOfMonth();
 
+        // Use daily salary if available, otherwise calculate from monthly
+        BigDecimal dailyRate;
         BigDecimal monthlySalary = worker.getMonthlySalary();
-        if (monthlySalary == null || monthlySalary.compareTo(BigDecimal.ZERO) <= 0) {
-            // Agar oylik salary bo'lmasa, kunlik'ni ishlatish
-            monthlySalary = worker.getDailySalary() != null
-                    ? worker.getDailySalary().multiply(BigDecimal.valueOf(daysInMonth))
-                    : BigDecimal.ZERO;
-        }
 
-        BigDecimal dailyRate = monthlySalary.divide(
-                BigDecimal.valueOf(daysInMonth),
-                2,
-                RoundingMode.HALF_UP
-        );
-
-        // Agar bu 2+ assignment bo'lsa, oldingi barcha assignment'lar uchun log'larni yangilash kerak
-        if (activeAssignments.size() > 1) {
-            // Boshqa order'lar uchun mavjud log'larni yangilash (50% split'ga o'tkazish)
-            for (int i = 0; i < activeAssignments.size() - 1; i++) {
-                UUID otherOrderId = activeAssignments.get(i).getFurnitureOrderId();
-                List<EarningEntity> otherLogs = earningRepo.findByWorkerIdAndFurnitureOrderIdOrderByEarnDateAsc(workerId, otherOrderId);
-
-                for (EarningEntity log : otherLogs) {
-                    if (!log.isPaid()) {
-                        BigDecimal splitWage = dailyRate.divide(BigDecimal.TWO, 2, RoundingMode.HALF_UP);
-                        BigDecimal oldAmount = log.getTotalAmount();
-
-                        log.setBaseAmount(splitWage);
-                        log.setTotalAmount(splitWage);
-                        earningRepo.save(log);
-
-                        // Fark uchun financial log yozish (adjustment)
-                        BigDecimal difference = oldAmount.subtract(splitWage);
-                        if (difference.compareTo(BigDecimal.ZERO) != 0) {
-                            String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
-                            financialLogService.record(
-                                    workshopId,
-                                    FinancialLogType.WAGE_PAID,
-                                    difference, // Qaytarish (reverse)
-                                    "Yangi biriktirildi: wage split 50%",
-                                    workerId,
-                                    workerName,
-                                    log.getEarnDate(),
-                                    createdBy
-                            );
-                        }
-                    }
-                }
+        if (worker.getDailySalary() != null && worker.getDailySalary().compareTo(BigDecimal.ZERO) > 0) {
+            dailyRate = worker.getDailySalary();
+            if (monthlySalary == null || monthlySalary.compareTo(BigDecimal.ZERO) <= 0) {
+                monthlySalary = dailyRate.multiply(BigDecimal.valueOf(daysInMonth));
             }
-        }
-
-        BigDecimal wageForLog;
-        if (activeAssignments.size() <= 1) {
-            // Birinchi assignment — full daily rate
-            wageForLog = dailyRate;
+        } else if (monthlySalary != null && monthlySalary.compareTo(BigDecimal.ZERO) > 0) {
+            dailyRate = monthlySalary.divide(BigDecimal.valueOf(daysInMonth), 2, RoundingMode.HALF_UP);
         } else {
-            // 2+ assignment — split (50%)
-            wageForLog = dailyRate.divide(BigDecimal.TWO, 2, RoundingMode.HALF_UP);
+            dailyRate = BigDecimal.ZERO;
+            monthlySalary = BigDecimal.ZERO;
         }
 
-        // Yangi assignment uchun earning log yaratish
+        // Each worker gets full daily rate (no split)
         EarningEntity earning = EarningEntity.builder()
                 .workerId(workerId)
                 .workshopId(workshopId)
                 .earnDate(today)
                 .earnType(EarnType.DAILY_WAGE)
-                .baseAmount(wageForLog)
-                .totalAmount(wageForLog)
+                .baseAmount(dailyRate)
+                .totalAmount(dailyRate)
+                .dailyRate(dailyRate)
                 .monthlySalary(monthlySalary)
                 .daysInMonth(daysInMonth)
                 .periodStart(currentMonth.atDay(1))
@@ -129,16 +74,13 @@ public class WageCalculationService {
         earning.setCreatedBy(createdBy);
         earningRepo.save(earning);
 
-        // Financial log'ga yozish
-        String logDesc = activeAssignments.size() <= 1
-                ? "Oylik maosh (1-buyurtma): " + monthlySalary + " / " + daysInMonth + " = " + wageForLog
-                : "Oylik maosh (2+-buyurtma, 50% split): " + wageForLog;
-
         String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
+        String logDesc = "Kunlik maosh hisoblandi: " + workerName + " | " + dailyRate + " so'm";
+
         financialLogService.record(
                 workshopId,
-                FinancialLogType.WAGE_PAID,
-                wageForLog.negate(),
+                FinancialLogType.WAGE_CALCULATED,
+                dailyRate.negate(),
                 logDesc,
                 workerId,
                 workerName,
@@ -149,7 +91,7 @@ public class WageCalculationService {
 
     /**
      * Har kun: assignment'larni tekshirish va wage'larni update qilish
-     * Oldingi kunning log'ini reverse qilish, yangi kunning log'ini qo'shish
+     * Har bir assignment uchun to'liq kunlik maosh hisoblaydi (split yo'q)
      */
     @Transactional
     public void updateDailyWagesForWorker(UUID workerId, UUID workshopId, LocalDate today, UUID updatedBy) {
@@ -164,65 +106,39 @@ public class WageCalculationService {
         YearMonth currentMonth = YearMonth.from(today);
         int daysInMonth = currentMonth.lengthOfMonth();
 
+        BigDecimal dailyRate;
         BigDecimal monthlySalary = worker.getMonthlySalary();
-        if (monthlySalary == null || monthlySalary.compareTo(BigDecimal.ZERO) <= 0) {
-            monthlySalary = worker.getDailySalary() != null
-                    ? worker.getDailySalary().multiply(BigDecimal.valueOf(daysInMonth))
-                    : BigDecimal.ZERO;
+
+        if (worker.getDailySalary() != null && worker.getDailySalary().compareTo(BigDecimal.ZERO) > 0) {
+            dailyRate = worker.getDailySalary();
+            if (monthlySalary == null || monthlySalary.compareTo(BigDecimal.ZERO) <= 0) {
+                monthlySalary = dailyRate.multiply(BigDecimal.valueOf(daysInMonth));
+            }
+        } else if (monthlySalary != null && monthlySalary.compareTo(BigDecimal.ZERO) > 0) {
+            dailyRate = monthlySalary.divide(BigDecimal.valueOf(daysInMonth), 2, RoundingMode.HALF_UP);
+        } else {
+            return; // No salary configured
         }
 
-        BigDecimal dailyRate = monthlySalary.divide(
-                BigDecimal.valueOf(daysInMonth),
-                2,
-                RoundingMode.HALF_UP
-        );
+        String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
 
-        // Har assignment uchun log'ni update qilish
-        for (int assignmentIndex = 0; assignmentIndex < activeAssignments.size(); assignmentIndex++) {
-            FurnitureAssignmentEntity assignment = activeAssignments.get(assignmentIndex);
+        // Create earning for each active assignment
+        for (FurnitureAssignmentEntity assignment : activeAssignments) {
             UUID orderId = assignment.getFurnitureOrderId();
 
-            // Oldingi kunning log'ini topish va reverse qilish
-            earningRepo
-                    .findByWorkerIdAndFurnitureOrderIdAndEarnDate(
-                            workerId,
-                            orderId,
-                            today.minusDays(1)
-                    )
-                    .ifPresent(previousLog -> {
-                        if (!previousLog.isPaid()) {
-                            // Oldingi log'ini soft-delete qilish
-                            previousLog.setDeletedAt(LocalDateTime.now());
-                            previousLog.setDeletedBy(updatedBy);
-                            earningRepo.save(previousLog);
-
-                            // Reverse entry
-                            String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
-                            financialLogService.record(
-                                    workshopId,
-                                    FinancialLogType.WAGE_PAID,
-                                    previousLog.getTotalAmount(), // Positive (reverse)
-                                    "Oldingi kunning log'i qaytarildi",
-                                    workerId,
-                                    workerName,
-                                    today.minusDays(1),
-                                    updatedBy
-                            );
-                        }
-                    });
-
-            // Bugungi log'ni yaratish
-            BigDecimal wageForLog = assignmentIndex == 0
-                    ? dailyRate
-                    : dailyRate.divide(BigDecimal.TWO, 2, RoundingMode.HALF_UP);
+            // Check if earning already exists for today
+            if (earningRepo.findByWorkerIdAndFurnitureOrderIdAndEarnDate(workerId, orderId, today).isPresent()) {
+                continue;
+            }
 
             EarningEntity earning = EarningEntity.builder()
                     .workerId(workerId)
                     .workshopId(workshopId)
                     .earnDate(today)
                     .earnType(EarnType.DAILY_WAGE)
-                    .baseAmount(wageForLog)
-                    .totalAmount(wageForLog)
+                    .baseAmount(dailyRate)
+                    .totalAmount(dailyRate)
+                    .dailyRate(dailyRate)
                     .monthlySalary(monthlySalary)
                     .daysInMonth(daysInMonth)
                     .periodStart(currentMonth.atDay(1))
@@ -231,17 +147,11 @@ public class WageCalculationService {
             earning.setCreatedBy(updatedBy);
             earningRepo.save(earning);
 
-            // Financial log
-            String logDesc = assignmentIndex == 0
-                    ? "Bugun: Oylik maosh (1-buyurtma): " + wageForLog
-                    : "Bugun: Oylik maosh (2+-buyurtma, 50%): " + wageForLog;
-
-            String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
             financialLogService.record(
                     workshopId,
-                    FinancialLogType.WAGE_PAID,
-                    wageForLog.negate(),
-                    logDesc,
+                    FinancialLogType.WAGE_CALCULATED,
+                    dailyRate.negate(),
+                    "Kunlik maosh hisoblandi: " + workerName,
                     workerId,
                     workerName,
                     today,

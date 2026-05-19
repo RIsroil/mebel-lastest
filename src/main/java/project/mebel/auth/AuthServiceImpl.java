@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import project.mebel.audit.AuditLogService;
 import project.mebel.auth.dto.CreateWorkerRequest;
 import project.mebel.auth.dto.LoginRequest;
 import project.mebel.auth.dto.UserRegisterRequest;
@@ -40,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final Utils utils;
     private final WorkshopRepository workshopRepository;
     private final ResponseHelper responseHelper;
+    private final AuditLogService auditLogService;
 
     @Override
     public ResponseEntity<ApiResponseStructure<UserTokenResponse>> register(UserRegisterRequest request) {
@@ -53,14 +55,16 @@ public class AuthServiceImpl implements AuthService {
                 .role(UserRole.OWNER)
                 .build();
 
-        UserTokenResponse userResponse = generateTokens(user);
-        userRepository.save(user);
+        // Save user first, then generate tokens
+        UserEntity savedUser = userRepository.save(user);
+        UserTokenResponse userResponse = generateTokens(savedUser);
 
         return responseHelper.success("registration.completed.successfully", userResponse);
 
     }
 
     @Override
+    @Transactional
     public ResponseEntity<ApiResponseStructure<Void>> deleteWorker(UUID id, Principal principal) {
         UserEntity owner = utils.getUserFromPrincipal(principal);
         UserEntity user = userRepository.findById(id)
@@ -71,7 +75,14 @@ public class AuthServiceImpl implements AuthService {
         if (!owner.getWorkshopId().equals(user.getWorkshopId())) {
             throw ApiException.forbidden("access.denied");
         }
+
+        String workerName = user.getFullName() != null ? user.getFullName() : user.getUsername();
+        String ownerName = owner.getFullName() != null ? owner.getFullName() : owner.getUsername();
+
         userRepository.delete(user);
+
+        auditLogService.logWorkerDeleted(id, workerName, owner.getId(), ownerName, owner.getWorkshopId());
+
         return responseHelper.success("worker.deleted.successfully", null);
     }
 

@@ -15,6 +15,9 @@ export const earningApi = {
   markPaid: (id: string) =>
     api.patch<ApiResponse<EarningResponse>>(`/api/earnings/${id}/pay`),
 
+  markPaidBatch: (earningIds: string[]) =>
+    api.patch<ApiResponse<EarningResponse[]>>('/api/earnings/pay-batch', earningIds),
+
   addBonus: (body: BonusRequest) =>
     api.post<ApiResponse<EarningResponse>>('/api/earnings/bonus', body),
 }

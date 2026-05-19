@@ -15,6 +15,7 @@ import project.mebel.common.enums.UserRole;
 import project.mebel.earning.EarningEntity;
 import project.mebel.earning.EarningRepository;
 import project.mebel.exception.ApiException;
+import project.mebel.audit.AuditLogService;
 import project.mebel.user.UserEntity;
 import project.mebel.user.UserRepository;
 import project.mebel.utils.Utils;
@@ -41,6 +42,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     private final DailyAttendanceRepository attendanceRepo;
     private final EarningRepository earningRepo;
     private final UserRepository userRepo;
+    private final AuditLogService auditLogService;
     private final Utils utils;
 
     private static final int SUBMIT_DEADLINE_DAYS = 3;
@@ -154,7 +156,17 @@ public class AttendanceServiceImpl implements AttendanceService {
             upsertEarning(saved, worker, owner.getId());
         }
 
-        return toResponse(saved, worker.getFullName());
+        String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
+        String ownerName = owner.getFullName() != null ? owner.getFullName() : owner.getUsername();
+        String oldHours = attendance.getOwnerOverrideHours() != null
+                ? attendance.getOwnerOverrideHours().toPlainString()
+                : (attendance.getHoursWorked() != null ? attendance.getHoursWorked().toPlainString() : "0");
+        auditLogService.logHoursOverride(
+                saved.getId(), worker.getId(), workerName,
+                owner.getId(), ownerName, owner.getWorkshopId(),
+                oldHours, request.getHoursWorked().toPlainString());
+
+        return toResponse(saved, workerName);
     }
 
     @Override
@@ -551,6 +563,7 @@ public class AttendanceServiceImpl implements AttendanceService {
                         },
                         () -> {
                             // Yangi to'lov sikli boshlandi
+                            LocalDate firstOfMonth = today.withDayOfMonth(1);
                             int daysInMonth = today.lengthOfMonth();
                             BigDecimal perDay = daysInMonth > 0
                                     ? monthlySalary.divide(BigDecimal.valueOf(daysInMonth), 4, RoundingMode.HALF_UP)
@@ -561,7 +574,7 @@ public class AttendanceServiceImpl implements AttendanceService {
                                     .earnDate(today)
                                     .earnType(EarnType.MONTHLY_WAGE)
                                     .monthlySalary(monthlySalary)
-                                    .periodStart(today)
+                                    .periodStart(firstOfMonth)
                                     .daysInMonth(daysInMonth)
                                     .daysWorked(BigDecimal.ONE)
                                     .baseAmount(perDay)

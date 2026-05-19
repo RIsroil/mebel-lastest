@@ -47,9 +47,9 @@ const UNIT_TYPES: { value: UnitType; label: string }[] = [
 const NEXT_STATUSES: Record<FurnitureStatus, FurnitureStatus[]> = {
   DRAFT:       ['IN_PROGRESS', 'CANCELLED'],
   IN_PROGRESS: ['COMPLETED', 'CANCELLED'],
-  COMPLETED:   ['SOLD', 'IN_PROGRESS'],
+  COMPLETED:   ['SOLD'],
   SOLD:        [],
-  CANCELLED:   ['DRAFT'],
+  CANCELLED:   [],
 }
 
 const OrderDetailPage = () => {

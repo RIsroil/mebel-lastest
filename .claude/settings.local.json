@@ -44,7 +44,10 @@
       "Bash(Write-Output \"Checking dev server status...\")",
       "Bash(xargs ls -la)",
       "Bash(grep -E \"\\\\.\\(tsx|css\\)$\")",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "PowerShell(.\\\\mvnw.cmd compile -q 2>&1 | Select-Object -First 30)",
+      "PowerShell(mvn compile *)",
+      "Bash(dir)"
     ]
   }
 }

@@ -58,6 +58,12 @@ public class EarningController {
         return ResponseEntity.ok(earningService.payEarning(id, principal));
     }
 
+    @PatchMapping("/pay-batch")
+    @Operation(summary = "Bir nechta daromadni to'langan deb belgilash (OWNER) - oylik maosh uchun")
+    public ResponseEntity<List<EarningResponse>> payEarnings(@RequestBody List<UUID> earningIds, Principal principal) {
+        return ResponseEntity.ok(earningService.payEarnings(earningIds, principal));
+    }
+
     @PostMapping("/bonus")
     @Operation(summary = "Bonus qo'shish (OWNER)")
     public ResponseEntity<EarningResponse> addBonus(@RequestBody BonusRequest request, Principal principal) {

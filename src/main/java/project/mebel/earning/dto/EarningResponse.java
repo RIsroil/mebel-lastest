@@ -9,6 +9,7 @@ import project.mebel.common.enums.EarnType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
@@ -33,4 +34,7 @@ public class EarningResponse {
     private BigDecimal monthlySalary;
     private LocalDate periodStart;
     private Integer daysInMonth;
+
+    // For aggregated monthly wages - contains all underlying earning IDs
+    private List<UUID> earningIds;
 }

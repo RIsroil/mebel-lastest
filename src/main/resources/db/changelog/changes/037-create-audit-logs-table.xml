@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="037-create-audit-logs-table" author="Isroil">
+        <createTable tableName="audit_logs">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="action" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_type" type="VARCHAR(50)"/>
+            <column name="entity_id" type="UUID"/>
+            <column name="actor_id" type="UUID"/>
+            <column name="actor_name" type="VARCHAR(100)"/>
+            <column name="workshop_id" type="UUID"/>
+            <column name="details" type="TEXT"/>
+            <column name="ip_address" type="VARCHAR(45)"/>
+            <column name="created_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="audit_logs" indexName="idx_audit_logs_workshop_created">
+            <column name="workshop_id"/>
+            <column name="created_at"/>
+        </createIndex>
+
+        <createIndex tableName="audit_logs" indexName="idx_audit_logs_entity">
+            <column name="entity_type"/>
+            <column name="entity_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

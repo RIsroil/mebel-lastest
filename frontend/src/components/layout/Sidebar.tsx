@@ -11,6 +11,7 @@ import {
   Clock,
   CheckCircle2,
   Users as UsersIcon,
+  ClipboardList,
 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { useTheme } from '@/hooks/useTheme'
@@ -72,6 +73,7 @@ const WORKER_NAV_BUTTON: NavSection[] = [
 const WORKER_NAV_MANUAL: NavSection[] = [
   {
     items: [
+      { to: '/my-tasks',          icon: <ClipboardList size={20} />, label: 'Mening vazifalarim' },
       { to: '/weekly-attendance', icon: <FileText size={20} />, label: 'Haftalik davomat' },
       { to: '/my-earnings',       icon: <DollarSign size={20} />, label: 'Mening maoshim' },
     ],

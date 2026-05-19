@@ -212,3 +212,35 @@ cd frontend && npm run dev
 3. `src/pages/owner/XPage.tsx` + `XPage.module.css`
 4. `router/index.tsx` — route qo'shish
 5. `Sidebar.tsx` — nav item qo'shish
+
+---
+
+## Muhim API naqshlari
+
+### Oylik maosh to'lash (Batch payment)
+Oylik maoshlar aggregatsiyalangan ko'rinishda qaytariladi. To'lash uchun:
+```typescript
+// EarningResponse da earningIds mavjud
+const ids = earning.earningIds ?? [earning.id]
+if (ids.length > 1) {
+  earningApi.markPaidBatch(ids)  // PATCH /api/earnings/pay-batch
+} else {
+  earningApi.markPaid(ids[0])    // PATCH /api/earnings/{id}/pay
+}
+```
+
+### Financial Log turlari
+- `WAGE_CALCULATED` — maosh hisoblangan (hali to'lanmagan)
+- `WAGE_PAID` — maosh to'langan
+- `COMMISSION_PAID`, `BONUS_PAID` — komissiya/bonus to'langan
+- `WAREHOUSE_PURCHASE` — xomashyo sotib olindi
+- `MATERIAL_USED` — buyurtmaga sarflandi
+- `FURNITURE_SOLD` — mebel sotildi
+
+### Komissiya hisoblash
+Har bir ishchi o'zining to'liq komissiya foizini oladi (bo'linmaydi):
+```java
+// Worker A: 5% = salePrice * 0.05
+// Worker B: 3% = salePrice * 0.03
+// Ikkisi ham to'liq oladi, bo'linmaydi
+```
