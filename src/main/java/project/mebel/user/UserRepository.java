@@ -11,4 +11,6 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID>, JpaSpec
     Optional<UserEntity> findByUsernameAndDeletedAtIsNull(String username);
 
     UserEntity findByUsername(String username);
+
+    Optional<UserEntity> findByPasswordResetToken(String token);
 }

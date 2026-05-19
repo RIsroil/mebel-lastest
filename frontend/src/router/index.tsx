@@ -9,6 +9,8 @@ import RoleRoute from './RoleRoute'
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
 import BlockedPage from '@/pages/auth/BlockedPage'
+import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage'
+import ResetPasswordPage from '@/pages/auth/ResetPasswordPage'
 
 import DashboardPage from '@/pages/owner/DashboardPage'
 import OrdersPage from '@/pages/owner/OrdersPage'
@@ -44,6 +46,8 @@ export const router = createBrowserRouter([
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
       { path: '/blocked', element: <BlockedPage /> },
+      { path: '/forgot-password', element: <ForgotPasswordPage /> },
+      { path: '/reset-password', element: <ResetPasswordPage /> },
     ],
   },
 
