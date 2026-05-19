@@ -40,5 +40,6 @@
     <include file="changes/033-fix-financial-log-null-worker-name.xml" relativeToChangelogFile="true"/>
     <include file="changes/034-add-monthly-wage.xml" relativeToChangelogFile="true"/>
     <include file="changes/035-add-days-and-cost-to-assignments.xml" relativeToChangelogFile="true"/>
+    <include file="changes/036-add-soft-delete-to-earnings.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
