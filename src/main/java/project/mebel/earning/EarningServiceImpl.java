@@ -14,11 +14,14 @@ import project.mebel.user.UserEntity;
 import project.mebel.user.UserRepository;
 import project.mebel.utils.Utils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.time.YearMonth;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,8 +37,7 @@ public class EarningServiceImpl implements EarningService {
     @Transactional(readOnly = true)
     public List<EarningResponse> getMyEarnings(LocalDate from, LocalDate to, Principal principal) {
         UserEntity worker = requireWorker(principal);
-        return earningRepo.findWorkerEarningsIncludingMonthly(worker.getId(), from, to, EarnType.MONTHLY_WAGE)
-                .stream().map(e -> toResponse(e, displayName(worker))).toList();
+        return buildEarningsList(worker.getId(), from, to, displayName(worker));
     }
 
     @Override
@@ -46,21 +48,111 @@ public class EarningServiceImpl implements EarningService {
                 .filter(u -> owner.getWorkshopId().equals(u.getWorkshopId()))
                 .orElseThrow(() -> ApiException.notFound("worker.not.found"));
 
-        return earningRepo.findWorkerEarningsIncludingMonthly(workerId, from, to, EarnType.MONTHLY_WAGE)
-                .stream().map(e -> toResponse(e, displayName(worker))).toList();
+        return buildEarningsList(workerId, from, to, displayName(worker));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<EarningResponse> getWorkshopEarnings(LocalDate from, LocalDate to, Principal principal) {
         UserEntity owner = requireOwner(principal);
-        return earningRepo.findWorkshopEarningsIncludingMonthly(owner.getWorkshopId(), from, to, EarnType.MONTHLY_WAGE)
-                .stream().map(e -> {
-                    String name = userRepo.findById(e.getWorkerId())
-                            .map(this::displayName)
-                            .orElse("—");
-                    return toResponse(e, name);
-                }).toList();
+        List<EarningEntity> allEarnings = earningRepo.findAllByWorkshopIdAndEarnDateBetween(owner.getWorkshopId(), from, to);
+        List<EarningResponse> result = new ArrayList<>();
+
+        // Group by worker and earn type, excluding DAILY_WAGE as it's aggregated
+        Map<String, List<EarningEntity>> grouped = allEarnings.stream()
+                .filter(e -> e.getEarnType() != EarnType.DAILY_WAGE)
+                .collect(Collectors.groupingBy(e -> e.getWorkerId().toString() + "-" + e.getEarnType()));
+
+        for (List<EarningEntity> group : grouped.values()) {
+            for (EarningEntity earning : group) {
+                String name = userRepo.findById(earning.getWorkerId())
+                        .map(this::displayName)
+                        .orElse("—");
+                result.add(toResponse(earning, name));
+            }
+        }
+
+        // Add aggregated daily wages by period
+        Map<String, List<EarningEntity>> dailyByWorker = allEarnings.stream()
+                .filter(e -> e.getEarnType() == EarnType.DAILY_WAGE)
+                .collect(Collectors.groupingBy(e -> e.getWorkerId().toString()));
+
+        for (Map.Entry<String, List<EarningEntity>> entry : dailyByWorker.entrySet()) {
+            UUID workerId = UUID.fromString(entry.getKey());
+            String workerName = userRepo.findById(workerId)
+                    .map(this::displayName)
+                    .orElse("—");
+            addAggregatedDailyWages(entry.getValue(), workerName, result);
+        }
+
+        return result;
+    }
+
+    private List<EarningResponse> buildEarningsList(UUID workerId, LocalDate from, LocalDate to, String workerName) {
+        List<EarningEntity> allEarnings = earningRepo.findAllByWorkerIdAndEarnDateBetween(workerId, from, to);
+        List<EarningResponse> result = new ArrayList<>();
+
+        // Add non-daily earnings (bonus, commission, etc.)
+        allEarnings.stream()
+                .filter(e -> e.getEarnType() != EarnType.DAILY_WAGE)
+                .forEach(e -> result.add(toResponse(e, workerName)));
+
+        // Aggregate and add daily wages by period
+        addAggregatedDailyWages(
+                allEarnings.stream()
+                        .filter(e -> e.getEarnType() == EarnType.DAILY_WAGE)
+                        .collect(Collectors.toList()),
+                workerName,
+                result
+        );
+
+        // Sort by date descending
+        result.sort((a, b) -> b.getEarnDate().compareTo(a.getEarnDate()));
+        return result;
+    }
+
+    private void addAggregatedDailyWages(List<EarningEntity> dailyWages, String workerName, List<EarningResponse> result) {
+        if (dailyWages.isEmpty()) return;
+
+        // Group by month (periodStart)
+        Map<LocalDate, List<EarningEntity>> byMonth = dailyWages.stream()
+                .collect(Collectors.groupingBy(e -> e.getPeriodStart() != null ? e.getPeriodStart() : e.getEarnDate().withDayOfMonth(1)));
+
+        for (Map.Entry<LocalDate, List<EarningEntity>> entry : byMonth.entrySet()) {
+            List<EarningEntity> monthWages = entry.getValue();
+            if (monthWages.isEmpty()) continue;
+
+            // Calculate aggregate
+            BigDecimal totalWage = monthWages.stream()
+                    .map(EarningEntity::getTotalAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            int daysWorked = monthWages.size();
+            EarningEntity sample = monthWages.get(0);
+            BigDecimal monthlySalary = sample.getMonthlySalary();
+            Integer daysInMonth = sample.getDaysInMonth();
+
+            // Create aggregated response
+            EarningResponse agg = EarningResponse.builder()
+                    .id(UUID.randomUUID())
+                    .workerId(sample.getWorkerId())
+                    .workerName(workerName)
+                    .earnDate(entry.getKey())
+                    .earnType(EarnType.MONTHLY_WAGE)
+                    .baseAmount(totalWage)
+                    .totalAmount(totalWage)
+                    .daysWorked(BigDecimal.valueOf(daysWorked))
+                    .dailyRate(daysInMonth != null && daysInMonth > 0 && monthlySalary != null
+                            ? monthlySalary.divide(BigDecimal.valueOf(daysInMonth), 2, RoundingMode.HALF_UP)
+                            : null)
+                    .monthlySalary(monthlySalary)
+                    .periodStart(entry.getKey())
+                    .daysInMonth(daysInMonth)
+                    .paid(monthWages.stream().allMatch(EarningEntity::isPaid))
+                    .paidAt(monthWages.stream().map(EarningEntity::getPaidAt).filter(Objects::nonNull).findFirst().orElse(null))
+                    .build();
+            result.add(agg);
+        }
     }
 
     @Override
