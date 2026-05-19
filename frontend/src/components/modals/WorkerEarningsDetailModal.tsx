@@ -197,24 +197,6 @@ const WorkerEarningsDetailModal = ({
         {/* Total Costs */}
         <div className={styles.section}>
           <div className={styles.sectionTitle}>📊 Jami xarajat</div>
-          {worker.wageCost > 0 && (
-            <div>
-              <div className={styles.infoRow}>
-                <span className={styles.label}>Jami maosh:</span>
-                <span className={styles.valueCost}>
-                  -{formatNumber(worker.wageCost)} so'm
-                </span>
-              </div>
-              {daysWorkedCalculated > 0 && dailyEarnings > 0 && (
-                <div className={styles.calculation}>
-                  {formatNumber(dailyEarnings)} × {daysWorkedCalculated} kun
-                  {totalAssignments > 1 && ` ÷ ${totalAssignments}`} = {formatNumber(
-                    (dailyEarnings * daysWorkedCalculated) / totalAssignments
-                  )} so'm
-                </div>
-              )}
-            </div>
-          )}
           {worker.commissionCost > 0 && (
             <div>
               <div className={styles.infoRow}>
@@ -223,10 +205,22 @@ const WorkerEarningsDetailModal = ({
                   -{formatNumber(worker.commissionCost)} so'm
                 </span>
               </div>
-              {daysWorkedCalculated > 0 && dailyEarnings > 0 && totalAssignments > 0 && (
+            </div>
+          )}
+          {worker.wageCost > 0 && (
+            <div>
+              <div className={styles.infoRow}>
+                <span className={styles.label}>Ishchining maoshi:</span>
+                <span className={styles.valueCost}>
+                  {formatNumber(worker.wageCost)} so'm
+                </span>
+              </div>
+              {daysWorkedCalculated > 0 && dailyEarnings > 0 && (
                 <div className={styles.calculation}>
-                  Komissiya hisoblash: {formatNumber(worker.commissionCost / daysWorkedCalculated)}{' '}
-                  × {daysWorkedCalculated} kun = {formatNumber(worker.commissionCost)} so'm
+                  {formatNumber(dailyEarnings)} × {daysWorkedCalculated} kun
+                  {totalAssignments > 1 && ` ÷ ${totalAssignments}`} = {formatNumber(
+                    (dailyEarnings * daysWorkedCalculated) / totalAssignments
+                  )} so'm
                 </div>
               )}
             </div>
