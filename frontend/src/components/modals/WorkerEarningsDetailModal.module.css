@@ -93,3 +93,60 @@
   text-align: center;
   padding: 8px;
 }
+
+.calendar {
+  margin-top: 8px;
+}
+
+.calendarHeader {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.calendarDay {
+  text-align: center;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text2);
+  padding: 4px;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.dayCell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  border-radius: 4px;
+  background-color: var(--border);
+  color: var(--text3);
+}
+
+.dayCell.inactive {
+  opacity: 0.3;
+}
+
+.dayCell.worked {
+  background-color: var(--green);
+  color: white;
+  font-weight: 600;
+}
+
+.dayCell.today {
+  border: 2px solid var(--accent);
+}
+
+.calendarNote {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 8px;
+  text-align: center;
+}

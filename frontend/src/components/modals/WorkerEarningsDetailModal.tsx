@@ -21,7 +21,18 @@ const WorkerEarningsDetailModal = ({
   if (!worker) return null
 
   const monthlySalary = worker.workerMonthlySalary || 0
-  const dailyEarnings = monthlySalary / 30
+  const isMonthlyWorker = worker.workerPayType === 'MONTHLY'
+
+  // Calculate days in month based on assignedAt
+  let daysInMonth = 30
+  if (worker.assignedAt) {
+    const assignedDate = new Date(worker.assignedAt)
+    const year = assignedDate.getFullYear()
+    const month = assignedDate.getMonth()
+    daysInMonth = new Date(year, month + 1, 0).getDate()
+  }
+
+  const dailyEarnings = monthlySalary / daysInMonth
   const totalAssignments = (worker.otherAssignmentsCount || 0) + 1
   const splitPercentage = totalAssignments > 1 ? (100 / totalAssignments).toFixed(0) : 100
 
@@ -60,19 +71,34 @@ const WorkerEarningsDetailModal = ({
               <span className={styles.value}>{worker.daysWorked} kun</span>
             </div>
           )}
+          {worker.daysWorked > 0 && (
+            <div className={styles.infoRow}>
+              <span className={styles.label}>Kunlik daromadi:</span>
+              <span className={styles.value}>{formatNumber(dailyEarnings)} so'm/kun</span>
+            </div>
+          )}
         </div>
 
-        {/* Salary Calculation */}
-        <div className={styles.section}>
-          <div className={styles.sectionTitle}>💰 Oylik maosh hisoblash</div>
-          <div className={styles.infoRow}>
-            <span className={styles.label}>Oylik maosh:</span>
-            <span className={styles.value}>{formatNumber(monthlySalary)} so'm</span>
+        {/* Salary Calculation - Only for monthly workers */}
+        {isMonthlyWorker && (
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>💰 Oylik maosh hisoblash</div>
+            <div className={styles.infoRow}>
+              <span className={styles.label}>Oylik maosh:</span>
+              <span className={styles.value}>{formatNumber(monthlySalary)} so'm</span>
+            </div>
+            <div className={styles.calculation}>
+              {formatNumber(monthlySalary)} ÷ {daysInMonth} kun = {formatNumber(dailyEarnings)} so'm/kun
+            </div>
+            {worker.daysWorked > 0 && (
+              <div className={styles.calculation} style={{ marginTop: '8px' }}>
+                {formatNumber(dailyEarnings)} × {worker.daysWorked} kun = {formatNumber(
+                  dailyEarnings * worker.daysWorked
+                )} so'm
+              </div>
+            )}
           </div>
-          <div className={styles.calculation}>
-            {formatNumber(monthlySalary)} ÷ 30 kun = {formatNumber(dailyEarnings)} so'm/kun
-          </div>
-        </div>
+        )}
 
         {/* Multiple Assignments */}
         {totalAssignments > 1 && (
@@ -130,8 +156,84 @@ const WorkerEarningsDetailModal = ({
             </div>
           </div>
         )}
+
+        {/* Assignment Period Calendar */}
+        {worker.assignedAt && worker.daysWorked > 0 && (
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>📆 Biriktirilish davri</div>
+            <AssignmentCalendar
+              assignedAt={worker.assignedAt}
+              unassignedAt={worker.unassignedAt}
+              daysWorked={worker.daysWorked}
+            />
+          </div>
+        )}
       </div>
     </Modal>
+  )
+}
+
+interface AssignmentCalendarProps {
+  assignedAt: string
+  unassignedAt: string | null
+  daysWorked: number
+}
+
+const AssignmentCalendar = ({
+  assignedAt,
+  unassignedAt,
+  daysWorked,
+}: AssignmentCalendarProps) => {
+  const startDate = new Date(assignedAt)
+  const endDate = unassignedAt ? new Date(unassignedAt) : new Date()
+  const year = startDate.getFullYear()
+  const month = startDate.getMonth()
+
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+  const startDayOfWeek = firstDay.getDay()
+  const daysInMonth = lastDay.getDate()
+
+  const isInAssignmentPeriod = (day: number) => {
+    const checkDate = new Date(year, month, day)
+    return checkDate >= startDate && checkDate <= endDate
+  }
+
+  const dayLabels = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya']
+
+  return (
+    <div className={styles.calendar}>
+      <div className={styles.calendarHeader}>
+        {dayLabels.map((day) => (
+          <div key={day} className={styles.calendarDay}>
+            {day}
+          </div>
+        ))}
+      </div>
+      <div className={styles.calendarGrid}>
+        {Array.from({ length: startDayOfWeek }).map((_, i) => (
+          <div key={`empty-${i}`} className={styles.dayCell} />
+        ))}
+        {Array.from({ length: daysInMonth }).map((_, i) => {
+          const day = i + 1
+          const inPeriod = isInAssignmentPeriod(day)
+          return (
+            <div
+              key={day}
+              className={`${styles.dayCell} ${
+                inPeriod ? styles.worked : styles.inactive
+              }`}
+              title={inPeriod ? 'Biriktirilish davri' : 'Tashqarida'}
+            >
+              {day}
+            </div>
+          )
+        })}
+      </div>
+      <div className={styles.calendarNote}>
+        Jami {daysWorked} kun ish qilgan
+      </div>
+    </div>
   )
 }
 

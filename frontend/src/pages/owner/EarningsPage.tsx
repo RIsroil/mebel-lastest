@@ -312,7 +312,7 @@ const EarningsPage = () => {
               <th>Sana</th>
               <th>Tur</th>
               <th>Soat</th>
-              <th>To'liq kun</th>
+              <th>To'liq daromand</th>
               <th>Hisoblangan</th>
               <th>Holat</th>
               <th>Amal</th>
@@ -337,7 +337,9 @@ const EarningsPage = () => {
                     </td>
                     <td className={styles.hoursCell}>—</td>
                     <td className={styles.rateCell}>
-                      {e.monthlySalary != null ? formatNumber(e.monthlySalary) : '—'}
+                      {e.monthlySalary != null && e.daysInMonth != null
+                        ? formatNumber((e.monthlySalary / e.daysInMonth) * came)
+                        : '—'}
                     </td>
                     <td className={styles.totalCell}>{formatNumber(e.totalAmount)}</td>
                     <td>
