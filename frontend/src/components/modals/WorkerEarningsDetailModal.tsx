@@ -60,14 +60,32 @@ const WorkerEarningsDetailModal = ({
     enabled: !!attendanceFromDate && !!attendanceToDate && isOpen,
   })
 
-  // Convert attendance data to calendar format
-  const attendanceData = useMemo(() => {
+  // Convert attendance data to calendar format and get latest attendance date
+  const { attendanceData, latestAttendanceDate } = useMemo(() => {
     const records = attendanceResp?.data?.data ?? []
-    return records.map((record) => ({
+    const data = records.map((record) => ({
       date: record.workDate,
       hoursWorked: record.hoursWorked,
     }))
+
+    // Get the latest attendance date if available
+    const latest =
+      data.length > 0
+        ? data.reduce((max, current) =>
+            new Date(current.date) > new Date(max.date) ? current : max
+          ).date
+        : null
+
+    return { attendanceData: data, latestAttendanceDate: latest }
   }, [attendanceResp])
+
+  // Recalculate days worked using latest attendance date if available
+  if (latestAttendanceDate && worker.assignedAt) {
+    const assignedDate = new Date(worker.assignedAt)
+    const endDate = new Date(latestAttendanceDate)
+    const diffTime = Math.abs(endDate.getTime() - assignedDate.getTime())
+    daysWorkedCalculated = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
+  }
 
   // Calculate daily earnings
   let dailyEarnings = 0
@@ -180,19 +198,37 @@ const WorkerEarningsDetailModal = ({
         <div className={styles.section}>
           <div className={styles.sectionTitle}>📊 Jami xarajat</div>
           {worker.wageCost > 0 && (
-            <div className={styles.infoRow}>
-              <span className={styles.label}>Jami maosh:</span>
-              <span className={styles.valueCost}>
-                -{formatNumber(worker.wageCost)} so'm
-              </span>
+            <div>
+              <div className={styles.infoRow}>
+                <span className={styles.label}>Jami maosh:</span>
+                <span className={styles.valueCost}>
+                  -{formatNumber(worker.wageCost)} so'm
+                </span>
+              </div>
+              {daysWorkedCalculated > 0 && dailyEarnings > 0 && (
+                <div className={styles.calculation}>
+                  {formatNumber(dailyEarnings)} × {daysWorkedCalculated} kun
+                  {totalAssignments > 1 && ` ÷ ${totalAssignments}`} = {formatNumber(
+                    (dailyEarnings * daysWorkedCalculated) / totalAssignments
+                  )} so'm
+                </div>
+              )}
             </div>
           )}
           {worker.commissionCost > 0 && (
-            <div className={styles.infoRow}>
-              <span className={styles.label}>Jami komissiya:</span>
-              <span className={styles.valueCost}>
-                -{formatNumber(worker.commissionCost)} so'm
-              </span>
+            <div>
+              <div className={styles.infoRow}>
+                <span className={styles.label}>Jami komissiya:</span>
+                <span className={styles.valueCost}>
+                  -{formatNumber(worker.commissionCost)} so'm
+                </span>
+              </div>
+              {daysWorkedCalculated > 0 && dailyEarnings > 0 && totalAssignments > 0 && (
+                <div className={styles.calculation}>
+                  Komissiya hisoblash: {formatNumber(worker.commissionCost / daysWorkedCalculated)}{' '}
+                  × {daysWorkedCalculated} kun = {formatNumber(worker.commissionCost)} so'm
+                </div>
+              )}
             </div>
           )}
           {worker.wageCost === 0 && worker.commissionCost === 0 && (
