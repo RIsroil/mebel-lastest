@@ -7,9 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import project.mebel.auth.dto.CreateWorkerRequest;
-import project.mebel.auth.dto.ForgotPasswordRequest;
 import project.mebel.auth.dto.LoginRequest;
-import project.mebel.auth.dto.ResetPasswordRequest;
 import project.mebel.auth.dto.UserRegisterRequest;
 import project.mebel.auth.dto.UserResponse;
 import project.mebel.auth.dto.UserTokenResponse;
@@ -218,46 +216,6 @@ public class AuthServiceImpl implements AuthService {
                 .dailySalary(u.getDailySalary())
                 .monthlySalary(u.getMonthlySalary())
                 .build();
-    }
-
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponseStructure<Void>> forgotPassword(ForgotPasswordRequest request) {
-        UserEntity user = userRepository.findByUsernameAndDeletedAtIsNull(request.getUsername())
-                .orElseThrow(() -> ApiException.notFound("user.not.found"));
-
-        String resetToken = UUID.randomUUID().toString();
-        user.setPasswordResetToken(resetToken);
-        user.setPasswordResetTokenExpiresAt(LocalDateTime.now().plusHours(24));
-        userRepository.save(user);
-
-        return responseHelper.success("password.reset.link.sent", null);
-    }
-
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponseStructure<UserTokenResponse>> resetPassword(ResetPasswordRequest request) {
-        if (request.getToken() == null || request.getToken().isEmpty()) {
-            throw ApiException.badRequest("invalid.reset.token");
-        }
-
-        UserEntity user = userRepository.findByPasswordResetToken(request.getToken())
-                .orElseThrow(() -> ApiException.badRequest("invalid.reset.token"));
-
-        if (user.getPasswordResetTokenExpiresAt() == null ||
-            user.getPasswordResetTokenExpiresAt().isBefore(LocalDateTime.now())) {
-            throw ApiException.badRequest("reset.token.expired");
-        }
-
-        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
-        user.setPasswordResetToken(null);
-        user.setPasswordResetTokenExpiresAt(null);
-        user.setFailedLoginCount((short) 0);
-        user.setBlocked(false);
-        userRepository.save(user);
-
-        UserTokenResponse userResponse = generateTokens(user);
-        return responseHelper.success("password.reset.successfully", userResponse);
     }
 
     private UserTokenResponse generateTokens(UserEntity user) {

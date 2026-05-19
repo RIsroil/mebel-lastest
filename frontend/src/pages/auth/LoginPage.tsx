@@ -73,9 +73,7 @@ const LoginPage = () => {
             {...register('password')}
           />
           <div className={styles.forgotRow}>
-            <Link to="/forgot-password" className={styles.forgotLink}>
-              Parolni unutdingizmi?
-            </Link>
+            <span className={styles.forgotLink}>Parolni unutdingizmi?</span>
           </div>
         </div>
 
