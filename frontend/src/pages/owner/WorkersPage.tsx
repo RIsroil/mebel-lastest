@@ -4,12 +4,13 @@ import { useForm } from 'react-hook-form'
 import type { Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Calendar, Edit2, Trash2 } from 'lucide-react'
+import { Calendar, Edit2, Trash2, Key } from 'lucide-react'
 import { useTopbar } from '@/context/TopbarContext'
 import { authApi } from '@/api/auth.api'
 import { adminApi } from '@/api/admin.api'
 import { workshopApi } from '@/api/workshop.api'
 import { attendanceApi } from '@/api/attendance.api'
+import { userApi } from '@/api/user.api'
 import type { AdminUserResponse } from '@/types/admin.types'
 import type { PayType } from '@/types/auth.types'
 import type { WeeklyDayResponse, ManualEntryRequest } from '@/types/attendance.types'
@@ -93,6 +94,10 @@ const WorkersPage = () => {
   const [editNotes,    setEditNotes]    = useState('')
   const [editHours,    setEditHours]    = useState('')
 
+  // Password reset state
+  const [resetPasswordWorker, setResetPasswordWorker] = useState<AdminUserResponse | null>(null)
+  const [resetPasswordInput, setResetPasswordInput] = useState('')
+
   const { data: workersResp, isLoading } = useQuery({
     queryKey: ['workers'],
     queryFn:  () => adminApi.users.getAll({ role: 'WORKER', size: 200 }),
@@ -144,6 +149,15 @@ const WorkersPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worker-weekly'] })
       setEditDayInfo(null)
+    },
+  })
+
+  const resetPasswordMut = useMutation({
+    mutationFn: ({ workerId, password }: { workerId: string; password: string }) =>
+      userApi.resetWorkerPassword(workerId, password),
+    onSuccess: () => {
+      setResetPasswordWorker(null)
+      setResetPasswordInput('')
     },
   })
 
@@ -351,6 +365,14 @@ const WorkersPage = () => {
                     <button
                       type="button"
                       className={styles.iconBtn}
+                      title="Parolni tiklash"
+                      onClick={() => setResetPasswordWorker(worker)}
+                    >
+                      <Key size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.iconBtn}
                       title="Tahrirlash"
                       onClick={() => openEdit(worker)}
                     >
@@ -426,6 +448,14 @@ const WorkersPage = () => {
                 onClick={() => openAttendance(worker)}
               >
                 <Calendar size={18} />
+              </button>
+              <button
+                type="button"
+                className={styles.iconBtn}
+                title="Parolni tiklash"
+                onClick={() => setResetPasswordWorker(worker)}
+              >
+                <Key size={18} />
               </button>
               <button
                 type="button"
@@ -947,6 +977,61 @@ const WorkersPage = () => {
                 onClick={() => deleteMut.mutate(deleteTarget.id)}
               >
                 O'chirish
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Reset password modal */}
+      <Modal
+        isOpen={resetPasswordWorker !== null}
+        onClose={() => {
+          setResetPasswordWorker(null)
+          setResetPasswordInput('')
+        }}
+        title="Parolni tiklash"
+      >
+        {resetPasswordWorker && (
+          <div>
+            <p className={styles.confirmText}>
+              <strong>{resetPasswordWorker.fullName || resetPasswordWorker.username}</strong> uchun yangi parol
+            </p>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Yangi parol *</label>
+              <input
+                className={styles.formInput}
+                type="password"
+                placeholder="Yangi parolni kiriting"
+                value={resetPasswordInput}
+                onChange={(e) => setResetPasswordInput(e.target.value)}
+              />
+            </div>
+            <div className={styles.formActions}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setResetPasswordWorker(null)
+                  setResetPasswordInput('')
+                }}
+              >
+                Bekor qilish
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                loading={resetPasswordMut.isPending}
+                disabled={!resetPasswordInput || resetPasswordInput.length < 4}
+                onClick={() =>
+                  resetPasswordMut.mutate({
+                    workerId: resetPasswordWorker.id,
+                    password: resetPasswordInput,
+                  })
+                }
+              >
+                Parolni tiklash →
               </Button>
             </div>
           </div>
