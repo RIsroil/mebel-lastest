@@ -25,4 +25,13 @@ export const authApi = {
 
   me: () =>
     api.get<ApiResponse<UserProfile>>('/api/auth/me'),
+
+  forgotPassword: (username: string) =>
+    api.post<ApiResponse<null>>('/api/auth/forgot-password', { username }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    api.post<ApiResponse<TokenPair>>('/api/auth/reset-password', {
+      token,
+      newPassword,
+    }),
 }
