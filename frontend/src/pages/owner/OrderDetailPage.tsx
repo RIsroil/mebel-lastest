@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Image as ImageIcon, Trash2, X as XIcon, User, TrendingUp, Wrench, Plus, Minus } from 'lucide-react'
+import { Image as ImageIcon, Trash2, X as XIcon, User, TrendingUp, Wrench } from 'lucide-react'
 import { useTopbar } from '@/context/TopbarContext'
 import { furnitureApi } from '@/api/furniture.api'
 import { warehouseApi } from '@/api/warehouse.api'

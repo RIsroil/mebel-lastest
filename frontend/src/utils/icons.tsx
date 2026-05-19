@@ -15,7 +15,6 @@ import {
   ShoppingCart,
   BookOpen,
   Warehouse,
-  Package,
   BarChart3,
   LogOut,
   Menu,
