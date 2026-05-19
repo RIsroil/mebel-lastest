@@ -337,9 +337,7 @@ const EarningsPage = () => {
                     </td>
                     <td className={styles.hoursCell}>—</td>
                     <td className={styles.rateCell}>
-                      {e.monthlySalary != null && e.daysInMonth != null
-                        ? formatNumber((e.monthlySalary / e.daysInMonth) * came)
-                        : '—'}
+                      {e.monthlySalary != null ? formatNumber(e.monthlySalary) : '—'}
                     </td>
                     <td className={styles.totalCell}>{formatNumber(e.totalAmount)}</td>
                     <td>
