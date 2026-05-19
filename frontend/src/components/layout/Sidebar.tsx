@@ -8,7 +8,6 @@ import {
   Users,
   DollarSign,
   FileText,
-  Bookmark,
   Clock,
   CheckCircle2,
   Users as UsersIcon,
@@ -63,7 +62,6 @@ const OWNER_NAV: NavSection[] = [
 const WORKER_NAV_BUTTON: NavSection[] = [
   {
     items: [
-      { to: '/my-tasks',     icon: <Bookmark size={20} />, label: 'Mening vazifalarim' },
       { to: '/check-in',     icon: <CheckCircle2 size={20} />, label: 'Kirish / Chiqish' },
       { to: '/submit-hours', icon: <Clock size={20} />, label: 'Soatlarni topshirish' },
       { to: '/my-earnings',  icon: <DollarSign size={20} />, label: 'Mening maoshim' },
@@ -74,7 +72,6 @@ const WORKER_NAV_BUTTON: NavSection[] = [
 const WORKER_NAV_MANUAL: NavSection[] = [
   {
     items: [
-      { to: '/my-tasks',          icon: <Bookmark size={20} />, label: 'Mening vazifalarim' },
       { to: '/weekly-attendance', icon: <FileText size={20} />, label: 'Haftalik davomat' },
       { to: '/my-earnings',       icon: <DollarSign size={20} />, label: 'Mening maoshim' },
     ],
