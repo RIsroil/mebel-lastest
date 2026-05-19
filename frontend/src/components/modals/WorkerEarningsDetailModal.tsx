@@ -1,7 +1,10 @@
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import Modal from '@/components/ui/Modal'
 import Avatar from '@/components/ui/Avatar'
 import { formatNumber } from '@/utils/formatMoney'
-import { formatDate } from '@/utils/formatDate'
+import { formatDate, toApiDate } from '@/utils/formatDate'
+import { attendanceApi } from '@/api/attendance.api'
 import type { AssignedWorker } from '@/types/furniture.types'
 import styles from './WorkerEarningsDetailModal.module.css'
 
@@ -26,12 +29,45 @@ const WorkerEarningsDetailModal = ({
 
   // Calculate days in month based on assignedAt
   let daysInMonth = 30
+  let daysWorkedCalculated = worker.daysWorked
+  let attendanceFromDate = ''
+  let attendanceToDate = ''
+
   if (worker.assignedAt) {
     const assignedDate = new Date(worker.assignedAt)
     const year = assignedDate.getFullYear()
     const month = assignedDate.getMonth()
     daysInMonth = new Date(year, month + 1, 0).getDate()
+
+    // Calculate days from assignment to unassignment or today
+    const endDate = worker.unassignedAt ? new Date(worker.unassignedAt) : new Date()
+    const diffTime = Math.abs(endDate.getTime() - assignedDate.getTime())
+    daysWorkedCalculated = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 to include start day
+
+    // Set date range for attendance query
+    attendanceFromDate = toApiDate(assignedDate)
+    attendanceToDate = toApiDate(endDate)
   }
+
+  // Fetch attendance data for the worker during assignment period
+  const { data: attendanceResp } = useQuery({
+    queryKey: ['attendance', worker.workerId, attendanceFromDate, attendanceToDate],
+    queryFn: () =>
+      attendanceApi.getWorkerHistory(worker.workerId, {
+        from: attendanceFromDate,
+        to: attendanceToDate,
+      }),
+    enabled: !!attendanceFromDate && !!attendanceToDate && isOpen,
+  })
+
+  // Convert attendance data to calendar format
+  const attendanceData = useMemo(() => {
+    const records = attendanceResp?.data?.data ?? []
+    return records.map((record) => ({
+      date: record.workDate,
+      hoursWorked: record.hoursWorked,
+    }))
+  }, [attendanceResp])
 
   // Calculate daily earnings
   let dailyEarnings = 0
@@ -45,6 +81,9 @@ const WorkerEarningsDetailModal = ({
   // For multiple assignments, split the earnings
   const displayedDailyEarnings = dailyEarnings / totalAssignments
   const splitPercentage = totalAssignments > 1 ? (100 / totalAssignments).toFixed(0) : 100
+
+  // Calculate total for days worked
+  const totalForDaysWorked = dailyEarnings * daysWorkedCalculated
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Ishchi daromadi tafsilotlari">
@@ -75,13 +114,13 @@ const WorkerEarningsDetailModal = ({
               <span className={styles.value}>{formatDate(worker.unassignedAt)}</span>
             </div>
           )}
-          {worker.daysWorked > 0 && (
+          {daysWorkedCalculated > 0 && (
             <div className={styles.infoRow}>
               <span className={styles.label}>Ish kunlari:</span>
-              <span className={styles.value}>{worker.daysWorked} kun</span>
+              <span className={styles.value}>{daysWorkedCalculated} kun</span>
             </div>
           )}
-          {worker.daysWorked > 0 && dailyEarnings > 0 && (
+          {daysWorkedCalculated > 0 && dailyEarnings > 0 && (
             <div className={styles.infoRow}>
               <span className={styles.label}>Kunlik daromadi:</span>
               <span className={styles.value}>{formatNumber(displayedDailyEarnings)} so'm/kun</span>
@@ -100,15 +139,15 @@ const WorkerEarningsDetailModal = ({
             <div className={styles.calculation}>
               {formatNumber(monthlySalary)} ÷ {daysInMonth} kun = {formatNumber(dailyEarnings)} so'm/kun
             </div>
-            {worker.daysWorked > 0 && (
+            {daysWorkedCalculated > 0 && (
               <div className={styles.calculation} style={{ marginTop: '8px' }}>
-                {formatNumber(dailyEarnings)} × {worker.daysWorked} kun = {formatNumber(
-                  dailyEarnings * worker.daysWorked
+                {formatNumber(dailyEarnings)} × {daysWorkedCalculated} kun = {formatNumber(
+                  totalForDaysWorked
                 )} so'm
                 {totalAssignments > 1 && (
                   <>
                     <br />÷ {totalAssignments} = {formatNumber(
-                      (dailyEarnings * worker.daysWorked) / totalAssignments
+                      totalForDaysWorked / totalAssignments
                     )} so'm (bu loyihaga)
                   </>
                 )}
@@ -175,13 +214,14 @@ const WorkerEarningsDetailModal = ({
         )}
 
         {/* Assignment Period Calendar */}
-        {worker.assignedAt && worker.daysWorked > 0 && (
+        {worker.assignedAt && daysWorkedCalculated > 0 && (
           <div className={styles.section}>
             <div className={styles.sectionTitle}>📆 Biriktirilish davri</div>
             <AssignmentCalendar
               assignedAt={worker.assignedAt}
               unassignedAt={worker.unassignedAt}
-              daysWorked={worker.daysWorked}
+              daysWorked={daysWorkedCalculated}
+              attendanceData={attendanceData}
             />
           </div>
         )}
