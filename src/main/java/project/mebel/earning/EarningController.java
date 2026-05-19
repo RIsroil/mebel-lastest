@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import project.mebel.earning.dto.BonusRequest;
 import project.mebel.earning.dto.EarningResponse;
+import project.mebel.earning.dto.PartialPaymentRequest;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -62,6 +63,12 @@ public class EarningController {
     @Operation(summary = "Bir nechta daromadni to'langan deb belgilash (OWNER) - oylik maosh uchun")
     public ResponseEntity<List<EarningResponse>> payEarnings(@RequestBody List<UUID> earningIds, Principal principal) {
         return ResponseEntity.ok(earningService.payEarnings(earningIds, principal));
+    }
+
+    @PatchMapping("/pay-partial")
+    @Operation(summary = "Qisman to'lash - faqat N kunni to'lash (OWNER)")
+    public ResponseEntity<List<EarningResponse>> payPartial(@RequestBody PartialPaymentRequest request, Principal principal) {
+        return ResponseEntity.ok(earningService.payPartial(request.getEarningIds(), request.getDaysToPay(), principal));
     }
 
     @PostMapping("/bonus")

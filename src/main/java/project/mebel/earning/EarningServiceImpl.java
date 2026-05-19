@@ -250,6 +250,64 @@ public class EarningServiceImpl implements EarningService {
 
     @Override
     @Transactional
+    public List<EarningResponse> payPartial(List<UUID> earningIds, int daysToPay, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        List<EarningResponse> results = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        // Get all earnings, filter by workshop and unpaid, sort by date (oldest first)
+        List<EarningEntity> earnings = earningRepo.findAllById(earningIds).stream()
+                .filter(e -> e.getWorkshopId().equals(owner.getWorkshopId()))
+                .filter(e -> !e.isPaid())
+                .sorted(Comparator.comparing(EarningEntity::getEarnDate))
+                .collect(Collectors.toList());
+
+        // Pay only the requested number of days
+        int paidCount = 0;
+        BigDecimal totalPaid = BigDecimal.ZERO;
+        String workerName = null;
+        UUID workerId = null;
+
+        for (EarningEntity earning : earnings) {
+            if (paidCount >= daysToPay) break;
+
+            earning.setPaid(true);
+            earning.setPaidAt(now);
+            earning.setPaidBy(owner.getId());
+            earning.setUpdatedBy(owner.getId());
+
+            if (workerName == null) {
+                workerName = userRepo.findById(earning.getWorkerId())
+                        .map(this::displayName)
+                        .orElse("—");
+                workerId = earning.getWorkerId();
+            }
+
+            EarningEntity saved = earningRepo.save(earning);
+            results.add(toResponse(saved, workerName));
+            totalPaid = totalPaid.add(saved.getTotalAmount());
+            paidCount++;
+        }
+
+        // Financial log for partial payment
+        if (!results.isEmpty() && workerName != null) {
+            String desc = "Qisman maosh to'landi: " + paidCount + " kun, jami: " + totalPaid + " | " + workerName;
+            financialLogService.record(owner.getWorkshopId(), FinancialLogType.WAGE_PAID,
+                    totalPaid.negate(), desc, workerId,
+                    workerName, LocalDate.now(), owner.getId());
+
+            String ownerName = owner.getFullName() != null ? owner.getFullName() : owner.getUsername();
+            auditLogService.logEarningPaid(
+                    results.get(0).getId(), workerId, workerName,
+                    owner.getId(), ownerName, owner.getWorkshopId(),
+                    totalPaid.toPlainString() + " (" + paidCount + " kun)");
+        }
+
+        return results;
+    }
+
+    @Override
+    @Transactional
     public EarningResponse addBonus(BonusRequest request, Principal principal) {
         UserEntity owner = requireOwner(principal);
 

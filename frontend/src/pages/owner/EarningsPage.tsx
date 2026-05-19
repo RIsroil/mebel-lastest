@@ -66,6 +66,10 @@ const EarningsPage = () => {
   const [overrideRow, setOverrideRow] = useState<EarningResponse | null>(null)
   const [overrideHours, setOverrideHours] = useState('')
 
+  // Partial payment modal state
+  const [partialPayTarget, setPartialPayTarget] = useState<EarningResponse | null>(null)
+  const [daysToPay, setDaysToPay] = useState('')
+
   const { data: workersResp } = useQuery({
     queryKey: ['workers'],
     queryFn:  () => adminApi.users.getAll({ role: 'WORKER', size: 200 }),
@@ -88,6 +92,15 @@ const EarningsPage = () => {
   const payBatchMut = useMutation({
     mutationFn: (ids: string[]) => earningApi.markPaidBatch(ids),
     onSuccess:  () => queryClient.invalidateQueries({ queryKey: earningsKey }),
+  })
+
+  const payPartialMut = useMutation({
+    mutationFn: ({ ids, days }: { ids: string[]; days: number }) => earningApi.payPartial(ids, days),
+    onSuccess:  () => {
+      queryClient.invalidateQueries({ queryKey: earningsKey })
+      setPartialPayTarget(null)
+      setDaysToPay('')
+    },
   })
 
   const bonusMut = useMutation({
@@ -240,12 +253,13 @@ const EarningsPage = () => {
                     <button
                       type="button"
                       className={styles.payBtn}
-                      disabled={payMut.isPending || payBatchMut.isPending}
+                      disabled={payMut.isPending || payBatchMut.isPending || payPartialMut.isPending}
                       onClick={() => {
-                        // Use batch payment for monthly wages
                         const ids = e.earningIds ?? [e.id]
                         if (ids.length > 1) {
-                          payBatchMut.mutate(ids)
+                          // Open partial payment modal for multi-day wages
+                          setPartialPayTarget(e)
+                          setDaysToPay(String(ids.length))
                         } else {
                           payMut.mutate(e.id)
                         }
@@ -363,11 +377,13 @@ const EarningsPage = () => {
                         <button
                           type="button"
                           className={styles.payBtn}
-                          disabled={payMut.isPending || payBatchMut.isPending}
+                          disabled={payMut.isPending || payBatchMut.isPending || payPartialMut.isPending}
                           onClick={() => {
                             const ids = e.earningIds ?? [e.id]
                             if (ids.length > 1) {
-                              payBatchMut.mutate(ids)
+                              // Open partial payment modal
+                              setPartialPayTarget(e)
+                              setDaysToPay(String(ids.length))
                             } else {
                               payMut.mutate(e.id)
                             }
@@ -517,6 +533,65 @@ const EarningsPage = () => {
               onClick={submitOverride}
             >
               Saqlash →
+            </Button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Partial payment modal */}
+      {partialPayTarget && (
+        <Modal
+          isOpen={!!partialPayTarget}
+          onClose={() => { setPartialPayTarget(null); setDaysToPay('') }}
+          title="Qisman to'lash"
+        >
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>
+              {partialPayTarget.workerName}
+            </label>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 12 }}>
+              Jami: <strong>{partialPayTarget.earningIds?.length ?? 1}</strong> kun,{' '}
+              <strong>{formatNumber(partialPayTarget.totalAmount)}</strong> so'm
+            </div>
+            <label className={styles.formLabel}>Necha kun to'lamoqchisiz?</label>
+            <input
+              className={styles.formInput}
+              type="number"
+              min="1"
+              max={partialPayTarget.earningIds?.length ?? 1}
+              placeholder={String(partialPayTarget.earningIds?.length ?? 1)}
+              value={daysToPay}
+              onChange={(e) => setDaysToPay(e.target.value)}
+              autoFocus
+            />
+            {daysToPay && partialPayTarget.daysWorked && (
+              <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 8 }}>
+                To'lanadigan summa: ~{formatNumber(
+                  Math.round(partialPayTarget.totalAmount / (partialPayTarget.earningIds?.length ?? 1) * parseInt(daysToPay || '0'))
+                )} so'm
+              </div>
+            )}
+          </div>
+          <div className={styles.formActions}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => { setPartialPayTarget(null); setDaysToPay('') }}
+            >
+              Bekor qilish
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              loading={payPartialMut.isPending}
+              disabled={!daysToPay || parseInt(daysToPay) < 1 || parseInt(daysToPay) > (partialPayTarget.earningIds?.length ?? 1)}
+              onClick={() => {
+                const ids = partialPayTarget.earningIds ?? [partialPayTarget.id]
+                payPartialMut.mutate({ ids, days: parseInt(daysToPay) })
+              }}
+            >
+              To'lash →
             </Button>
           </div>
         </Modal>

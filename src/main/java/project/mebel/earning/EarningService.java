@@ -21,5 +21,8 @@ public interface EarningService {
     /** Batch payment for multiple earnings (e.g., monthly wages) */
     List<EarningResponse> payEarnings(List<UUID> earningIds, Principal principal);
 
+    /** Partial payment - pay only N days from aggregated earnings */
+    List<EarningResponse> payPartial(List<UUID> earningIds, int daysToPay, Principal principal);
+
     EarningResponse addBonus(BonusRequest request, Principal principal);
 }
