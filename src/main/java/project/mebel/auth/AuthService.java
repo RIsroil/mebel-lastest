@@ -2,8 +2,10 @@ package project.mebel.auth;
 
 import org.springframework.http.ResponseEntity;
 import project.mebel.auth.dto.CreateWorkerRequest;
+import project.mebel.auth.dto.ForgotPasswordRequest;
 import project.mebel.auth.dto.LoginRequest;
 import project.mebel.auth.dto.LoginResponse;
+import project.mebel.auth.dto.ResetPasswordRequest;
 import project.mebel.auth.dto.UserRegisterRequest;
 import project.mebel.auth.dto.UserResponse;
 import project.mebel.auth.dto.UserTokenResponse;
@@ -25,5 +27,9 @@ public interface AuthService {
     ResponseEntity<ApiResponseStructure<UserTokenResponse>> refreshToken(String refreshToken);
 
     ResponseEntity<ApiResponseStructure<UserResponse>> getMe(Principal principal);
+
+    ResponseEntity<ApiResponseStructure<Void>> forgotPassword(ForgotPasswordRequest request);
+
+    ResponseEntity<ApiResponseStructure<UserTokenResponse>> resetPassword(ResetPasswordRequest request);
 
 }

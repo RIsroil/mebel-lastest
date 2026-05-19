@@ -8,8 +8,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import project.mebel.auth.dto.CreateWorkerRequest;
+import project.mebel.auth.dto.ForgotPasswordRequest;
 import project.mebel.auth.dto.LoginRequest;
 import project.mebel.auth.dto.LoginResponse;
+import project.mebel.auth.dto.ResetPasswordRequest;
 import project.mebel.auth.dto.UserRegisterRequest;
 import project.mebel.auth.dto.UserResponse;
 import project.mebel.auth.dto.UserTokenResponse;
@@ -62,5 +64,17 @@ public class AuthController {
     @Operation(summary = "Joriy foydalanuvchi profili (har doim yangi workshop modeli bilan)")
     public ResponseEntity<ApiResponseStructure<UserResponse>> me(Principal principal) {
         return authService.getMe(principal);
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Parol tiklash uchun link yuborish")
+    public ResponseEntity<ApiResponseStructure<Void>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        return authService.forgotPassword(request);
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Parolni yangi parol bilan almashtirish")
+    public ResponseEntity<ApiResponseStructure<UserTokenResponse>> resetPassword(@RequestBody ResetPasswordRequest request) {
+        return authService.resetPassword(request);
     }
 }
