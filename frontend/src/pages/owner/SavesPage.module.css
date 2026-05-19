@@ -498,75 +498,192 @@
     overflow-y: hidden;
     border-radius: var(--radius);
     gap: 8px;
-    padding: 8px;
+    padding: 10px 14px;
     border-right: none;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    margin: 0 0 4px 0;
   }
   .sidebar::-webkit-scrollbar { display: none; }
 
   .saveItem {
     flex-shrink: 0;
-    min-width: 140px;
-    max-width: 180px;
+    min-width: 150px;
+    max-width: 200px;
     white-space: normal;
     word-break: break-word;
+    padding: 12px 14px;
+    font-size: 13px;
   }
 
   .saveItemName {
     font-size: 13px;
     white-space: normal;
+    font-weight: 600;
+  }
+
+  .saveItemMeta {
+    font-size: 11px;
+    margin-top: 4px;
   }
 
   /* Detail section — full width, proper padding */
   .detail {
     overflow-y: visible;
     overflow-x: visible;
-    padding-bottom: 80px;
+    padding: 0 14px 80px 14px;
   }
 
   .detailHeader {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 
   .detailTitle {
-    font-size: 17px;
+    font-size: 18px;
+    width: 100%;
   }
 
-  /* Table — horizontal scroll */
+  .detailActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* Table — card-based layout */
   .tableWrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow: visible;
+    -webkit-overflow-scrolling: auto;
     margin: 0;
+    padding: 0 14px 14px;
   }
 
   .table {
-    min-width: 500px;
     width: 100%;
-    font-size: 12px;
+    font-size: 13px;
   }
 
-  .table th, .table td {
-    padding: 10px 8px;
-    font-size: 12px;
-  }
-
-  /* Mobile: hide # and Izoh columns — show Material, Bo'yi, Eni, Balandligi, Soni, Actions */
-  .table th:nth-child(1),
-  .table td:nth-child(1),
-  .table th:nth-child(7),
-  .table td:nth-child(7) {
+  /* Hide table header, show content as cards */
+  .table thead {
     display: none;
   }
 
+  .table,
+  .table tbody,
+  .table tr {
+    display: block;
+    width: 100%;
+  }
+
+  .table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface2);
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .table tbody td {
+    display: block;
+    padding: 0;
+    border-bottom: none;
+    font-size: 13px;
+  }
+
+  /* Row labels using ::before */
+  .table tbody td::before {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 3px;
+  }
+
+  /* Hide # column */
+  .table tbody td:nth-child(1) {
+    display: none;
+  }
+
+  /* Material name label */
+  .table tbody td:nth-child(2)::before {
+    content: 'Material';
+  }
+
+  /* Length label */
+  .table tbody td:nth-child(3)::before {
+    content: 'Bo\'yi (mm)';
+  }
+
+  /* Width label */
+  .table tbody td:nth-child(4)::before {
+    content: 'Eni (mm)';
+  }
+
+  /* Height label */
+  .table tbody td:nth-child(5)::before {
+    content: 'Balandlik (mm)';
+  }
+
+  /* Quantity label */
+  .table tbody td:nth-child(6)::before {
+    content: 'Soni';
+  }
+
+  /* Hide Izoh column */
+  .table tbody td:nth-child(7) {
+    display: none;
+  }
+
+  /* Actions */
+  .table tbody td:nth-child(8)::before {
+    content: 'Amal';
+  }
+
   .nameCell {
-    min-width: 100px;
+    min-width: 0;
+    word-break: break-word;
+  }
+
+  .rowActions {
+    justify-content: flex-start;
   }
 
   /* Image grid smaller on mobile */
   .imageItem {
     width: 90px;
     height: 90px;
+  }
+
+  /* Forms */
+  /* Cuts section */
+  .cutsSection {
+    border: none;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    margin: 0 -14px;
+    padding: 0;
+  }
+
+  .cutsHeader {
+    padding: 14px 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .cutsTitle {
+    font-size: 14px;
+    width: 100%;
   }
 
   /* Forms */
@@ -581,5 +698,20 @@
 
   .batchForm {
     max-height: 70vh;
+  }
+
+  .batchRow {
+    margin: 0 14px 12px 14px;
+  }
+
+  /* Image grid */
+  .imageGrid {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .imageItem {
+    width: 85px;
+    height: 85px;
   }
 }

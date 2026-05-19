@@ -41,7 +41,9 @@
       "Bash(timeout 45 ./mvnw spring-boot:run)",
       "Bash(Start-Sleep -Seconds 10)",
       "Bash(curl -s http://localhost:9060/api/auth/me)",
-      "Bash(Write-Output \"Checking dev server status...\")"
+      "Bash(Write-Output \"Checking dev server status...\")",
+      "Bash(xargs ls -la)",
+      "Bash(grep -E \"\\\\.\\(tsx|css\\)$\")"
     ]
   }
 }
