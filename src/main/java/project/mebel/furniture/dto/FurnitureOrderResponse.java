@@ -61,6 +61,8 @@ public class FurnitureOrderResponse {
         private BigDecimal fullDailyRate;
         private Integer activeAssignments;
         private BigDecimal earnedAmount;
+        private BigDecimal hoursWorked;
+        private BigDecimal hoursTarget;
     }
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor

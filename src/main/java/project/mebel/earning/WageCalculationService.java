@@ -3,6 +3,8 @@ package project.mebel.earning;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import project.mebel.attendance.DailyAttendanceEntity;
+import project.mebel.attendance.DailyAttendanceRepository;
 import project.mebel.common.enums.EarnType;
 import project.mebel.common.enums.FinancialLogType;
 import project.mebel.furniture.FurnitureAssignmentEntity;
@@ -26,6 +28,7 @@ public class WageCalculationService {
     private final EarningRepository earningRepo;
     private final FurnitureAssignmentRepository assignmentRepo;
     private final UserRepository userRepo;
+    private final DailyAttendanceRepository attendanceRepo;
     private final FinancialLogService financialLogService;
 
     /**
@@ -100,7 +103,9 @@ public class WageCalculationService {
 
     /**
      * Har kun: assignment'larni tekshirish va wage'larni update qilish
-     * Maosh proporsional bo'linadi: totalActiveAssignments ga qarab
+     * Maosh proporsional bo'linadi:
+     * 1. Ishlangan soat / target soat (masalan 8/10 = 0.8)
+     * 2. Active assignments soni (masalan 2 ta buyurtma = 1/2)
      */
     @Transactional
     public void updateDailyWagesForWorker(UUID workerId, UUID workshopId, LocalDate today, UUID updatedBy) {
@@ -129,11 +134,33 @@ public class WageCalculationService {
             return; // No salary configured
         }
 
+        // Get attendance for today to calculate hours factor
+        BigDecimal hoursFactor = BigDecimal.ONE;
+        BigDecimal hoursWorked = null;
+        BigDecimal hoursTarget = worker.getDailyHoursTarget();
+        UUID attendanceId = null;
+
+        DailyAttendanceEntity attendance = attendanceRepo.findByUserIdAndWorkDate(workerId, today).orElse(null);
+        if (attendance != null && attendance.getHoursWorked() != null && hoursTarget != null
+                && hoursTarget.compareTo(BigDecimal.ZERO) > 0) {
+            hoursWorked = attendance.getHoursWorked();
+            attendanceId = attendance.getId();
+            // Calculate hours factor: min(1.0, hoursWorked / hoursTarget)
+            // Don't pay more than 100% even if overtime
+            hoursFactor = hoursWorked.divide(hoursTarget, 4, RoundingMode.HALF_UP);
+            if (hoursFactor.compareTo(BigDecimal.ONE) > 0) {
+                hoursFactor = BigDecimal.ONE;
+            }
+        }
+
+        // Apply hours factor to daily rate
+        BigDecimal adjustedDailyRate = dailyRate.multiply(hoursFactor).setScale(2, RoundingMode.HALF_UP);
+
         String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
 
         // Proportional rate: split across all active assignments
         int totalAssignments = activeAssignments.size();
-        BigDecimal proportionalRate = dailyRate
+        BigDecimal proportionalRate = adjustedDailyRate
                 .divide(BigDecimal.valueOf(totalAssignments), 2, RoundingMode.HALF_UP);
 
         // Create earning for each active assignment
@@ -153,6 +180,9 @@ public class WageCalculationService {
                     .baseAmount(proportionalRate)
                     .totalAmount(proportionalRate)
                     .dailyRate(dailyRate)
+                    .hoursWorked(hoursWorked)
+                    .hoursTarget(hoursTarget)
+                    .attendanceId(attendanceId)
                     .monthlySalary(monthlySalary)
                     .daysInMonth(daysInMonth)
                     .periodStart(currentMonth.atDay(1))
@@ -161,11 +191,14 @@ public class WageCalculationService {
             earning.setCreatedBy(updatedBy);
             earningRepo.save(earning);
 
+            String hoursInfo = hoursWorked != null
+                    ? " (" + hoursWorked + "h/" + hoursTarget + "h)"
+                    : "";
             financialLogService.record(
                     workshopId,
                     FinancialLogType.WAGE_CALCULATED,
                     proportionalRate.negate(),
-                    "Kunlik maosh hisoblandi: " + workerName + " (1/" + totalAssignments + ")",
+                    "Kunlik maosh hisoblandi: " + workerName + hoursInfo + " (1/" + totalAssignments + ")",
                     workerId,
                     workerName,
                     today,

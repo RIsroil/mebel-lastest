@@ -324,33 +324,50 @@ const WageBreakdownSummary = ({ breakdown }: WageBreakdownProps) => {
 }
 
 const WageBreakdownTable = ({ breakdown }: WageBreakdownProps) => {
+  const hasHours = breakdown.some(item => item.hoursWorked != null)
+
   return (
     <table className={styles.breakdownTable}>
       <thead>
         <tr>
           <th>Sana</th>
+          {hasHours && <th>Soat</th>}
           <th>Buyurtmalar</th>
           <th>Kunlik</th>
           <th>Olgan</th>
         </tr>
       </thead>
       <tbody>
-        {breakdown.map((item) => (
-          <tr key={item.date}>
-            <td>{formatDate(item.date)}</td>
-            <td>
-              <span
-                className={`${styles.assignmentBadge} ${
-                  item.activeAssignments === 1 ? styles.single : styles.multiple
-                }`}
-              >
-                {item.activeAssignments}
-              </span>
-            </td>
-            <td>{formatNumber(item.fullDailyRate)}</td>
-            <td>{formatNumber(item.earnedAmount)}</td>
-          </tr>
-        ))}
+        {breakdown.map((item) => {
+          const hoursRatio = item.hoursWorked != null && item.hoursTarget != null && item.hoursTarget > 0
+            ? item.hoursWorked / item.hoursTarget
+            : 1
+          const isPartial = hoursRatio < 1
+
+          return (
+            <tr key={item.date}>
+              <td>{formatDate(item.date)}</td>
+              {hasHours && (
+                <td style={{ color: isPartial ? 'var(--accent)' : 'var(--text)' }}>
+                  {item.hoursWorked != null
+                    ? `${item.hoursWorked}/${item.hoursTarget}h`
+                    : '—'}
+                </td>
+              )}
+              <td>
+                <span
+                  className={`${styles.assignmentBadge} ${
+                    item.activeAssignments === 1 ? styles.single : styles.multiple
+                  }`}
+                >
+                  {item.activeAssignments}
+                </span>
+              </td>
+              <td>{formatNumber(item.fullDailyRate)}</td>
+              <td>{formatNumber(item.earnedAmount)}</td>
+            </tr>
+          )
+        })}
       </tbody>
     </table>
   )

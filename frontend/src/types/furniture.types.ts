@@ -5,6 +5,8 @@ export interface WageBreakdownItem {
   fullDailyRate: number
   activeAssignments: number
   earnedAmount: number
+  hoursWorked: number | null
+  hoursTarget: number | null
 }
 
 export interface AssignedWorker {
