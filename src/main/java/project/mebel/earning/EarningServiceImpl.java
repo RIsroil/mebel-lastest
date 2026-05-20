@@ -10,6 +10,7 @@ import project.mebel.audit.AuditLogService;
 import project.mebel.earning.dto.BonusRequest;
 import project.mebel.earning.dto.EarningResponse;
 import project.mebel.exception.ApiException;
+import project.mebel.attendance.DailyAttendanceRepository;
 import project.mebel.financiallog.FinancialLogService;
 import project.mebel.user.UserEntity;
 import project.mebel.user.UserRepository;
@@ -31,6 +32,7 @@ public class EarningServiceImpl implements EarningService {
     private final EarningRepository earningRepo;
     private final BonusRepository bonusRepo;
     private final UserRepository userRepo;
+    private final DailyAttendanceRepository attendanceRepo;
     private final FinancialLogService financialLogService;
     private final AuditLogService auditLogService;
     private final Utils utils;
@@ -134,6 +136,20 @@ public class EarningServiceImpl implements EarningService {
                     .map(EarningEntity::getHoursWorked)
                     .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            // If no hours in earnings, try to get from attendance
+            if (totalHoursWorked.compareTo(BigDecimal.ZERO) == 0) {
+                UUID workerId = monthWages.get(0).getWorkerId();
+                LocalDate periodStart = entry.getKey();
+                LocalDate periodEnd = periodStart.plusMonths(1).minusDays(1);
+                // Sum hours from attendance records for this period
+                List<project.mebel.attendance.DailyAttendanceEntity> attendances =
+                    attendanceRepo.findAllByUserIdAndWorkDateBetween(workerId, periodStart, periodEnd);
+                totalHoursWorked = attendances.stream()
+                        .map(project.mebel.attendance.DailyAttendanceEntity::getHoursWorked)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+            }
 
             EarningEntity sample = monthWages.get(0);
             BigDecimal monthlySalary = sample.getMonthlySalary();

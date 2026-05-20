@@ -410,9 +410,11 @@ const EarningsPage = () => {
                     <td className={styles.rateCell}>
                       {e.workerPayType === 'DAILY' && e.dailyRate != null
                         ? formatNumber(e.dailyRate) + '/kun'
-                        : e.monthlySalary != null
-                          ? formatNumber(e.monthlySalary)
-                          : '—'}
+                        : e.workerPayType === 'MONTHLY' && e.monthlySalary != null && e.daysInMonth
+                          ? formatNumber(Math.round(e.monthlySalary / e.daysInMonth * came))
+                          : e.monthlySalary != null
+                            ? formatNumber(e.monthlySalary)
+                            : '—'}
                     </td>
                     <td className={styles.totalCell}>{formatNumber(e.totalAmount)}</td>
                     <td>
