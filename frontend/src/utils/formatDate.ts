@@ -4,10 +4,10 @@ export const formatDate = (iso: string): string => {
   return d.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-/** "2025-01-15T08:30:00" → "08:30" */
+/** "2025-01-15T08:30:00" → "08:30" (24-soat formatida: 0-23) */
 export const formatTime = (iso: string): string => {
   const d = new Date(iso)
-  return d.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
 /** "2025-01-15T08:30:00" → "15.01.2025, 08:30" */

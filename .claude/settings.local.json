@@ -49,7 +49,12 @@
       "PowerShell(mvn compile *)",
       "Bash(dir)",
       "PowerShell(.\\\\mvnw compile -q 2>&1 | Select-Object -Last 10)",
-      "PowerShell(.\\\\mvnw.cmd compile -q 2>&1 | Select-Object -Last 10)"
+      "PowerShell(.\\\\mvnw.cmd compile -q 2>&1 | Select-Object -Last 10)",
+      "Bash(npm list *)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(./mvnw spring-boot:run)",
+      "Bash(curl -s http://localhost:9060/api/auth/me -H \"Authorization: Bearer invalid\")",
+      "Bash(node *)"
     ]
   }
 }
