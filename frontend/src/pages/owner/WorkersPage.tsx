@@ -18,6 +18,7 @@ import { formatNumber } from '@/utils/formatMoney'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Avatar from '@/components/ui/Avatar'
+import TimeInput24 from '@/components/ui/TimeInput24'
 import { cn } from '@/utils/cn'
 import styles from './WorkersPage.module.css'
 
@@ -892,20 +893,18 @@ const WorkersPage = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div className={styles.formGroup}>
                     <label className={styles.formLabel}>Kirish vaqti *</label>
-                    <input
-                      className={styles.formInput}
-                      type="time"
+                    <TimeInput24
                       value={editCheckIn}
-                      onChange={(e) => setEditCheckIn(e.target.value)}
+                      onChange={setEditCheckIn}
+                      className={styles.formInput}
                     />
                   </div>
                   <div className={styles.formGroup}>
                     <label className={styles.formLabel}>Chiqish vaqti *</label>
-                    <input
-                      className={styles.formInput}
-                      type="time"
+                    <TimeInput24
                       value={editCheckOut}
-                      onChange={(e) => setEditCheckOut(e.target.value)}
+                      onChange={setEditCheckOut}
+                      className={styles.formInput}
                     />
                   </div>
                 </div>

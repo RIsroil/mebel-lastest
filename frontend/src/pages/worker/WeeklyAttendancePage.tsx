@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { formatNumber } from '@/utils/formatMoney'
 import type { WeeklyDayResponse } from '@/types/attendance.types'
 import Modal from '@/components/ui/Modal'
+import TimeInput24 from '@/components/ui/TimeInput24'
 import styles from './WeeklyAttendancePage.module.css'
 
 /* ── helpers ──────────────────────────────────────────────────── */
@@ -275,20 +276,18 @@ const WeeklyAttendancePage = () => {
             <div className={styles.editRow}>
               <div className={styles.editField}>
                 <label className={styles.editLabel}>Kelish vaqti</label>
-                <input
-                  type="time"
-                  className={styles.timeInput}
+                <TimeInput24
                   value={editIn}
-                  onChange={(e) => setEditIn(e.target.value)}
+                  onChange={setEditIn}
+                  className={styles.timeInput}
                 />
               </div>
               <div className={styles.editField}>
                 <label className={styles.editLabel}>Ketish vaqti</label>
-                <input
-                  type="time"
-                  className={styles.timeInput}
+                <TimeInput24
                   value={editOut}
-                  onChange={(e) => setEditOut(e.target.value)}
+                  onChange={setEditOut}
+                  className={styles.timeInput}
                 />
               </div>
             </div>
