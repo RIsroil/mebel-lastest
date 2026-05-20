@@ -32,6 +32,35 @@ public class WageCalculationService {
     private final FinancialLogService financialLogService;
 
     /**
+     * Ishchining to'lov kuniga asoslangan period boshlanishini hisoblash
+     * Masalan: paymentDay=28, today=May 15 → periodStart=Apr 28
+     * Masalan: paymentDay=28, today=May 30 → periodStart=May 28
+     */
+    private LocalDate calculatePeriodStart(LocalDate today, Integer paymentDayOfMonth) {
+        int paymentDay = paymentDayOfMonth != null ? paymentDayOfMonth : today.getDayOfMonth();
+        // Clamp to valid day for the month
+        paymentDay = Math.min(paymentDay, today.lengthOfMonth());
+
+        if (today.getDayOfMonth() >= paymentDay) {
+            // Period started this month
+            return today.withDayOfMonth(paymentDay);
+        } else {
+            // Period started last month
+            LocalDate lastMonth = today.minusMonths(1);
+            int adjustedDay = Math.min(paymentDay, lastMonth.lengthOfMonth());
+            return lastMonth.withDayOfMonth(adjustedDay);
+        }
+    }
+
+    /**
+     * Period ichidagi kunlar soni (odatda 30, lekin oy uzunligiga qarab o'zgaradi)
+     */
+    private int calculateDaysInPeriod(LocalDate periodStart) {
+        LocalDate periodEnd = periodStart.plusMonths(1).minusDays(1);
+        return (int) java.time.temporal.ChronoUnit.DAYS.between(periodStart, periodEnd) + 1;
+    }
+
+    /**
      * Worker biriktirilganda wage log yaratish
      * Maosh proporsional bo'linadi: totalActiveAssignments ga qarab
      */
@@ -41,8 +70,10 @@ public class WageCalculationService {
                 .orElseThrow(() -> new IllegalArgumentException("Worker not found"));
 
         LocalDate today = LocalDate.now();
-        YearMonth currentMonth = YearMonth.from(today);
-        int daysInMonth = currentMonth.lengthOfMonth();
+
+        // Calculate period based on worker's payment day
+        LocalDate periodStart = calculatePeriodStart(today, worker.getPaymentDayOfMonth());
+        int daysInPeriod = calculateDaysInPeriod(periodStart);
 
         // Use daily salary if available, otherwise calculate from monthly
         BigDecimal dailyRate;
@@ -51,10 +82,10 @@ public class WageCalculationService {
         if (worker.getDailySalary() != null && worker.getDailySalary().compareTo(BigDecimal.ZERO) > 0) {
             dailyRate = worker.getDailySalary();
             if (monthlySalary == null || monthlySalary.compareTo(BigDecimal.ZERO) <= 0) {
-                monthlySalary = dailyRate.multiply(BigDecimal.valueOf(daysInMonth));
+                monthlySalary = dailyRate.multiply(BigDecimal.valueOf(daysInPeriod));
             }
         } else if (monthlySalary != null && monthlySalary.compareTo(BigDecimal.ZERO) > 0) {
-            dailyRate = monthlySalary.divide(BigDecimal.valueOf(daysInMonth), 2, RoundingMode.HALF_UP);
+            dailyRate = monthlySalary.divide(BigDecimal.valueOf(daysInPeriod), 2, RoundingMode.HALF_UP);
         } else {
             dailyRate = BigDecimal.ZERO;
             monthlySalary = BigDecimal.ZERO;
@@ -79,8 +110,8 @@ public class WageCalculationService {
                 .totalAmount(proportionalRate)
                 .dailyRate(dailyRate)
                 .monthlySalary(monthlySalary)
-                .daysInMonth(daysInMonth)
-                .periodStart(currentMonth.atDay(1))
+                .daysInMonth(daysInPeriod)
+                .periodStart(periodStart)
                 .furnitureOrderId(orderId)
                 .build();
         earning.setCreatedBy(createdBy);
@@ -117,8 +148,9 @@ public class WageCalculationService {
 
         if (activeAssignments.isEmpty()) return;
 
-        YearMonth currentMonth = YearMonth.from(today);
-        int daysInMonth = currentMonth.lengthOfMonth();
+        // Calculate period based on worker's payment day
+        LocalDate periodStart = calculatePeriodStart(today, worker.getPaymentDayOfMonth());
+        int daysInPeriod = calculateDaysInPeriod(periodStart);
 
         BigDecimal dailyRate;
         BigDecimal monthlySalary = worker.getMonthlySalary();
@@ -126,10 +158,10 @@ public class WageCalculationService {
         if (worker.getDailySalary() != null && worker.getDailySalary().compareTo(BigDecimal.ZERO) > 0) {
             dailyRate = worker.getDailySalary();
             if (monthlySalary == null || monthlySalary.compareTo(BigDecimal.ZERO) <= 0) {
-                monthlySalary = dailyRate.multiply(BigDecimal.valueOf(daysInMonth));
+                monthlySalary = dailyRate.multiply(BigDecimal.valueOf(daysInPeriod));
             }
         } else if (monthlySalary != null && monthlySalary.compareTo(BigDecimal.ZERO) > 0) {
-            dailyRate = monthlySalary.divide(BigDecimal.valueOf(daysInMonth), 2, RoundingMode.HALF_UP);
+            dailyRate = monthlySalary.divide(BigDecimal.valueOf(daysInPeriod), 2, RoundingMode.HALF_UP);
         } else {
             return; // No salary configured
         }
@@ -184,8 +216,8 @@ public class WageCalculationService {
                     .hoursTarget(hoursTarget)
                     .attendanceId(attendanceId)
                     .monthlySalary(monthlySalary)
-                    .daysInMonth(daysInMonth)
-                    .periodStart(currentMonth.atDay(1))
+                    .daysInMonth(daysInPeriod)
+                    .periodStart(periodStart)
                     .furnitureOrderId(orderId)
                     .build();
             earning.setCreatedBy(updatedBy);

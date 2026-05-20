@@ -42,5 +42,6 @@
     <include file="changes/035-add-days-and-cost-to-assignments.xml" relativeToChangelogFile="true"/>
     <include file="changes/036-add-soft-delete-to-earnings.xml" relativeToChangelogFile="true"/>
     <include file="changes/037-create-audit-logs-table.xml" relativeToChangelogFile="true"/>
+    <include file="changes/038-add-payment-day-to-users.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

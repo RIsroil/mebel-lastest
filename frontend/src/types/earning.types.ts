@@ -29,6 +29,7 @@ export interface EarningResponse {
   paidDays: number | null // To'langan kunlar
   unpaidDays: number | null // To'lanmagan kunlar
   workerPayType: string | null // 'DAILY' or 'MONTHLY'
+  totalHoursWorked: number | null // Jami ishlangan soatlar
 }
 
 export interface BonusRequest {

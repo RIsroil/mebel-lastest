@@ -43,4 +43,5 @@ public class EarningResponse {
     private Integer paidDays;
     private Integer unpaidDays;
     private String workerPayType; // DAILY or MONTHLY
+    private BigDecimal totalHoursWorked; // Jami ishlangan soatlar
 }

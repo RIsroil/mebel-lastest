@@ -250,21 +250,29 @@ const EarningsPage = () => {
                   <div className={styles.earnCardLeft}>
                     <span className={styles.earnCardName}>{e.workerName}</span>
                     <span className={styles.earnCardDate}>
-                      {came} kun keldi / {left} kun qoldi
-                      {paid > 0 && <span style={{ color: 'var(--green)', marginLeft: 6 }}>({paid} to'langan)</span>}
+                      {came} kun / {left} qoldi
+                      {paid > 0 && <span style={{ color: 'var(--green)' }}> ({paid}✓)</span>}
                     </span>
+                    {e.workerPayType === 'MONTHLY' && e.periodStart && (
+                      <span className={styles.earnCardPeriod}>{formatDate(e.periodStart)}dan</span>
+                    )}
                   </div>
-                  <span className={`${styles.earnBadge} ${styles[payTypeClass]}`}>
-                    {payTypeLabel}
-                  </span>
+                  <div className={styles.earnCardRight}>
+                    <span className={`${styles.earnBadge} ${styles[payTypeClass]}`}>
+                      {payTypeLabel}
+                    </span>
+                    {e.totalHoursWorked != null && (
+                      <span className={styles.earnCardHoursSmall}>{e.totalHoursWorked}h</span>
+                    )}
+                  </div>
                 </div>
                 <div className={styles.earnCardMid}>
-                  <span className={styles.earnCardHours}>
+                  <span className={styles.earnCardRate}>
                     {e.workerPayType === 'DAILY'
-                      ? `Kunlik: ${e.dailyRate != null ? formatNumber(e.dailyRate) : '—'} so'm`
-                      : `Oylik: ${e.monthlySalary != null ? formatNumber(e.monthlySalary) : '—'} so'm`}
+                      ? `${e.dailyRate != null ? formatNumber(e.dailyRate) : '—'}/kun`
+                      : `${e.monthlySalary != null ? formatNumber(e.monthlySalary) : '—'}/oy`}
                   </span>
-                  <span className={styles.earnCardTotal}>{formatNumber(e.totalAmount)} so'm</span>
+                  <span className={styles.earnCardTotal}>{formatNumber(e.totalAmount)}</span>
                 </div>
                 <div className={styles.earnCardBottom}>
                   <div className={styles.earnCardStatus}>
@@ -385,6 +393,11 @@ const EarningsPage = () => {
                         {came} kun keldi / {left} kun qoldi
                         {paid > 0 && <span style={{ color: 'var(--green)', marginLeft: 6 }}>({paid} to'langan)</span>}
                       </span>
+                      {e.workerPayType === 'MONTHLY' && e.periodStart && (
+                        <span className={styles.periodStart}>
+                          {formatDate(e.periodStart)}dan
+                        </span>
+                      )}
                     </td>
                     <td>
                       <span className={`${styles.earnBadge} ${styles[payTypeClass]}`}>
@@ -392,7 +405,7 @@ const EarningsPage = () => {
                       </span>
                     </td>
                     <td className={styles.hoursCell}>
-                      {e.workerPayType === 'DAILY' ? `${left} kun` : '—'}
+                      {e.totalHoursWorked != null ? `${e.totalHoursWorked}h` : '—'}
                     </td>
                     <td className={styles.rateCell}>
                       {e.workerPayType === 'DAILY' && e.dailyRate != null

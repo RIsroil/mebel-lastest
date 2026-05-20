@@ -67,7 +67,7 @@ public class EarningServiceImpl implements EarningService {
 
         for (List<EarningEntity> group : grouped.values()) {
             for (EarningEntity earning : group) {
-                String name = userRepo.findById(earning.getWorkerId())
+                String name = userRepo.findByIdIncludeDeleted(earning.getWorkerId())
                         .map(this::displayName)
                         .orElse("—");
                 result.add(toResponse(earning, name));
@@ -81,7 +81,7 @@ public class EarningServiceImpl implements EarningService {
 
         for (Map.Entry<String, List<EarningEntity>> entry : dailyByWorker.entrySet()) {
             UUID workerId = UUID.fromString(entry.getKey());
-            String workerName = userRepo.findById(workerId)
+            String workerName = userRepo.findByIdIncludeDeleted(workerId)
                     .map(this::displayName)
                     .orElse("—");
             addAggregatedDailyWages(entry.getValue(), workerName, result);
@@ -129,20 +129,38 @@ public class EarningServiceImpl implements EarningService {
             int paidDays = (int) monthWages.stream().filter(EarningEntity::isPaid).count();
             int unpaidDays = totalDays - paidDays;
 
-            // Calculate only unpaid amount for display
-            BigDecimal unpaidAmount = monthWages.stream()
-                    .filter(e -> !e.isPaid())
-                    .map(EarningEntity::getTotalAmount)
+            // Calculate total hours worked across all days
+            BigDecimal totalHoursWorked = monthWages.stream()
+                    .map(EarningEntity::getHoursWorked)
+                    .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             EarningEntity sample = monthWages.get(0);
             BigDecimal monthlySalary = sample.getMonthlySalary();
             Integer daysInMonth = sample.getDaysInMonth();
+            BigDecimal dailyRate = sample.getDailyRate();
 
-            // Get worker's actual pay type
-            String workerPayType = userRepo.findById(sample.getWorkerId())
+            // Get worker's actual pay type (including deleted workers)
+            String workerPayType = userRepo.findByIdIncludeDeleted(sample.getWorkerId())
                     .map(u -> u.getPayType() != null ? u.getPayType().name() : "DAILY")
                     .orElse("DAILY");
+
+            // Calculate correct amounts based on pay type
+            BigDecimal calculatedAmount;
+            if ("MONTHLY".equals(workerPayType) && monthlySalary != null && daysInMonth != null && daysInMonth > 0) {
+                // For MONTHLY workers: monthlySalary / daysInMonth * unpaidDays
+                calculatedAmount = monthlySalary
+                        .divide(BigDecimal.valueOf(daysInMonth), 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(unpaidDays))
+                        .setScale(2, RoundingMode.HALF_UP);
+                dailyRate = monthlySalary.divide(BigDecimal.valueOf(daysInMonth), 2, RoundingMode.HALF_UP);
+            } else {
+                // For DAILY workers: sum of unpaid amounts
+                calculatedAmount = monthWages.stream()
+                        .filter(e -> !e.isPaid())
+                        .map(EarningEntity::getTotalAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+            }
 
             // Collect only unpaid earning IDs for batch payment
             List<UUID> unpaidEarningIds = monthWages.stream()
@@ -160,12 +178,10 @@ public class EarningServiceImpl implements EarningService {
                     .workerName(workerName)
                     .earnDate(entry.getKey())
                     .earnType(EarnType.MONTHLY_WAGE) // Keep for compatibility
-                    .baseAmount(unpaidAmount)
-                    .totalAmount(unpaidAmount)
+                    .baseAmount(calculatedAmount)
+                    .totalAmount(calculatedAmount)
                     .daysWorked(BigDecimal.valueOf(unpaidDays))
-                    .dailyRate(daysInMonth != null && daysInMonth > 0 && monthlySalary != null
-                            ? monthlySalary.divide(BigDecimal.valueOf(daysInMonth), 2, RoundingMode.HALF_UP)
-                            : sample.getDailyRate())
+                    .dailyRate(dailyRate)
                     .monthlySalary(monthlySalary)
                     .periodStart(entry.getKey())
                     .daysInMonth(daysInMonth)
@@ -176,6 +192,7 @@ public class EarningServiceImpl implements EarningService {
                     .paidDays(paidDays)
                     .unpaidDays(unpaidDays)
                     .workerPayType(workerPayType)
+                    .totalHoursWorked(totalHoursWorked.compareTo(BigDecimal.ZERO) > 0 ? totalHoursWorked : null)
                     .build();
             result.add(agg);
         }
@@ -197,7 +214,7 @@ public class EarningServiceImpl implements EarningService {
         earning.setPaidBy(owner.getId());
         earning.setUpdatedBy(owner.getId());
 
-        String workerName = userRepo.findById(earning.getWorkerId())
+        String workerName = userRepo.findByIdIncludeDeleted(earning.getWorkerId())
                 .map(this::displayName)
                 .orElse("—");
         EarningEntity saved = earningRepo.save(earning);
@@ -244,7 +261,7 @@ public class EarningServiceImpl implements EarningService {
             earning.setPaidBy(owner.getId());
             earning.setUpdatedBy(owner.getId());
 
-            String workerName = userRepo.findById(earning.getWorkerId())
+            String workerName = userRepo.findByIdIncludeDeleted(earning.getWorkerId())
                     .map(this::displayName)
                     .orElse("—");
             EarningEntity saved = earningRepo.save(earning);
@@ -295,7 +312,7 @@ public class EarningServiceImpl implements EarningService {
             earning.setUpdatedBy(owner.getId());
 
             if (workerName == null) {
-                workerName = userRepo.findById(earning.getWorkerId())
+                workerName = userRepo.findByIdIncludeDeleted(earning.getWorkerId())
                         .map(this::displayName)
                         .orElse("—");
                 workerId = earning.getWorkerId();

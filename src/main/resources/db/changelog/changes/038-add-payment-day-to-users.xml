@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="038-add-payment-day-to-users" author="Isroil">
+        <addColumn tableName="users">
+            <column name="payment_day_of_month" type="SMALLINT">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <sql>
+            UPDATE users
+            SET payment_day_of_month = EXTRACT(DAY FROM created_at)::SMALLINT
+            WHERE role = 'WORKER' AND payment_day_of_month IS NULL;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

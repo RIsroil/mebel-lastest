@@ -93,6 +93,9 @@ public class UserEntity extends SoftDeleteEntity implements UserDetails {
     @Builder.Default
     private boolean hybridPay = false;
 
+    @Column(name = "payment_day_of_month")
+    private Integer paymentDayOfMonth; // Oylik to'lov kuni (1-31), null bo'lsa createdAt dan olinadi
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
