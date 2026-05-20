@@ -46,6 +46,7 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/refresh-token").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         // Admin panel (ADMIN and OWNER - service layer checks specific permissions)
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "OWNER")
                         // All other API endpoints require authentication (JWT filter handles this)

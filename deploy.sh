@@ -1,6 +1,18 @@
 #!/bin/bash
 set -e
 
+# ============================================
+# MEBEL MS - Deploy Script
+# For existing servers: ./deploy.sh
+# For new servers: ./setup.sh
+# ============================================
+
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo -e "${BLUE}[MEBEL MS]${NC} Deploying..."
+
 echo "==> Git pull..."
 git pull
 
@@ -16,4 +28,4 @@ docker compose up -d --build backend
 echo "==> Nginx reload..."
 sudo nginx -s reload
 
-echo "✓ Deploy tugadi!"
+echo -e "${GREEN}[OK]${NC} Deploy tugadi!"
