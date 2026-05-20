@@ -47,7 +47,9 @@
       "Bash(npm install *)",
       "PowerShell(.\\\\mvnw.cmd compile -q 2>&1 | Select-Object -First 30)",
       "PowerShell(mvn compile *)",
-      "Bash(dir)"
+      "Bash(dir)",
+      "PowerShell(.\\\\mvnw compile -q 2>&1 | Select-Object -Last 10)",
+      "PowerShell(.\\\\mvnw.cmd compile -q 2>&1 | Select-Object -Last 10)"
     ]
   }
 }

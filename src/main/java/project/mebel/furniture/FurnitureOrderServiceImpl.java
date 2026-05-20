@@ -758,9 +758,9 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                 }
             }
 
-            // Current active assignments (for display only)
+            // Current active IN_PROGRESS assignments (for display only)
             int currentActiveAssignments = worker != null
-                    ? assignmentRepo.findAllByWorkerIdAndActiveTrue(worker.getId()).size()
+                    ? assignmentRepo.countActiveInProgressAssignments(worker.getId())
                     : 0;
             int otherAssignmentsCount = Math.max(0, currentActiveAssignments - 1);
 

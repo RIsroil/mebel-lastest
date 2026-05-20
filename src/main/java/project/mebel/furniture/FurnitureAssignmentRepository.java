@@ -21,6 +21,13 @@ public interface FurnitureAssignmentRepository extends JpaRepository<FurnitureAs
 
     List<FurnitureAssignmentEntity> findByWorkerIdAndActiveTrueOrderByAssignedAtAsc(UUID workerId);
 
+    @Query("SELECT COUNT(a) FROM FurnitureAssignmentEntity a " +
+           "JOIN FurnitureOrderEntity o ON a.furnitureOrderId = o.id " +
+           "WHERE a.workerId = :workerId " +
+           "AND a.active = true " +
+           "AND o.status = 'IN_PROGRESS'")
+    int countActiveInProgressAssignments(@Param("workerId") UUID workerId);
+
     // Ma'lum kundagi active assignmentlar soni
     // Order is "in progress" on date if: startedAt <= date AND (completedAt is null OR completedAt > date)
     // Assignment is active if: assignedAt <= date AND (unassignedAt is null OR unassignedAt > date)
