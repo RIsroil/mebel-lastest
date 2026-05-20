@@ -548,7 +548,9 @@ public class AttendanceServiceImpl implements AttendanceService {
                             // Kelgan kunlarni qayta sanash (idempotent — double count yo'q)
                             long daysWorked = attendanceRepo.countWorkedDays(
                                     worker.getId(), existing.getPeriodStart(), today, BigDecimal.ZERO);
-                            int daysInMonth = existing.getDaysInMonth();
+                            int daysInMonth = existing.getDaysInMonth() != null
+                                    ? existing.getDaysInMonth()
+                                    : today.lengthOfMonth();
                             BigDecimal amount = daysInMonth > 0
                                     ? monthlySalary.multiply(BigDecimal.valueOf(daysWorked))
                                                    .divide(BigDecimal.valueOf(daysInMonth), 2, RoundingMode.HALF_UP)
