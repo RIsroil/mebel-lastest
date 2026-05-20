@@ -25,6 +25,10 @@ export interface EarningResponse {
   periodStart: string | null
   daysInMonth: number | null
   earningIds: string[] | null // For aggregated monthly wages
+  totalDays: number | null // Jami ishlangan kunlar
+  paidDays: number | null // To'langan kunlar
+  unpaidDays: number | null // To'lanmagan kunlar
+  workerPayType: string | null // 'DAILY' or 'MONTHLY'
 }
 
 export interface BonusRequest {

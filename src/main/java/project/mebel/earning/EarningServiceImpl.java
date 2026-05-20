@@ -124,40 +124,58 @@ public class EarningServiceImpl implements EarningService {
             List<EarningEntity> monthWages = entry.getValue();
             if (monthWages.isEmpty()) continue;
 
-            // Calculate aggregate
-            BigDecimal totalWage = monthWages.stream()
+            // Count paid and unpaid days
+            int totalDays = monthWages.size();
+            int paidDays = (int) monthWages.stream().filter(EarningEntity::isPaid).count();
+            int unpaidDays = totalDays - paidDays;
+
+            // Calculate only unpaid amount for display
+            BigDecimal unpaidAmount = monthWages.stream()
+                    .filter(e -> !e.isPaid())
                     .map(EarningEntity::getTotalAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            int daysWorked = monthWages.size();
             EarningEntity sample = monthWages.get(0);
             BigDecimal monthlySalary = sample.getMonthlySalary();
             Integer daysInMonth = sample.getDaysInMonth();
 
-            // Collect all earning IDs for batch payment
-            List<UUID> earningIds = monthWages.stream()
+            // Get worker's actual pay type
+            String workerPayType = userRepo.findById(sample.getWorkerId())
+                    .map(u -> u.getPayType() != null ? u.getPayType().name() : "DAILY")
+                    .orElse("DAILY");
+
+            // Collect only unpaid earning IDs for batch payment
+            List<UUID> unpaidEarningIds = monthWages.stream()
+                    .filter(e -> !e.isPaid())
                     .map(EarningEntity::getId)
                     .collect(Collectors.toList());
 
-            // Create aggregated response with real earning IDs
+            // Skip if all are paid
+            if (unpaidEarningIds.isEmpty()) continue;
+
+            // Create aggregated response with unpaid earnings
             EarningResponse agg = EarningResponse.builder()
-                    .id(earningIds.get(0)) // Use first real ID as primary
+                    .id(unpaidEarningIds.get(0)) // Use first unpaid ID as primary
                     .workerId(sample.getWorkerId())
                     .workerName(workerName)
                     .earnDate(entry.getKey())
-                    .earnType(EarnType.MONTHLY_WAGE)
-                    .baseAmount(totalWage)
-                    .totalAmount(totalWage)
-                    .daysWorked(BigDecimal.valueOf(daysWorked))
+                    .earnType(EarnType.MONTHLY_WAGE) // Keep for compatibility
+                    .baseAmount(unpaidAmount)
+                    .totalAmount(unpaidAmount)
+                    .daysWorked(BigDecimal.valueOf(unpaidDays))
                     .dailyRate(daysInMonth != null && daysInMonth > 0 && monthlySalary != null
                             ? monthlySalary.divide(BigDecimal.valueOf(daysInMonth), 2, RoundingMode.HALF_UP)
-                            : null)
+                            : sample.getDailyRate())
                     .monthlySalary(monthlySalary)
                     .periodStart(entry.getKey())
                     .daysInMonth(daysInMonth)
-                    .paid(monthWages.stream().allMatch(EarningEntity::isPaid))
-                    .paidAt(monthWages.stream().map(EarningEntity::getPaidAt).filter(Objects::nonNull).findFirst().orElse(null))
-                    .earningIds(earningIds) // Include all IDs for batch payment
+                    .paid(false) // Only showing unpaid
+                    .paidAt(null)
+                    .earningIds(unpaidEarningIds) // Only unpaid IDs
+                    .totalDays(totalDays)
+                    .paidDays(paidDays)
+                    .unpaidDays(unpaidDays)
+                    .workerPayType(workerPayType)
                     .build();
             result.add(agg);
         }

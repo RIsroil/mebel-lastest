@@ -37,4 +37,10 @@ public class EarningResponse {
 
     // For aggregated monthly wages - contains all underlying earning IDs
     private List<UUID> earningIds;
+
+    // For tracking paid/unpaid days in aggregated wages
+    private Integer totalDays;
+    private Integer paidDays;
+    private Integer unpaidDays;
+    private String workerPayType; // DAILY or MONTHLY
 }

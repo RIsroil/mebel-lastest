@@ -31,11 +31,32 @@ const EARN_CLASS: Record<EarnType, string> = {
   BONUS:        'earnBonus',
 }
 
-function monthlyMeta(e: { daysWorked: number | null; daysInMonth: number | null }) {
+function monthlyMeta(e: {
+  daysWorked: number | null
+  daysInMonth: number | null
+  totalDays: number | null
+  paidDays: number | null
+  unpaidDays: number | null
+}) {
+  // If we have the new fields, use them
+  if (e.totalDays != null) {
+    return {
+      came: e.totalDays,
+      left: e.unpaidDays ?? 0,
+      paid: e.paidDays ?? 0
+    }
+  }
+  // Fallback to old logic
   const came = e.daysWorked ?? 0
   const total = e.daysInMonth ?? 30
   const left  = Math.max(0, total - came)
-  return { came, left }
+  return { came, left, paid: 0 }
+}
+
+function getPayTypeLabel(workerPayType: string | null): string {
+  if (workerPayType === 'DAILY') return 'Kunlik'
+  if (workerPayType === 'MONTHLY') return 'Oylik'
+  return 'Oylik'
 }
 
 const firstOfMonth = (): string => {
@@ -220,7 +241,9 @@ const EarningsPage = () => {
         )}
         {earnings.map((e) => {
           if (e.earnType === 'MONTHLY_WAGE') {
-            const { came, left } = monthlyMeta(e)
+            const { came, left, paid } = monthlyMeta(e)
+            const payTypeLabel = getPayTypeLabel(e.workerPayType)
+            const payTypeClass = e.workerPayType === 'DAILY' ? 'earnDaily' : 'earnMonthly'
             return (
               <div key={e.id} className={styles.earnCard}>
                 <div className={styles.earnCardTop}>
@@ -228,10 +251,11 @@ const EarningsPage = () => {
                     <span className={styles.earnCardName}>{e.workerName}</span>
                     <span className={styles.earnCardDate}>
                       {came} kun keldi / {left} kun qoldi
+                      {paid > 0 && <span style={{ color: 'var(--green)', marginLeft: 6 }}>({paid} to'langan)</span>}
                     </span>
                   </div>
-                  <span className={`${styles.earnBadge} ${styles[EARN_CLASS[e.earnType]]}`}>
-                    {EARN_LABELS[e.earnType]}
+                  <span className={`${styles.earnBadge} ${styles[payTypeClass]}`}>
+                    {payTypeLabel}
                   </span>
                 </div>
                 <div className={styles.earnCardMid}>
@@ -348,18 +372,21 @@ const EarningsPage = () => {
           <tbody>
             {earnings.map((e) => {
               if (e.earnType === 'MONTHLY_WAGE') {
-                const { came, left } = monthlyMeta(e)
+                const { came, left, paid } = monthlyMeta(e)
+                const payTypeLabel = getPayTypeLabel(e.workerPayType)
+                const payTypeClass = e.workerPayType === 'DAILY' ? 'earnDaily' : 'earnMonthly'
                 return (
                   <tr key={e.id}>
                     <td className={styles.workerName}>{e.workerName}</td>
                     <td className={styles.dateCell}>
                       <span className={styles.monthlyDays}>
                         {came} kun keldi / {left} kun qoldi
+                        {paid > 0 && <span style={{ color: 'var(--green)', marginLeft: 6 }}>({paid} to'langan)</span>}
                       </span>
                     </td>
                     <td>
-                      <span className={`${styles.earnBadge} ${styles[EARN_CLASS[e.earnType]]}`}>
-                        {EARN_LABELS[e.earnType]}
+                      <span className={`${styles.earnBadge} ${styles[payTypeClass]}`}>
+                        {payTypeLabel}
                       </span>
                     </td>
                     <td className={styles.hoursCell}>—</td>
