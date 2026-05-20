@@ -5,7 +5,7 @@ import Avatar from '@/components/ui/Avatar'
 import { formatNumber } from '@/utils/formatMoney'
 import { formatDate, toApiDate } from '@/utils/formatDate'
 import { attendanceApi } from '@/api/attendance.api'
-import type { AssignedWorker } from '@/types/furniture.types'
+import type { AssignedWorker, WageBreakdownItem } from '@/types/furniture.types'
 import styles from './WorkerEarningsDetailModal.module.css'
 
 interface WorkerEarningsDetailModalProps {
@@ -120,6 +120,15 @@ const WorkerEarningsDetailModal = ({
                 Maosh har kuni uchun buyurtmalar soniga qarab proporsional bo'lingan.
               </div>
             )}
+          </div>
+        )}
+
+        {/* Wage Breakdown Logs */}
+        {worker.wageBreakdown && worker.wageBreakdown.length > 0 && (
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>📋 Kunlik maosh loglari</div>
+            <WageBreakdownSummary breakdown={worker.wageBreakdown} />
+            <WageBreakdownTable breakdown={worker.wageBreakdown} />
           </div>
         )}
 
@@ -272,6 +281,78 @@ const AssignmentCalendar = ({
         Jami {workedDays} kun ishlagan
       </div>
     </div>
+  )
+}
+
+interface WageBreakdownProps {
+  breakdown: WageBreakdownItem[]
+}
+
+const WageBreakdownSummary = ({ breakdown }: WageBreakdownProps) => {
+  const grouped = useMemo(() => {
+    const map = new Map<number, { count: number; rate: number; total: number }>()
+    for (const item of breakdown) {
+      const key = item.activeAssignments
+      const existing = map.get(key) ?? { count: 0, rate: item.earnedAmount, total: 0 }
+      existing.count++
+      existing.total += item.earnedAmount
+      map.set(key, existing)
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([assignments, data]) => ({
+        assignments,
+        days: data.count,
+        dailyRate: data.total / data.count,
+        total: data.total,
+      }))
+  }, [breakdown])
+
+  if (grouped.length <= 1) return null
+
+  return (
+    <div className={styles.breakdownSummary}>
+      {grouped.map((g) => (
+        <div key={g.assignments} className={styles.summaryChip}>
+          <span className={styles.chipCount}>{g.days} kun</span>
+          <span className={styles.chipRate}>@ {formatNumber(g.dailyRate)} so'm</span>
+          <span className={styles.chipTotal}>= {formatNumber(g.total)} so'm</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const WageBreakdownTable = ({ breakdown }: WageBreakdownProps) => {
+  return (
+    <table className={styles.breakdownTable}>
+      <thead>
+        <tr>
+          <th>Sana</th>
+          <th>Buyurtmalar</th>
+          <th>Kunlik</th>
+          <th>Olgan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {breakdown.map((item) => (
+          <tr key={item.date}>
+            <td>{formatDate(item.date)}</td>
+            <td>
+              <span
+                className={`${styles.assignmentBadge} ${
+                  item.activeAssignments === 1 ? styles.single : styles.multiple
+                }`}
+              >
+                {item.activeAssignments}
+              </span>
+            </td>
+            <td>{formatNumber(item.fullDailyRate)}</td>
+            <td>{formatNumber(item.earnedAmount)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   )
 }
 

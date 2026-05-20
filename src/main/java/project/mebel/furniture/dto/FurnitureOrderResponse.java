@@ -52,6 +52,15 @@ public class FurnitureOrderResponse {
         private BigDecimal workerMonthlySalary;
         private Integer otherAssignmentsCount;
         private String workerPayType;
+        private List<WageBreakdownItem> wageBreakdown;
+    }
+
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class WageBreakdownItem {
+        private String date;
+        private BigDecimal fullDailyRate;
+        private Integer activeAssignments;
+        private BigDecimal earnedAmount;
     }
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor

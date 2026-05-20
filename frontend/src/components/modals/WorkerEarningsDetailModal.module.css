@@ -173,3 +173,92 @@
   margin-top: 8px;
   text-align: center;
 }
+
+.breakdownTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.breakdownTable th,
+.breakdownTable td {
+  padding: 8px 6px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.breakdownTable th {
+  color: var(--text2);
+  font-weight: 500;
+  font-size: 11px;
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.breakdownTable td {
+  color: var(--text);
+}
+
+.breakdownTable td:last-child {
+  text-align: right;
+  font-weight: 600;
+  color: var(--green);
+}
+
+.breakdownTable tr:last-child td {
+  border-bottom: none;
+}
+
+.assignmentBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.assignmentBadge.single {
+  background-color: var(--green);
+  color: white;
+}
+
+.assignmentBadge.multiple {
+  background-color: var(--accent);
+  color: white;
+}
+
+.breakdownSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.summaryChip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  font-size: 11px;
+}
+
+.summaryChip .chipCount {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.summaryChip .chipRate {
+  color: var(--text2);
+}
+
+.summaryChip .chipTotal {
+  font-weight: 600;
+  color: var(--green);
+}

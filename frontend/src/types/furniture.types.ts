@@ -1,5 +1,12 @@
 export type FurnitureStatus = 'DRAFT' | 'IN_PROGRESS' | 'COMPLETED' | 'SOLD' | 'CANCELLED'
 
+export interface WageBreakdownItem {
+  date: string
+  fullDailyRate: number
+  activeAssignments: number
+  earnedAmount: number
+}
+
 export interface AssignedWorker {
   assignmentId: string
   workerId: string
@@ -15,6 +22,7 @@ export interface AssignedWorker {
   workerMonthlySalary: number | null
   otherAssignmentsCount: number
   workerPayType: string | null
+  wageBreakdown?: WageBreakdownItem[]
 }
 
 export interface MaterialUsage {

@@ -708,6 +708,7 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
             int daysWorked = 0;
             BigDecimal wageCost = BigDecimal.ZERO;
             BigDecimal commissionCost = BigDecimal.ZERO;
+            List<FurnitureOrderResponse.WageBreakdownItem> wageBreakdown = new ArrayList<>();
 
             if (worker != null) {
                 // Calculate wage by iterating each worked day
@@ -740,6 +741,13 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                     BigDecimal dayWage = dailyRate.divide(
                             BigDecimal.valueOf(assignmentsOnDay), 2, RoundingMode.HALF_UP);
                     wageCost = wageCost.add(dayWage);
+
+                    wageBreakdown.add(FurnitureOrderResponse.WageBreakdownItem.builder()
+                            .date(workDate.toString())
+                            .fullDailyRate(dailyRate)
+                            .activeAssignments(assignmentsOnDay)
+                            .earnedAmount(dayWage)
+                            .build());
                 }
 
                 if (o.getSalePrice() != null && a.getCommissionPct() != null
@@ -771,6 +779,7 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                     .workerMonthlySalary(worker != null ? worker.getMonthlySalary() : null)
                     .otherAssignmentsCount(otherAssignmentsCount)
                     .workerPayType(worker != null ? worker.getPayType().name() : null)
+                    .wageBreakdown(wageBreakdown)
                     .build());
 
             totalWageCost = totalWageCost.add(wageCost);
