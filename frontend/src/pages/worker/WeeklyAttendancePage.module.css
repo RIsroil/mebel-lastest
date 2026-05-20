@@ -258,6 +258,15 @@
   transition: border-color 0.15s;
 }
 
+/* Force 24-hour format (hide AM/PM) */
+.timeInput::-webkit-calendar-picker-indicator {
+  filter: invert(0.6);
+}
+
+.timeInput::-webkit-datetime-edit-ampm-field {
+  display: none;
+}
+
 .timeInput:focus {
   border-color: var(--accent);
 }
