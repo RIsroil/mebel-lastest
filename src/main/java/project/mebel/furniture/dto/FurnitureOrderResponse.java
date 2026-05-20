@@ -48,6 +48,7 @@ public class FurnitureOrderResponse {
         private Integer daysWorked;
         private BigDecimal wageCost;
         private BigDecimal commissionCost;
+        private BigDecimal workerDailySalary;
         private BigDecimal workerMonthlySalary;
         private Integer otherAssignmentsCount;
         private String workerPayType;

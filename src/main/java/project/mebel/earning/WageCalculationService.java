@@ -30,7 +30,7 @@ public class WageCalculationService {
 
     /**
      * Worker biriktirilganda wage log yaratish
-     * Har bir worker o'zining to'liq kunlik maoshini oladi (split yo'q)
+     * Maosh proporsional bo'linadi: totalActiveAssignments ga qarab
      */
     @Transactional
     public void createWageLogOnAssignment(UUID orderId, UUID workerId, UUID workshopId, UUID createdBy) {
@@ -57,14 +57,23 @@ public class WageCalculationService {
             monthlySalary = BigDecimal.ZERO;
         }
 
-        // Each worker gets full daily rate (no split)
+        // Count active assignments AFTER this new one is added
+        List<FurnitureAssignmentEntity> activeAssignments = assignmentRepo
+                .findAllByWorkerIdAndActiveTrue(workerId);
+        int totalAssignments = activeAssignments.size();
+        if (totalAssignments < 1) totalAssignments = 1;
+
+        // Proportional daily rate for this order
+        BigDecimal proportionalRate = dailyRate
+                .divide(BigDecimal.valueOf(totalAssignments), 2, RoundingMode.HALF_UP);
+
         EarningEntity earning = EarningEntity.builder()
                 .workerId(workerId)
                 .workshopId(workshopId)
                 .earnDate(today)
                 .earnType(EarnType.DAILY_WAGE)
-                .baseAmount(dailyRate)
-                .totalAmount(dailyRate)
+                .baseAmount(proportionalRate)
+                .totalAmount(proportionalRate)
                 .dailyRate(dailyRate)
                 .monthlySalary(monthlySalary)
                 .daysInMonth(daysInMonth)
@@ -75,12 +84,12 @@ public class WageCalculationService {
         earningRepo.save(earning);
 
         String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
-        String logDesc = "Kunlik maosh hisoblandi: " + workerName + " | " + dailyRate + " so'm";
+        String logDesc = "Kunlik maosh hisoblandi: " + workerName + " | " + proportionalRate + " so'm (1/" + totalAssignments + ")";
 
         financialLogService.record(
                 workshopId,
                 FinancialLogType.WAGE_CALCULATED,
-                dailyRate.negate(),
+                proportionalRate.negate(),
                 logDesc,
                 workerId,
                 workerName,
@@ -91,7 +100,7 @@ public class WageCalculationService {
 
     /**
      * Har kun: assignment'larni tekshirish va wage'larni update qilish
-     * Har bir assignment uchun to'liq kunlik maosh hisoblaydi (split yo'q)
+     * Maosh proporsional bo'linadi: totalActiveAssignments ga qarab
      */
     @Transactional
     public void updateDailyWagesForWorker(UUID workerId, UUID workshopId, LocalDate today, UUID updatedBy) {
@@ -122,6 +131,11 @@ public class WageCalculationService {
 
         String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
 
+        // Proportional rate: split across all active assignments
+        int totalAssignments = activeAssignments.size();
+        BigDecimal proportionalRate = dailyRate
+                .divide(BigDecimal.valueOf(totalAssignments), 2, RoundingMode.HALF_UP);
+
         // Create earning for each active assignment
         for (FurnitureAssignmentEntity assignment : activeAssignments) {
             UUID orderId = assignment.getFurnitureOrderId();
@@ -136,8 +150,8 @@ public class WageCalculationService {
                     .workshopId(workshopId)
                     .earnDate(today)
                     .earnType(EarnType.DAILY_WAGE)
-                    .baseAmount(dailyRate)
-                    .totalAmount(dailyRate)
+                    .baseAmount(proportionalRate)
+                    .totalAmount(proportionalRate)
                     .dailyRate(dailyRate)
                     .monthlySalary(monthlySalary)
                     .daysInMonth(daysInMonth)
@@ -150,8 +164,8 @@ public class WageCalculationService {
             financialLogService.record(
                     workshopId,
                     FinancialLogType.WAGE_CALCULATED,
-                    dailyRate.negate(),
-                    "Kunlik maosh hisoblandi: " + workerName,
+                    proportionalRate.negate(),
+                    "Kunlik maosh hisoblandi: " + workerName + " (1/" + totalAssignments + ")",
                     workerId,
                     workerName,
                     today,

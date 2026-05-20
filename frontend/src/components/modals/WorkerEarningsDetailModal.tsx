@@ -27,9 +27,9 @@ const WorkerEarningsDetailModal = ({
   const isMonthlyWorker = worker.workerPayType === 'MONTHLY'
   const totalAssignments = (worker.otherAssignmentsCount || 0) + 1
 
-  // Calculate days in month based on assignedAt
+  // Use daysWorked from backend (correctly calculated based on attendance)
+  const daysWorkedCalculated = worker.daysWorked
   let daysInMonth = 30
-  let daysWorkedCalculated = worker.daysWorked
   let attendanceFromDate = ''
   let attendanceToDate = ''
 
@@ -39,12 +39,8 @@ const WorkerEarningsDetailModal = ({
     const month = assignedDate.getMonth()
     daysInMonth = new Date(year, month + 1, 0).getDate()
 
-    // Calculate days from assignment to unassignment or today
+    // Set date range for attendance query (for calendar display)
     const endDate = worker.unassignedAt ? new Date(worker.unassignedAt) : new Date()
-    const diffTime = Math.abs(endDate.getTime() - assignedDate.getTime())
-    daysWorkedCalculated = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 to include start day
-
-    // Set date range for attendance query
     attendanceFromDate = toApiDate(assignedDate)
     attendanceToDate = toApiDate(endDate)
   }
@@ -60,48 +56,32 @@ const WorkerEarningsDetailModal = ({
     enabled: !!attendanceFromDate && !!attendanceToDate && isOpen,
   })
 
-  // Convert attendance data to calendar format and get latest attendance date
-  const { attendanceData, latestAttendanceDate } = useMemo(() => {
+  // Convert attendance data to calendar format
+  const attendanceData = useMemo(() => {
     const records = attendanceResp?.data?.data ?? []
-    const data = records.map((record) => ({
+    return records.map((record) => ({
       date: record.workDate,
       hoursWorked: record.hoursWorked,
     }))
-
-    // Get the latest attendance date if available
-    const latest =
-      data.length > 0
-        ? data.reduce((max, current) =>
-            new Date(current.date) > new Date(max.date) ? current : max
-          ).date
-        : null
-
-    return { attendanceData: data, latestAttendanceDate: latest }
   }, [attendanceResp])
 
-  // Recalculate days worked using latest attendance date if available
-  if (latestAttendanceDate && worker.assignedAt) {
-    const assignedDate = new Date(worker.assignedAt)
-    const endDate = new Date(latestAttendanceDate)
-    const diffTime = Math.abs(endDate.getTime() - assignedDate.getTime())
-    daysWorkedCalculated = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
-  }
-
-  // Calculate daily earnings
+  // Calculate full daily earnings (not split)
   let dailyEarnings = 0
   if (isMonthlyWorker) {
     dailyEarnings = monthlySalary / daysInMonth
+  } else if (worker.workerDailySalary && worker.workerDailySalary > 0) {
+    dailyEarnings = worker.workerDailySalary
   } else if (worker.daysWorked > 0 && worker.wageCost > 0) {
-    // For daily workers: daily rate = wageCost / daysWorked
-    dailyEarnings = worker.wageCost / worker.daysWorked
+    // Fallback: wageCost is already proportional, so multiply back to get full rate
+    dailyEarnings = (worker.wageCost / worker.daysWorked) * totalAssignments
   }
 
-  // For multiple assignments, split the earnings
+  // Proportional daily rate for this order
   const displayedDailyEarnings = dailyEarnings / totalAssignments
   const splitPercentage = totalAssignments > 1 ? (100 / totalAssignments).toFixed(0) : 100
 
-  // Calculate total for days worked
-  const totalForDaysWorked = dailyEarnings * daysWorkedCalculated
+  // Calculate total for days worked (proportional)
+  const totalForDaysWorked = displayedDailyEarnings * daysWorkedCalculated
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Ishchi daromadi tafsilotlari">
@@ -159,16 +139,10 @@ const WorkerEarningsDetailModal = ({
             </div>
             {daysWorkedCalculated > 0 && (
               <div className={styles.calculation} style={{ marginTop: '8px' }}>
-                {formatNumber(dailyEarnings)} × {daysWorkedCalculated} kun = {formatNumber(
+                {formatNumber(displayedDailyEarnings)} × {daysWorkedCalculated} kun = {formatNumber(
                   totalForDaysWorked
                 )} so'm
-                {totalAssignments > 1 && (
-                  <>
-                    <br />÷ {totalAssignments} = {formatNumber(
-                      totalForDaysWorked / totalAssignments
-                    )} so'm (bu loyihaga)
-                  </>
-                )}
+                {totalAssignments > 1 && ' (bu loyihaga)'}
               </div>
             )}
           </div>
@@ -215,11 +189,10 @@ const WorkerEarningsDetailModal = ({
                   {formatNumber(worker.wageCost)} so'm
                 </span>
               </div>
-              {daysWorkedCalculated > 0 && dailyEarnings > 0 && (
+              {daysWorkedCalculated > 0 && displayedDailyEarnings > 0 && (
                 <div className={styles.calculation}>
-                  {formatNumber(dailyEarnings)} × {daysWorkedCalculated} kun
-                  {totalAssignments > 1 && ` ÷ ${totalAssignments}`} = {formatNumber(
-                    (dailyEarnings * daysWorkedCalculated) / totalAssignments
+                  {formatNumber(displayedDailyEarnings)} × {daysWorkedCalculated} kun = {formatNumber(
+                    totalForDaysWorked
                   )} so'm
                 </div>
               )}

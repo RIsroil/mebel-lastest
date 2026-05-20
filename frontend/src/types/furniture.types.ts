@@ -11,6 +11,7 @@ export interface AssignedWorker {
   daysWorked: number
   wageCost: number
   commissionCost: number
+  workerDailySalary: number | null
   workerMonthlySalary: number | null
   otherAssignmentsCount: number
   workerPayType: string | null

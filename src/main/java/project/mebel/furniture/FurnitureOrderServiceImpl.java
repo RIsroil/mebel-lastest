@@ -695,18 +695,13 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
         Map<UUID, WarehouseItemEntity> itemsMap = warehouseItemRepo.findAllById(itemIds).stream()
                 .collect(Collectors.toMap(WarehouseItemEntity::getId, i -> i));
 
-        // Calculate date range for attendance batch query
-        LocalDate minDate = assignments.stream()
-                .map(a -> a.getAssignedAt().toLocalDate())
-                .min(LocalDate::compareTo)
-                .orElse(LocalDate.now());
         LocalDate maxDate = o.getCompletedAt() != null ? o.getCompletedAt().toLocalDate() : LocalDate.now();
 
-        // Batch load attendance for all workers in date range
-        Map<UUID, Long> attendanceCountMap = new HashMap<>();
+        // Pre-load active assignment counts for all workers (batch query)
+        Map<UUID, Integer> activeAssignmentCountMap = new HashMap<>();
         for (UUID workerId : workerIds) {
-            long count = attendanceRepo.countWorkedDays(workerId, minDate, maxDate, BigDecimal.ZERO);
-            attendanceCountMap.put(workerId, count);
+            int count = assignmentRepo.findAllByWorkerIdAndActiveTrue(workerId).size();
+            activeAssignmentCountMap.put(workerId, count > 0 ? count : 1);
         }
 
         BigDecimal totalWageCost = BigDecimal.ZERO;
@@ -720,20 +715,33 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
             int daysWorked = 0;
             BigDecimal wageCost = BigDecimal.ZERO;
             BigDecimal commissionCost = BigDecimal.ZERO;
+            int totalActiveAssignments = 1;
 
             if (worker != null) {
-                daysWorked = attendanceCountMap.getOrDefault(worker.getId(), 0L).intValue();
+                // Count days FROM this assignment's assignedAt date
+                LocalDate assignmentStart = a.getAssignedAt().toLocalDate();
+                LocalDate assignmentEnd = a.getUnassignedAt() != null
+                        ? a.getUnassignedAt().toLocalDate()
+                        : maxDate;
+                daysWorked = (int) attendanceRepo.countWorkedDays(
+                        worker.getId(), assignmentStart, assignmentEnd, BigDecimal.ZERO);
 
+                // Use pre-loaded active assignment count
+                totalActiveAssignments = activeAssignmentCountMap.getOrDefault(worker.getId(), 1);
+
+                BigDecimal dailyRate = BigDecimal.ZERO;
                 if (worker.getPayType() == PayType.DAILY && worker.getDailySalary() != null) {
-                    wageCost = worker.getDailySalary()
-                            .multiply(BigDecimal.valueOf(daysWorked))
-                            .setScale(2, RoundingMode.HALF_UP);
+                    dailyRate = worker.getDailySalary();
                 } else if (worker.getPayType() == PayType.MONTHLY && worker.getMonthlySalary() != null) {
-                    wageCost = worker.getMonthlySalary()
-                            .divide(BigDecimal.valueOf(30), 2, RoundingMode.HALF_UP)
-                            .multiply(BigDecimal.valueOf(daysWorked))
-                            .setScale(2, RoundingMode.HALF_UP);
+                    dailyRate = worker.getMonthlySalary()
+                            .divide(BigDecimal.valueOf(30), 2, RoundingMode.HALF_UP);
                 }
+
+                // Proportional wage: dailyRate / totalActiveAssignments * daysWorked
+                wageCost = dailyRate
+                        .divide(BigDecimal.valueOf(totalActiveAssignments), 2, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(daysWorked))
+                        .setScale(2, RoundingMode.HALF_UP);
 
                 if (o.getSalePrice() != null && a.getCommissionPct() != null
                         && a.getCommissionPct().compareTo(BigDecimal.ZERO) > 0) {
@@ -743,11 +751,7 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                 }
             }
 
-            int otherAssignmentsCount = (int) assignments.stream()
-                    .filter(ass -> ass.getWorkerId().equals(a.getWorkerId())
-                            && ass.isActive()
-                            && !ass.getId().equals(a.getId()))
-                    .count();
+            int otherAssignmentsCount = totalActiveAssignments - 1;
 
             assignedWorkers.add(FurnitureOrderResponse.AssignedWorkerResponse.builder()
                     .assignmentId(a.getId())
@@ -760,6 +764,7 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                     .daysWorked(daysWorked)
                     .wageCost(wageCost)
                     .commissionCost(commissionCost)
+                    .workerDailySalary(worker != null ? worker.getDailySalary() : null)
                     .workerMonthlySalary(worker != null ? worker.getMonthlySalary() : null)
                     .otherAssignmentsCount(otherAssignmentsCount)
                     .workerPayType(worker != null ? worker.getPayType().name() : null)
