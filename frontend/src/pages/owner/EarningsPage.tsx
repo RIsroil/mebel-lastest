@@ -260,7 +260,9 @@ const EarningsPage = () => {
                 </div>
                 <div className={styles.earnCardMid}>
                   <span className={styles.earnCardHours}>
-                    Oylik: {e.monthlySalary != null ? formatNumber(e.monthlySalary) : '—'} so'm
+                    {e.workerPayType === 'DAILY'
+                      ? `Kunlik: ${e.dailyRate != null ? formatNumber(e.dailyRate) : '—'} so'm`
+                      : `Oylik: ${e.monthlySalary != null ? formatNumber(e.monthlySalary) : '—'} so'm`}
                   </span>
                   <span className={styles.earnCardTotal}>{formatNumber(e.totalAmount)} so'm</span>
                 </div>
@@ -389,9 +391,15 @@ const EarningsPage = () => {
                         {payTypeLabel}
                       </span>
                     </td>
-                    <td className={styles.hoursCell}>—</td>
+                    <td className={styles.hoursCell}>
+                      {e.workerPayType === 'DAILY' ? `${left} kun` : '—'}
+                    </td>
                     <td className={styles.rateCell}>
-                      {e.monthlySalary != null ? formatNumber(e.monthlySalary) : '—'}
+                      {e.workerPayType === 'DAILY' && e.dailyRate != null
+                        ? formatNumber(e.dailyRate) + '/kun'
+                        : e.monthlySalary != null
+                          ? formatNumber(e.monthlySalary)
+                          : '—'}
                     </td>
                     <td className={styles.totalCell}>{formatNumber(e.totalAmount)}</td>
                     <td>
