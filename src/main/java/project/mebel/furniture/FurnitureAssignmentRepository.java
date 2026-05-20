@@ -22,10 +22,16 @@ public interface FurnitureAssignmentRepository extends JpaRepository<FurnitureAs
     List<FurnitureAssignmentEntity> findByWorkerIdAndActiveTrueOrderByAssignedAtAsc(UUID workerId);
 
     // Ma'lum kundagi active assignmentlar soni
-    // Assignment is active on date if: assignedAt <= date AND (unassignedAt is null OR unassignedAt > date)
-    @Query("SELECT COUNT(a) FROM FurnitureAssignmentEntity a WHERE a.workerId = :workerId " +
+    // Order is "in progress" on date if: startedAt <= date AND (completedAt is null OR completedAt > date)
+    // Assignment is active if: assignedAt <= date AND (unassignedAt is null OR unassignedAt > date)
+    @Query("SELECT COUNT(a) FROM FurnitureAssignmentEntity a " +
+           "JOIN FurnitureOrderEntity o ON a.furnitureOrderId = o.id " +
+           "WHERE a.workerId = :workerId " +
            "AND a.assignedAt <= :dateTime " +
-           "AND (a.unassignedAt IS NULL OR a.unassignedAt > :dateTime)")
+           "AND (a.unassignedAt IS NULL OR a.unassignedAt > :dateTime) " +
+           "AND o.startedAt IS NOT NULL " +
+           "AND o.startedAt <= :dateTime " +
+           "AND (o.completedAt IS NULL OR o.completedAt > :dateTime)")
     int countActiveAssignmentsOnDate(@Param("workerId") UUID workerId,
                                      @Param("dateTime") LocalDateTime dateTime);
 }
