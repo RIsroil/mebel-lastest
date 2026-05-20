@@ -23,29 +23,31 @@ const WorkerEarningsDetailModal = ({
 }: WorkerEarningsDetailModalProps) => {
   if (!worker) return null
 
-  const monthlySalary = worker.workerMonthlySalary || 0
   const isMonthlyWorker = worker.workerPayType === 'MONTHLY'
-  const totalAssignments = (worker.otherAssignmentsCount || 0) + 1
+  const currentAssignments = (worker.otherAssignmentsCount || 0) + 1
 
-  // Use daysWorked from backend (correctly calculated based on attendance)
-  const daysWorkedCalculated = worker.daysWorked
-  let daysInMonth = 30
+  // Full daily rate (before any split)
+  let dailyRate = 0
+  if (worker.workerDailySalary && worker.workerDailySalary > 0) {
+    dailyRate = worker.workerDailySalary
+  } else if (worker.workerMonthlySalary && worker.workerMonthlySalary > 0) {
+    const daysInMonth = worker.assignedAt
+      ? new Date(new Date(worker.assignedAt).getFullYear(), new Date(worker.assignedAt).getMonth() + 1, 0).getDate()
+      : 30
+    dailyRate = worker.workerMonthlySalary / daysInMonth
+  }
+
+  // Date range for calendar
   let attendanceFromDate = ''
   let attendanceToDate = ''
-
   if (worker.assignedAt) {
     const assignedDate = new Date(worker.assignedAt)
-    const year = assignedDate.getFullYear()
-    const month = assignedDate.getMonth()
-    daysInMonth = new Date(year, month + 1, 0).getDate()
-
-    // Set date range for attendance query (for calendar display)
     const endDate = worker.unassignedAt ? new Date(worker.unassignedAt) : new Date()
     attendanceFromDate = toApiDate(assignedDate)
     attendanceToDate = toApiDate(endDate)
   }
 
-  // Fetch attendance data for the worker during assignment period
+  // Fetch attendance for calendar display
   const { data: attendanceResp } = useQuery({
     queryKey: ['attendance', worker.workerId, attendanceFromDate, attendanceToDate],
     queryFn: () =>
@@ -56,7 +58,6 @@ const WorkerEarningsDetailModal = ({
     enabled: !!attendanceFromDate && !!attendanceToDate && isOpen,
   })
 
-  // Convert attendance data to calendar format
   const attendanceData = useMemo(() => {
     const records = attendanceResp?.data?.data ?? []
     return records.map((record) => ({
@@ -64,24 +65,6 @@ const WorkerEarningsDetailModal = ({
       hoursWorked: record.hoursWorked,
     }))
   }, [attendanceResp])
-
-  // Calculate full daily earnings (not split)
-  let dailyEarnings = 0
-  if (isMonthlyWorker) {
-    dailyEarnings = monthlySalary / daysInMonth
-  } else if (worker.workerDailySalary && worker.workerDailySalary > 0) {
-    dailyEarnings = worker.workerDailySalary
-  } else if (worker.daysWorked > 0 && worker.wageCost > 0) {
-    // Fallback: wageCost is already proportional, so multiply back to get full rate
-    dailyEarnings = (worker.wageCost / worker.daysWorked) * totalAssignments
-  }
-
-  // Proportional daily rate for this order
-  const displayedDailyEarnings = dailyEarnings / totalAssignments
-  const splitPercentage = totalAssignments > 1 ? (100 / totalAssignments).toFixed(0) : 100
-
-  // Calculate total for days worked (proportional)
-  const totalForDaysWorked = displayedDailyEarnings * daysWorkedCalculated
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Ishchi daromadi tafsilotlari">
@@ -97,7 +80,7 @@ const WorkerEarningsDetailModal = ({
           </div>
         </div>
 
-        {/* Assignment Dates */}
+        {/* Assignment Info */}
         <div className={styles.section}>
           <div className={styles.sectionTitle}>📅 Biriktirilish</div>
           <div className={styles.infoRow}>
@@ -108,122 +91,92 @@ const WorkerEarningsDetailModal = ({
           </div>
           {worker.unassignedAt && (
             <div className={styles.infoRow}>
-              <span className={styles.label}>Biriktirilganliği bekor qilingan:</span>
+              <span className={styles.label}>Ajratilgan:</span>
               <span className={styles.value}>{formatDate(worker.unassignedAt)}</span>
             </div>
           )}
-          {daysWorkedCalculated > 0 && (
+          <div className={styles.infoRow}>
+            <span className={styles.label}>Ishlagan kunlari:</span>
+            <span className={styles.value}>{worker.daysWorked} kun</span>
+          </div>
+          {dailyRate > 0 && (
             <div className={styles.infoRow}>
-              <span className={styles.label}>Ish kunlari:</span>
-              <span className={styles.value}>{daysWorkedCalculated} kun</span>
-            </div>
-          )}
-          {daysWorkedCalculated > 0 && dailyEarnings > 0 && (
-            <div className={styles.infoRow}>
-              <span className={styles.label}>Kunlik daromadi:</span>
-              <span className={styles.value}>{formatNumber(displayedDailyEarnings)} so'm/kun</span>
+              <span className={styles.label}>Kunlik maosh:</span>
+              <span className={styles.value}>{formatNumber(dailyRate)} so'm/kun</span>
             </div>
           )}
         </div>
 
-        {/* Salary Calculation - Only for monthly workers */}
-        {isMonthlyWorker && (
+        {/* Wage calculation explanation */}
+        {worker.wageCost > 0 && (
           <div className={styles.section}>
-            <div className={styles.sectionTitle}>💰 Oylik maosh hisoblash</div>
-            <div className={styles.infoRow}>
-              <span className={styles.label}>Oylik maosh:</span>
-              <span className={styles.value}>{formatNumber(monthlySalary)} so'm</span>
-            </div>
+            <div className={styles.sectionTitle}>💰 Maosh hisoblash</div>
             <div className={styles.calculation}>
-              {formatNumber(monthlySalary)} ÷ {daysInMonth} kun = {formatNumber(dailyEarnings)} so'm/kun
+              Bu buyurtmaga ketgan maosh: <strong>{formatNumber(worker.wageCost)} so'm</strong>
             </div>
-            {daysWorkedCalculated > 0 && (
-              <div className={styles.calculation} style={{ marginTop: '8px' }}>
-                {formatNumber(displayedDailyEarnings)} × {daysWorkedCalculated} kun = {formatNumber(
-                  totalForDaysWorked
-                )} so'm
-                {totalAssignments > 1 && ' (bu loyihaga)'}
+            {currentAssignments > 1 && (
+              <div className={styles.note}>
+                * Ishchi hozirda {currentAssignments} ta buyurtmada ishlaydi.
+                Maosh har kuni uchun buyurtmalar soniga qarab proporsional bo'lingan.
               </div>
             )}
           </div>
         )}
 
-        {/* Multiple Assignments */}
-        {totalAssignments > 1 && dailyEarnings > 0 && (
+        {/* Commission */}
+        {worker.commissionCost > 0 && (
           <div className={styles.section}>
-            <div className={styles.sectionTitle}>🔀 Bir kunga biriktirilgan maxsulotlar</div>
+            <div className={styles.sectionTitle}>📊 Komissiya</div>
             <div className={styles.infoRow}>
-              <span className={styles.label}>Maxsulotlar soni:</span>
-              <span className={styles.value}>{totalAssignments} ta</span>
+              <span className={styles.label}>Komissiya foizi:</span>
+              <span className={styles.value}>{worker.commissionPct}%</span>
             </div>
             <div className={styles.infoRow}>
-              <span className={styles.label}>Kunlik daromad split:</span>
-              <span className={styles.value}>{splitPercentage}% har bir maxsulot uchun</span>
-            </div>
-            <div className={styles.calculation}>
-              {formatNumber(dailyEarnings)} ÷ {totalAssignments} = {formatNumber(
-                displayedDailyEarnings
-              )} so'm/kun (har bir maxsulot)
+              <span className={styles.label}>Komissiya summasi:</span>
+              <span className={styles.valueCost}>-{formatNumber(worker.commissionCost)} so'm</span>
             </div>
           </div>
         )}
 
-        {/* Total Costs */}
+        {/* Total */}
         <div className={styles.section}>
-          <div className={styles.sectionTitle}>📊 Jami xarajat</div>
+          <div className={styles.sectionTitle}>📋 Jami</div>
+          <div className={styles.infoRow}>
+            <span className={styles.label}>Maosh:</span>
+            <span className={styles.value}>{formatNumber(worker.wageCost)} so'm</span>
+          </div>
           {worker.commissionCost > 0 && (
-            <div>
-              <div className={styles.infoRow}>
-                <span className={styles.label}>Jami komissiya:</span>
-                <span className={styles.valueCost}>
-                  -{formatNumber(worker.commissionCost)} so'm
-                </span>
-              </div>
+            <div className={styles.infoRow}>
+              <span className={styles.label}>Komissiya:</span>
+              <span className={styles.valueCost}>-{formatNumber(worker.commissionCost)} so'm</span>
             </div>
           )}
-          {worker.wageCost > 0 && (
-            <div>
-              <div className={styles.infoRow}>
-                <span className={styles.label}>Ishchining maoshi:</span>
-                <span className={styles.valueCost}>
-                  {formatNumber(worker.wageCost)} so'm
-                </span>
-              </div>
-              {daysWorkedCalculated > 0 && displayedDailyEarnings > 0 && (
-                <div className={styles.calculation}>
-                  {formatNumber(displayedDailyEarnings)} × {daysWorkedCalculated} kun = {formatNumber(
-                    totalForDaysWorked
-                  )} so'm
-                </div>
-              )}
-            </div>
-          )}
-          {worker.wageCost === 0 && worker.commissionCost === 0 && (
-            <div className={styles.empty}>Hali xarajat yo'q</div>
-          )}
+          <div className={styles.infoRow} style={{ fontWeight: 'bold', marginTop: '8px' }}>
+            <span className={styles.label}>Jami xarajat:</span>
+            <span className={styles.value}>
+              {formatNumber(worker.wageCost + worker.commissionCost)} so'm
+            </span>
+          </div>
         </div>
 
-        {/* Pay Type Info */}
-        {worker.workerPayType && (
-          <div className={styles.section}>
-            <div className={styles.sectionTitle}>ℹ️ To'lash turi</div>
-            <div className={styles.infoRow}>
-              <span className={styles.label}>Tur:</span>
-              <span className={styles.value}>
-                {worker.workerPayType === 'DAILY' ? 'Kunlik' : 'Oylik'}
-              </span>
-            </div>
+        {/* Pay Type */}
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>ℹ️ To'lash turi</div>
+          <div className={styles.infoRow}>
+            <span className={styles.label}>Tur:</span>
+            <span className={styles.value}>
+              {isMonthlyWorker ? 'Oylik' : 'Kunlik'}
+            </span>
           </div>
-        )}
+        </div>
 
-        {/* Assignment Period Calendar */}
-        {worker.assignedAt && daysWorkedCalculated > 0 && (
+        {/* Calendar */}
+        {worker.assignedAt && worker.daysWorked > 0 && (
           <div className={styles.section}>
-            <div className={styles.sectionTitle}>📆 Biriktirilish davri</div>
+            <div className={styles.sectionTitle}>📆 Davomat</div>
             <AssignmentCalendar
               assignedAt={worker.assignedAt}
               unassignedAt={worker.unassignedAt}
-              daysWorked={daysWorkedCalculated}
               attendanceData={attendanceData}
             />
           </div>
@@ -241,14 +194,12 @@ interface AttendanceDay {
 interface AssignmentCalendarProps {
   assignedAt: string
   unassignedAt: string | null
-  daysWorked: number
   attendanceData?: AttendanceDay[]
 }
 
 const AssignmentCalendar = ({
   assignedAt,
   unassignedAt,
-  daysWorked,
   attendanceData = [],
 }: AssignmentCalendarProps) => {
   const startDate = new Date(assignedAt)
@@ -271,13 +222,17 @@ const AssignmentCalendar = ({
   }
 
   const getHoursForDay = (day: number): number | null => {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(
-      day
-    ).padStart(2, '0')}`
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     return attendanceMap.get(dateStr) ?? null
   }
 
   const dayLabels = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya']
+
+  // Count worked days
+  const workedDays = attendanceData.filter(d => {
+    const date = new Date(d.date)
+    return date >= startDate && date <= endDate && d.hoursWorked && d.hoursWorked > 0
+  }).length
 
   return (
     <div className={styles.calendar}>
@@ -296,16 +251,17 @@ const AssignmentCalendar = ({
           const day = i + 1
           const inPeriod = isInAssignmentPeriod(day)
           const hours = getHoursForDay(day)
+          const hasWorked = hours != null && hours > 0
           return (
             <div
               key={day}
               className={`${styles.dayCell} ${
-                inPeriod ? styles.worked : styles.inactive
+                hasWorked ? styles.worked : inPeriod ? styles.inPeriod : styles.inactive
               }`}
-              title={inPeriod ? 'Biriktirilish davri' : 'Tashqarida'}
+              title={hasWorked ? `${hours} soat ishlagan` : inPeriod ? 'Ishlamagan' : ''}
             >
               <div className={styles.dayCellDay}>{day}</div>
-              {hours != null && inPeriod && (
+              {hasWorked && (
                 <div className={styles.dayCellHours}>{hours}h</div>
               )}
             </div>
@@ -313,7 +269,7 @@ const AssignmentCalendar = ({
         })}
       </div>
       <div className={styles.calendarNote}>
-        Jami {daysWorked} kun ish qilgan
+        Jami {workedDays} kun ishlagan
       </div>
     </div>
   )

@@ -84,7 +84,13 @@
   background-color: rgba(255, 255, 255, 0.02);
   border-left: 2px solid var(--accent);
   border-radius: 4px;
-  font-family: monospace;
+}
+
+.note {
+  font-size: 11px;
+  color: var(--text3);
+  font-style: italic;
+  margin-top: 4px;
 }
 
 .empty {
@@ -144,6 +150,11 @@
 
 .dayCell.inactive {
   opacity: 0.3;
+}
+
+.dayCell.inPeriod {
+  background-color: var(--surface);
+  border: 1px dashed var(--border);
 }
 
 .dayCell.worked {

@@ -31,4 +31,11 @@ public interface DailyAttendanceRepository extends JpaRepository<DailyAttendance
                          @Param("from") LocalDate from,
                          @Param("to") LocalDate to,
                          @Param("zero") BigDecimal zero);
+
+    // Ishlangan kunlar ro'yxati (hoursWorked > 0)
+    @Query("SELECT a.workDate FROM DailyAttendanceEntity a WHERE a.userId = :userId " +
+           "AND a.workDate >= :from AND a.workDate <= :to AND a.hoursWorked > 0 ORDER BY a.workDate")
+    List<LocalDate> findWorkedDates(@Param("userId") UUID userId,
+                                    @Param("from") LocalDate from,
+                                    @Param("to") LocalDate to);
 }
