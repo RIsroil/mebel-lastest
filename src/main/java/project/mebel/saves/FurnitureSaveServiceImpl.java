@@ -189,9 +189,8 @@ public class FurnitureSaveServiceImpl implements FurnitureSaveService {
                 .filter(img -> img.getSaveId().equals(saveId))
                 .orElseThrow(() -> ApiException.notFound("image.not.found"));
 
-        minioStorageService.deleteFurnitureStoredFile(
-                image.getStoredPath(), image.getMinioBucket(), image.getMinioObjectKey());
-
+        // MUHIM: MinIO'dan o'chirmaydi, faqat DB'da soft-delete qiladi
+        // Rasmlar permanent saqlanadi, recovery mumkin bo'ladi
         boolean wasPrimary = image.isPrimary();
         image.setDeletedAt(LocalDateTime.now());
         image.setDeletedBy(owner.getId());
