@@ -38,7 +38,7 @@ export const furnitureApi = {
       api.post<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}/workers`, body),
 
     removeWorker: (id: string, workerId: string) =>
-      api.delete(`/api/furniture/orders/${id}/workers/${workerId}`),
+      api.delete<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}/workers/${workerId}`),
 
     addMaterial: (id: string, body: AddMaterialRequest) =>
       api.post<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}/materials`, body),
@@ -78,12 +78,12 @@ export const furnitureApi = {
       api.put<ApiResponse<FurnitureTemplateResponse>>(`/api/furniture/templates/${id}`, body),
 
     remove: (id: string) =>
-      api.delete(`/api/furniture/templates/${id}`),
+      api.delete<ApiResponse<FurnitureTemplateResponse>>(`/api/furniture/templates/${id}`),
 
     addMaterial: (id: string, body: AddTemplateMaterialRequest) =>
       api.post<ApiResponse<FurnitureTemplateResponse>>(`/api/furniture/templates/${id}/materials`, body),
 
     removeMaterial: (id: string, materialId: string) =>
-      api.delete(`/api/furniture/templates/${id}/materials/${materialId}`),
+      api.delete<ApiResponse<FurnitureTemplateResponse>>(`/api/furniture/templates/${id}/materials/${materialId}`),
   },
 }

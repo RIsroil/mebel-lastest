@@ -163,7 +163,10 @@ const OrderDetailPage = () => {
   const removeWorkerMutation = useMutation({
     mutationFn: (workerId: string) =>
       furnitureApi.orders.removeWorker(id!, workerId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['order', id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order', id] })
+      queryClient.refetchQueries({ queryKey: ['order', id] })
+    },
   })
 
   const uploadImageMutation = useMutation({
