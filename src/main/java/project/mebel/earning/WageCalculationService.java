@@ -190,8 +190,40 @@ public class WageCalculationService {
 
         String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
 
-        // Proportional rate: split across all active assignments
+        // Proportional rate: split across all active assignments (or full rate if no assignments)
         int totalAssignments = activeAssignments.size();
+
+        if (totalAssignments == 0) {
+            // Worker has no active assignments - pay full base wage
+            EarningEntity baseEarning = EarningEntity.builder()
+                    .workerId(workerId)
+                    .workshopId(workshopId)
+                    .earnDate(today)
+                    .earnType(EarnType.DAILY_WAGE)
+                    .baseAmount(adjustedDailyRate)
+                    .totalAmount(adjustedDailyRate)
+                    .dailyRate(dailyRate)
+                    .hoursWorked(hoursWorked)
+                    .hoursTarget(hoursTarget)
+                    .attendanceId(attendanceId)
+                    .monthlySalary(monthlySalary)
+                    .daysInMonth(daysInPeriod)
+                    .periodStart(periodStart)
+                    .furnitureOrderId(null)  // No specific order
+                    .build();
+            baseEarning.setCreatedBy(updatedBy);
+            earningRepo.save(baseEarning);
+
+            String hoursInfo = hoursWorked != null
+                    ? " (" + hoursWorked + "h/" + hoursTarget + "h)"
+                    : "";
+            financialLogService.record(
+                    workshopId, FinancialLogType.WAGE_CALCULATED,
+                    adjustedDailyRate, "Kunlik maosh (buyurtmasiz): " + workerName + hoursInfo,
+                    null, workerName, today, updatedBy);
+            return;
+        }
+
         BigDecimal proportionalRate = adjustedDailyRate
                 .divide(BigDecimal.valueOf(totalAssignments), 2, RoundingMode.HALF_UP);
 
