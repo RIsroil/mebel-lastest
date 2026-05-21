@@ -236,7 +236,12 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
     @Transactional
     public FurnitureOrderResponse unassignWorker(UUID orderId, UUID workerId, Principal principal) {
         UserEntity owner = requireOwner(principal);
-        findOrder(orderId, owner.getWorkshopId());
+        FurnitureOrderEntity order = findOrder(orderId, owner.getWorkshopId());
+
+        if (order.getStatus() == FurnitureStatus.COMPLETED || order.getStatus() == FurnitureStatus.SOLD
+                || order.getStatus() == FurnitureStatus.CANCELLED) {
+            throw ApiException.badRequest("order.already.closed");
+        }
 
         FurnitureAssignmentEntity assignment = assignmentRepo
                 .findByFurnitureOrderIdAndWorkerIdAndActiveTrue(orderId, workerId)
@@ -585,7 +590,8 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
         UserEntity owner = requireOwner(principal);
         FurnitureOrderEntity order = findOrder(orderId, owner.getWorkshopId());
 
-        if (order.getStatus() == FurnitureStatus.CANCELLED) {
+        if (order.getStatus() == FurnitureStatus.COMPLETED || order.getStatus() == FurnitureStatus.SOLD
+                || order.getStatus() == FurnitureStatus.CANCELLED) {
             throw ApiException.badRequest("order.already.closed");
         }
 
@@ -625,6 +631,11 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
     public FurnitureOrderResponse deleteImage(UUID orderId, UUID imageId, Principal principal) {
         UserEntity owner = requireOwner(principal);
         FurnitureOrderEntity order = findOrder(orderId, owner.getWorkshopId());
+
+        if (order.getStatus() == FurnitureStatus.COMPLETED || order.getStatus() == FurnitureStatus.SOLD
+                || order.getStatus() == FurnitureStatus.CANCELLED) {
+            throw ApiException.badRequest("order.already.closed");
+        }
 
         FurnitureImageEntity image = imageRepo.findById(imageId)
                 .filter(img -> img.getFurnitureOrderId().equals(orderId))

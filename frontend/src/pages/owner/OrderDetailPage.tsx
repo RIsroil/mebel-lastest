@@ -363,7 +363,7 @@ const OrderDetailPage = () => {
           <div className={styles.tableCard}>
             <div className={styles.tableHeader}>
               <span className={styles.tableTitle}><ImageIcon size={18} style={{ display: 'inline-block', marginRight: 8 }} />Tayyor mahsulot rasmlari</span>
-              {(order.images ?? []).length < 3 && order.status !== 'CANCELLED' && (
+              {(order.images ?? []).length < 3 && order.status !== 'CANCELLED' && order.status !== 'COMPLETED' && order.status !== 'SOLD' && (
                 <>
                   <input
                     ref={imageInputRef}
@@ -402,7 +402,9 @@ const OrderDetailPage = () => {
                       type="button"
                       className={styles.imageDelete}
                       onClick={() => deleteImageMutation.mutate(img.id)}
-                      title="O'chirish"
+                      disabled={order.status === 'COMPLETED' || order.status === 'SOLD' || order.status === 'CANCELLED'}
+                      title={order.status === 'COMPLETED' || order.status === 'SOLD' || order.status === 'CANCELLED' ? "Yopilgan buyurtmani o'chirib bo'lmaydi" : "O'chirish"}
+                      style={{ opacity: order.status === 'COMPLETED' || order.status === 'SOLD' || order.status === 'CANCELLED' ? 0.4 : 1 }}
                     >
                       <XIcon size={16} />
                     </button>
@@ -498,10 +500,12 @@ const OrderDetailPage = () => {
                 <Button
                   variant="danger"
                   size="sm"
+                  disabled={order.status === 'COMPLETED' || order.status === 'SOLD' || order.status === 'CANCELLED'}
                   onClick={(e) => {
                     e.stopPropagation()
                     removeWorkerMutation.mutate(w.workerId)
                   }}
+                  title={order.status === 'COMPLETED' || order.status === 'SOLD' || order.status === 'CANCELLED' ? "Yopilgan buyurtmadan ishchini o'chirib bo'lmaydi" : "Ishchini chiqarish"}
                 >
                   ✕
                 </Button>
@@ -510,7 +514,7 @@ const OrderDetailPage = () => {
             {order.assignedWorkers.length === 0 && (
               <p className={styles.empty}>Ishchi biriktirilmagan</p>
             )}
-            {availableWorkers.length > 0 && order.status !== 'SOLD' && order.status !== 'CANCELLED' && (
+            {availableWorkers.length > 0 && order.status !== 'SOLD' && order.status !== 'CANCELLED' && order.status !== 'COMPLETED' && (
               <Button
                 variant="ghost"
                 size="sm"
