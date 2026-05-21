@@ -96,7 +96,10 @@ const OrderDetailPage = () => {
   const changeStatusMutation = useMutation({
     mutationFn: (status: FurnitureStatus) =>
       furnitureApi.orders.changeStatus(id!, { status }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['order', id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order', id] })
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+    },
   })
   const changeStatusMutate = changeStatusMutation.mutate
 
