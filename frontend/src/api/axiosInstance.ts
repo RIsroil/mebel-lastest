@@ -78,7 +78,7 @@ api.interceptors.response.use(
       try {
         const { data } = await axios.post<ApiResponse<TokenPair>>(
           '/api/auth/refresh-token',
-          refreshToken,
+          JSON.stringify(refreshToken),
           { headers: { 'Content-Type': 'application/json' } }
         )
         const tokens = data.data
