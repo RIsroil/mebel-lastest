@@ -788,64 +788,25 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
             List<FurnitureOrderResponse.WageBreakdownItem> wageBreakdown = new ArrayList<>();
 
             if (worker != null) {
-                // Calculate wage by iterating each worked day
-                LocalDate assignmentStart = a.getAssignedAt().toLocalDate();
-                LocalDate assignmentEnd = a.getUnassignedAt() != null
-                        ? a.getUnassignedAt().toLocalDate()
-                        : maxDate;
+                // Get actual earnings records for this worker and order
+                List<EarningEntity> earnings = earningRepo.findByWorkerIdAndFurnitureOrderIdOrderByEarnDateAsc(
+                        a.getWorkerId(), o.getId());
 
-                // Get daily rate
-                BigDecimal dailyRate = BigDecimal.ZERO;
-                if (worker.getPayType() == PayType.DAILY && worker.getDailySalary() != null) {
-                    dailyRate = worker.getDailySalary();
-                } else if (worker.getPayType() == PayType.MONTHLY && worker.getMonthlySalary() != null) {
-                    dailyRate = worker.getMonthlySalary()
-                            .divide(BigDecimal.valueOf(30), 2, RoundingMode.HALF_UP);
-                }
+                // Build wage breakdown from actual earnings
+                for (EarningEntity earning : earnings) {
+                    daysWorked++;
+                    wageCost = wageCost.add(earning.getTotalAmount());
 
-                // Get list of worked dates for this assignment period
-                List<LocalDate> workedDates = attendanceRepo.findWorkedDates(
-                        worker.getId(), assignmentStart, assignmentEnd);
-                daysWorked = workedDates.size();
-
-                // Get worker's daily hours target
-                BigDecimal hoursTarget = worker.getDailyHoursTarget() != null
-                        ? worker.getDailyHoursTarget()
-                        : BigDecimal.valueOf(8);
-
-                // Calculate wage for each worked day based on hours and assignments
-                for (LocalDate workDate : workedDates) {
-                    LocalDateTime dateTime = workDate.atTime(12, 0); // noon of that day
-                    int assignmentsOnDay = assignmentRepo.countActiveAssignmentsOnDate(worker.getId(), dateTime);
-                    if (assignmentsOnDay < 1) assignmentsOnDay = 1;
-
-                    // Get hours worked on this day
-                    BigDecimal hoursFactor = BigDecimal.ONE;
-                    BigDecimal hoursWorked = null;
-                    var attendance = attendanceRepo.findByUserIdAndWorkDate(worker.getId(), workDate);
-                    if (attendance.isPresent() && attendance.get().getHoursWorked() != null
-                            && hoursTarget.compareTo(BigDecimal.ZERO) > 0) {
-                        hoursWorked = attendance.get().getHoursWorked();
-                        hoursFactor = hoursWorked.divide(hoursTarget, 4, RoundingMode.HALF_UP);
-                        // Don't pay more than 100% even if overtime
-                        if (hoursFactor.compareTo(BigDecimal.ONE) > 0) {
-                            hoursFactor = BigDecimal.ONE;
-                        }
-                    }
-
-                    // Apply hours factor first, then split by assignments
-                    BigDecimal adjustedDailyRate = dailyRate.multiply(hoursFactor).setScale(2, RoundingMode.HALF_UP);
-                    BigDecimal dayWage = adjustedDailyRate.divide(
-                            BigDecimal.valueOf(assignmentsOnDay), 2, RoundingMode.HALF_UP);
-                    wageCost = wageCost.add(dayWage);
-
+                    // Build breakdown item from earnings record
                     wageBreakdown.add(FurnitureOrderResponse.WageBreakdownItem.builder()
-                            .date(workDate.toString())
-                            .fullDailyRate(dailyRate)
-                            .activeAssignments(assignmentsOnDay)
-                            .earnedAmount(dayWage)
-                            .hoursWorked(hoursWorked)
-                            .hoursTarget(hoursTarget)
+                            .date(earning.getEarnDate().toString())
+                            .fullDailyRate(earning.getDailyRate())
+                            .activeAssignments(earning.getEarnDate() != null ?
+                                assignmentRepo.countActiveAssignmentsOnDate(a.getWorkerId(),
+                                    earning.getEarnDate().atTime(12, 0)) : 1)
+                            .earnedAmount(earning.getTotalAmount())
+                            .hoursWorked(earning.getHoursWorked())
+                            .hoursTarget(earning.getHoursTarget())
                             .build());
                 }
 
