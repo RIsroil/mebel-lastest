@@ -145,6 +145,13 @@ const WorkerTasksPage = () => {
                             </div>
                           )}
 
+                          {(assignment.wageCost > 0 || assignment.commissionCost > 0) && (
+                            <div className={styles.infoRow} style={{ borderTop: '1px solid var(--border)', paddingTop: 8, marginTop: 8 }}>
+                              <span className={styles.label} style={{ fontWeight: 700 }}>Sof foyda:</span>
+                              <span className={styles.valueProfit}>{formatNumber((assignment.wageCost || 0) + (assignment.commissionCost || 0))} UZS</span>
+                            </div>
+                          )}
+
                           {assignment.assignedAt && (
                             <div className={styles.infoRow}>
                               <span className={styles.label}>Biriktirilgan:</span>

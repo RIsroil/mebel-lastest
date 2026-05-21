@@ -134,6 +134,12 @@
   text-align: right;
 }
 
+.valueProfit {
+  color: var(--green);
+  font-weight: 700;
+  text-align: right;
+}
+
 .valueSmall {
   color: var(--text2);
   font-size: 12px;
