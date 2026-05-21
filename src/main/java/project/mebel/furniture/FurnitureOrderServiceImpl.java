@@ -34,9 +34,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -585,9 +587,19 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
 
         LocalDate earnDate = LocalDate.now();
 
-        // Each worker gets their own commission percentage (not split)
+        // Each worker gets their own commission percentage (not split) — avoid duplicates
+        Set<UUID> processedWorkers = new HashSet<>();
         for (FurnitureAssignmentEntity assignment : activeAssignments) {
-            userRepo.findById(assignment.getWorkerId()).ifPresent(worker -> {
+            UUID workerId = assignment.getWorkerId();
+            if (processedWorkers.contains(workerId)) continue;
+            processedWorkers.add(workerId);
+
+            userRepo.findById(workerId).ifPresent(worker -> {
+                // Skip if commission already exists for this worker/order/date
+                if (earningRepo.findByWorkerIdAndFurnitureOrderIdAndEarnDate(workerId, order.getId(), earnDate).isPresent()) {
+                    return;
+                }
+
                 BigDecimal commissionPct = assignment.getCommissionPct() != null
                         ? assignment.getCommissionPct()
                         : (worker.getCommissionPct() != null ? worker.getCommissionPct() : BigDecimal.ZERO);
