@@ -16,6 +16,9 @@ export const furnitureApi = {
     getAll: () =>
       api.get<ApiResponse<FurnitureOrderResponse[]>>('/api/furniture/orders'),
 
+    getMyOrders: () =>
+      api.get<ApiResponse<FurnitureOrderResponse[]>>('/api/furniture/orders/my'),
+
     getById: (id: string) =>
       api.get<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}`),
 

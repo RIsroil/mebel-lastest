@@ -13,6 +13,7 @@ const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'))
 const TimeInput24 = ({ value, onChange, className }: TimeInput24Props) => {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
 
   const [hour, minute] = useMemo(() => {
     if (!value || !value.includes(':')) return ['09', '00']
@@ -33,18 +34,35 @@ const TimeInput24 = ({ value, onChange, className }: TimeInput24Props) => {
   const setHour = (h: string) => onChange(`${h}:${minute}`)
   const setMinute = (m: string) => onChange(`${hour}:${m}`)
 
+  const handleOpenDropdown = () => {
+    setOpen(true)
+    if (ref.current) {
+      const btn = ref.current.querySelector('button')
+      if (btn) {
+        const rect = btn.getBoundingClientRect()
+        setDropdownPos({
+          top: rect.bottom + 4,
+          left: rect.left,
+        })
+      }
+    }
+  }
+
   return (
     <div ref={ref} className={`${styles.wrapper} ${className ?? ''}`}>
       <button
         type="button"
         className={styles.display}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (open) setOpen(false)
+          else handleOpenDropdown()
+        }}
       >
         <span className={styles.time}>{hour}:{minute}</span>
         <span className={styles.icon}>⏱</span>
       </button>
       {open && (
-        <div className={styles.dropdown}>
+        <div className={styles.dropdown} style={{ top: `${dropdownPos.top}px`, left: `${dropdownPos.left}px` }}>
           <div className={styles.col}>
             {HOURS.map((h) => (
               <button

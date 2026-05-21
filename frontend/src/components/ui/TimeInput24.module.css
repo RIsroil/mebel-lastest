@@ -35,9 +35,7 @@
 }
 
 .dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
+  position: fixed;
   z-index: 1000;
   display: flex;
   gap: 2px;

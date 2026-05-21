@@ -13,6 +13,8 @@ public interface FurnitureOrderService {
 
     List<FurnitureOrderResponse> getAllOrders(Principal principal);
 
+    List<FurnitureOrderResponse> getWorkerOrders(Principal principal);
+
     FurnitureOrderResponse getOrderById(UUID id, Principal principal);
 
     FurnitureOrderResponse updateOrder(UUID id, FurnitureOrderRequest request, Principal principal);

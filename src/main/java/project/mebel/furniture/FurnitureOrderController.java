@@ -36,6 +36,12 @@ public class FurnitureOrderController {
         return ResponseEntity.ok(orderService.getAllOrders(principal));
     }
 
+    @GetMapping("/my")
+    @Operation(summary = "Mening ishlab turgan buyurtmalar (WORKER)")
+    public ResponseEntity<List<FurnitureOrderResponse>> getMyOrders(Principal principal) {
+        return ResponseEntity.ok(orderService.getWorkerOrders(principal));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Buyurtma ma'lumotlari")
     public ResponseEntity<FurnitureOrderResponse> getById(@PathVariable UUID id, Principal principal) {

@@ -97,6 +97,19 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<FurnitureOrderResponse> getWorkerOrders(Principal principal) {
+        UserEntity worker = utils.getUserFromPrincipal(principal);
+        List<FurnitureAssignmentEntity> assignments = assignmentRepo.findByWorkerIdAndActiveTrueOrderByAssignedAtAsc(worker.getId());
+        List<UUID> orderIds = assignments.stream()
+                .map(FurnitureAssignmentEntity::getFurnitureOrderId)
+                .collect(Collectors.toList());
+        if (orderIds.isEmpty()) return List.of();
+        return orderRepo.findAllById(orderIds)
+                .stream().map(this::toResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public FurnitureOrderResponse getOrderById(UUID id, Principal principal) {
         UserEntity owner = requireOwner(principal);
         return toResponse(findOrder(id, owner.getWorkshopId()));
