@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
+
+    <changeSet id="039-cleanup-duplicate-earnings" author="system">
+        <comment>Soft-delete duplicate earnings records (keep the most recent one)</comment>
+
+        <!-- Find and soft-delete duplicate earnings, keeping the one with the highest ID -->
+        <sql>
+            UPDATE earnings e1
+            SET deleted_at = NOW(), deleted_by = '00000000-0000-0000-0000-000000000000'
+            WHERE e1.deleted_at IS NULL
+            AND EXISTS (
+                SELECT 1 FROM earnings e2
+                WHERE e2.worker_id = e1.worker_id
+                AND e2.furniture_order_id = e1.furniture_order_id
+                AND e2.earn_date = e1.earn_date
+                AND e2.deleted_at IS NULL
+                AND e2.id > e1.id
+            )
+        </sql>
+
+        <comment>Verify no duplicates remain</comment>
+        <!-- This will show if there are still duplicates (should return empty) -->
+        <sql>
+            SELECT COUNT(*) as duplicate_count
+            FROM (
+                SELECT worker_id, furniture_order_id, earn_date, COUNT(*) as cnt
+                FROM earnings
+                WHERE deleted_at IS NULL
+                GROUP BY worker_id, furniture_order_id, earn_date
+                HAVING COUNT(*) > 1
+            ) duplicates
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

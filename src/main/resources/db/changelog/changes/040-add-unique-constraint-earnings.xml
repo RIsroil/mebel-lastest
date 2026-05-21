@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd">
+
+    <changeSet id="040-add-unique-constraint-earnings" author="system">
+        <comment>Add unique index to prevent duplicate earnings for same worker, order, and date (excluding soft-deleted)</comment>
+
+        <sql>
+            CREATE UNIQUE INDEX unique_worker_order_earndate
+            ON earnings(worker_id, furniture_order_id, earn_date)
+            WHERE deleted_at IS NULL
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
