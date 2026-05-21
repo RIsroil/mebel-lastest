@@ -40,6 +40,9 @@ export const furnitureApi = {
     removeWorker: (id: string, workerId: string) =>
       api.delete<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}/workers/${workerId}`),
 
+    reactivateWorker: (id: string, workerId: string) =>
+      api.post<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}/workers/${workerId}/reactivate`),
+
     addMaterial: (id: string, body: AddMaterialRequest) =>
       api.post<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}/materials`, body),
 

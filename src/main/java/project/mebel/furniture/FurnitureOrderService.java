@@ -27,6 +27,8 @@ public interface FurnitureOrderService {
 
     FurnitureOrderResponse unassignWorker(UUID orderId, UUID workerId, Principal principal);
 
+    FurnitureOrderResponse reactivateWorker(UUID orderId, UUID workerId, Principal principal);
+
     FurnitureOrderResponse addMaterialUsage(UUID orderId, MaterialUsageRequest request, Principal principal);
 
     FurnitureOrderResponse removeMaterialUsage(UUID orderId, UUID usageId, Principal principal);

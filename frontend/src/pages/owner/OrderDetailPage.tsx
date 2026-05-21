@@ -169,6 +169,15 @@ const OrderDetailPage = () => {
     },
   })
 
+  const reactivateWorkerMutation = useMutation({
+    mutationFn: (workerId: string) =>
+      furnitureApi.orders.reactivateWorker(id!, workerId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order', id] })
+      queryClient.refetchQueries({ queryKey: ['order', id] })
+    },
+  })
+
   const uploadImageMutation = useMutation({
     mutationFn: (file: File) => furnitureApi.orders.uploadImage(id!, file),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['order', id] }),
@@ -475,11 +484,11 @@ const OrderDetailPage = () => {
                 key={w.assignmentId}
                 className={styles.workerItem}
                 style={{
-                  cursor: w.active ? 'pointer' : 'default',
+                  cursor: 'pointer',
                   opacity: w.active ? 1 : 0.6,
                   backgroundColor: w.active ? 'transparent' : 'rgba(0,0,0,0.1)',
                 }}
-                onClick={() => w.active && setSelectedWorker(w)}
+                onClick={() => setSelectedWorker(w)}
               >
                 <Avatar name={w.workerName} role="WORKER" size="sm" />
                 <div style={{ flex: 1 }}>
@@ -543,11 +552,13 @@ const OrderDetailPage = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    disabled={order.status !== 'IN_PROGRESS'}
+                    disabled={order.status !== 'IN_PROGRESS' || reactivateWorkerMutation.isPending}
+                    loading={reactivateWorkerMutation.isPending}
                     onClick={(e) => {
                       e.stopPropagation()
+                      reactivateWorkerMutation.mutate(w.workerId)
                     }}
-                    title="Qayta faollashtirish"
+                    title={order.status !== 'IN_PROGRESS' ? "Faqat IN_PROGRESS orderda qayta qo'shish mumkin" : "Qayta faollashtirish"}
                   >
                     ↻
                   </Button>

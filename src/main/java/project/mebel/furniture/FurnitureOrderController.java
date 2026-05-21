@@ -87,6 +87,14 @@ public class FurnitureOrderController {
         return ResponseEntity.ok(orderService.unassignWorker(id, workerId, principal));
     }
 
+    @PostMapping("/{id}/workers/{workerId}/reactivate")
+    @Operation(summary = "Bekor qilingan ishchini qayta faollashtirish")
+    public ResponseEntity<FurnitureOrderResponse> reactivateWorker(@PathVariable UUID id,
+                                                                    @PathVariable UUID workerId,
+                                                                    Principal principal) {
+        return ResponseEntity.ok(orderService.reactivateWorker(id, workerId, principal));
+    }
+
     @PostMapping("/{id}/materials")
     @Operation(summary = "Buyurtmaga material sarfini qo'shish")
     public ResponseEntity<FurnitureOrderResponse> addMaterial(@PathVariable UUID id,

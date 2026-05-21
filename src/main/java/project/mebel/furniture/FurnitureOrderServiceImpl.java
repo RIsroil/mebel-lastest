@@ -239,6 +239,38 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
 
     @Override
     @Transactional
+    public FurnitureOrderResponse reactivateWorker(UUID orderId, UUID workerId, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        FurnitureOrderEntity order = findOrder(orderId, owner.getWorkshopId());
+
+        if (order.getStatus() != FurnitureStatus.IN_PROGRESS) {
+            throw ApiException.badRequest("order.must.be.in.progress");
+        }
+
+        FurnitureAssignmentEntity assignment = assignmentRepo
+                .findByFurnitureOrderIdAndWorkerId(orderId, workerId)
+                .orElseThrow(() -> ApiException.notFound("assignment.not.found"));
+
+        if (assignment.isActive()) {
+            throw ApiException.badRequest("assignment.already.active");
+        }
+
+        assignment.setActive(true);
+        assignment.setAssignedAt(LocalDateTime.now());
+        assignment.setUnassignedAt(null);
+        assignment.setUpdatedBy(owner.getId());
+        assignmentRepo.save(assignment);
+
+        // Ishchi qayta qo'shilsa, barcha active assignmentlari uchun maosh qayta hisoblanadi
+        // Hisob yangi assignedAt sanasidan boshlanadi
+        LocalDate today = LocalDate.now();
+        wageCalculationService.updateDailyWagesForWorker(workerId, owner.getWorkshopId(), today, owner.getId());
+
+        return toResponse(findOrder(orderId, owner.getWorkshopId()));
+    }
+
+    @Override
+    @Transactional
     public FurnitureOrderResponse unassignWorker(UUID orderId, UUID workerId, Principal principal) {
         UserEntity owner = requireOwner(principal);
         FurnitureOrderEntity order = findOrder(orderId, owner.getWorkshopId());
