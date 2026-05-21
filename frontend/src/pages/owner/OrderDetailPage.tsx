@@ -472,46 +472,86 @@ const OrderDetailPage = () => {
             <div className={styles.infoCardTitle} style={{ display: 'flex', alignItems: 'center', gap: 8 }}><User size={18} /> Biriktirilgan ishchilar</div>
             {order.assignedWorkers.map((w) => (
               <div
-                key={w.workerId}
+                key={w.assignmentId}
                 className={styles.workerItem}
-                style={{ cursor: 'pointer' }}
-                onClick={() => setSelectedWorker(w)}
+                style={{
+                  cursor: w.active ? 'pointer' : 'default',
+                  opacity: w.active ? 1 : 0.6,
+                  backgroundColor: w.active ? 'transparent' : 'rgba(0,0,0,0.1)',
+                }}
+                onClick={() => w.active && setSelectedWorker(w)}
               >
                 <Avatar name={w.workerName} role="WORKER" size="sm" />
                 <div style={{ flex: 1 }}>
-                  <div className={styles.workerName}>{w.workerName ?? '—'}</div>
-                  <div className={styles.workerDate}>
-                    {w.assignedAt ? formatDate(w.assignedAt) + ' dan' : ''}
-                    {w.commissionPct != null && w.commissionPct > 0 && (
-                      <span style={{ marginLeft: 8, color: 'var(--accent)', fontSize: 11 }}>
-                        {w.commissionPct}% komissiya
+                  <div className={styles.workerName} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {w.workerName ?? '—'}
+                    {!w.active && (
+                      <span style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        background: 'var(--text3)',
+                        color: '#fff',
+                        borderRadius: 3,
+                      }}>
+                        INACTIVE
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    {w.daysWorked > 0 && (
-                      <span>{w.daysWorked} kun</span>
-                    )}
-                    {w.wageCost > 0 && (
-                      <span style={{ color: 'var(--red)' }}>maosh: -{formatNumber(w.wageCost)}</span>
-                    )}
-                    {w.commissionCost > 0 && (
-                      <span style={{ color: 'var(--red)' }}>komissiya: -{formatNumber(w.commissionCost)}</span>
-                    )}
-                  </div>
+                  {w.active ? (
+                    <>
+                      <div className={styles.workerDate}>
+                        {w.assignedAt ? formatDate(w.assignedAt) + ' dan' : ''}
+                        {w.commissionPct != null && w.commissionPct > 0 && (
+                          <span style={{ marginLeft: 8, color: 'var(--accent)', fontSize: 11 }}>
+                            {w.commissionPct}% komissiya
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        {w.daysWorked > 0 && (
+                          <span>{w.daysWorked} kun</span>
+                        )}
+                        {w.wageCost > 0 && (
+                          <span style={{ color: 'var(--red)' }}>maosh: -{formatNumber(w.wageCost)}</span>
+                        )}
+                        {w.commissionCost > 0 && (
+                          <span style={{ color: 'var(--red)' }}>komissiya: -{formatNumber(w.commissionCost)}</span>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
+                      {w.unassignedAt ? formatDate(w.unassignedAt) + ' da bekor qilingan' : 'Bekor qilingan'}
+                    </div>
+                  )}
                 </div>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  disabled={order.status === 'COMPLETED' || order.status === 'SOLD' || order.status === 'CANCELLED'}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    removeWorkerMutation.mutate(w.workerId)
-                  }}
-                  title={order.status === 'COMPLETED' || order.status === 'SOLD' || order.status === 'CANCELLED' ? "Yopilgan buyurtmadan ishchini o'chirib bo'lmaydi" : "Ishchini chiqarish"}
-                >
-                  ✕
-                </Button>
+                {w.active ? (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    disabled={order.status === 'COMPLETED' || order.status === 'SOLD' || order.status === 'CANCELLED'}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      removeWorkerMutation.mutate(w.workerId)
+                    }}
+                    title={order.status === 'COMPLETED' || order.status === 'SOLD' || order.status === 'CANCELLED' ? "Yopilgan buyurtmadan ishchini o'chirib bo'lmaydi" : "Ishchini chiqarish"}
+                  >
+                    ✕
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={order.status !== 'IN_PROGRESS'}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                    }}
+                    title="Qayta faollashtirish"
+                  >
+                    ↻
+                  </Button>
+                )}
               </div>
             ))}
             {order.assignedWorkers.length === 0 && (

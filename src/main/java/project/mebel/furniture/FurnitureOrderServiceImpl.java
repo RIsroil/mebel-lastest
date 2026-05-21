@@ -229,6 +229,11 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                 owner.getId()
         );
 
+        // Ishchi yangi biriktirilsa, barcha active assignmentlari uchun maosh qayta hisoblanadi
+        // Proportional rate to'g'ri hisoblanadi (masalan, 2 ta buyurtma → 3 ta buyurtmaga o'tganida)
+        LocalDate today = LocalDate.now();
+        wageCalculationService.updateDailyWagesForWorker(worker.getId(), owner.getWorkshopId(), today, owner.getId());
+
         return toResponse(order);
     }
 
@@ -251,6 +256,11 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
         assignment.setUnassignedAt(LocalDateTime.now());
         assignment.setUpdatedBy(owner.getId());
         assignmentRepo.save(assignment);
+
+        // Ishchi biriktirilsa, uning maosh hisob-kitoblarini yangilash kerak
+        // Qolgan active assignmentlarning miqdoriga qarab proportional maosh qayta hisoblanadi
+        LocalDate today = LocalDate.now();
+        wageCalculationService.updateDailyWagesForWorker(workerId, owner.getWorkshopId(), today, owner.getId());
 
         return toResponse(findOrder(orderId, owner.getWorkshopId()));
     }
