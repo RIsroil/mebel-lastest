@@ -21,6 +21,16 @@ export const earningApi = {
   payPartial: (earningIds: string[], daysToPay: number) =>
     api.patch<ApiResponse<EarningResponse[]>>('/api/earnings/pay-partial', { earningIds, daysToPay }),
 
+  payEnhanced: (body: {
+    earningIds: string[]
+    daysToPay?: number
+    customAmount?: number
+    notes?: string
+  }) => api.patch<ApiResponse<EarningResponse[]>>('/api/earnings/pay-enhanced', body),
+
+  skipPayment: (body: { earningIds: string[]; reason: string }) =>
+    api.delete<void>('/api/earnings/skip', { data: body }),
+
   addBonus: (body: BonusRequest) =>
     api.post<ApiResponse<EarningResponse>>('/api/earnings/bonus', body),
 }

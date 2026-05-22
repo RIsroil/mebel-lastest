@@ -8,7 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import project.mebel.earning.dto.BonusRequest;
 import project.mebel.earning.dto.EarningResponse;
+import project.mebel.earning.dto.EnhancedPaymentRequest;
 import project.mebel.earning.dto.PartialPaymentRequest;
+import project.mebel.earning.dto.SkipPaymentRequest;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -69,6 +71,19 @@ public class EarningController {
     @Operation(summary = "Qisman to'lash - faqat N kunni to'lash (OWNER)")
     public ResponseEntity<List<EarningResponse>> payPartial(@RequestBody PartialPaymentRequest request, Principal principal) {
         return ResponseEntity.ok(earningService.payPartial(request.getEarningIds(), request.getDaysToPay(), principal));
+    }
+
+    @PatchMapping("/pay-enhanced")
+    @Operation(summary = "Yaxshilangan to'lash - kunlar soni, o'zgartirilgan summa va izoh bilan (OWNER)")
+    public ResponseEntity<List<EarningResponse>> payEnhanced(@RequestBody EnhancedPaymentRequest request, Principal principal) {
+        return ResponseEntity.ok(earningService.payEnhanced(request, principal));
+    }
+
+    @DeleteMapping("/skip")
+    @Operation(summary = "Maoshni bekor qilish - to'lamaslik (OWNER)")
+    public ResponseEntity<Void> skipPayment(@RequestBody SkipPaymentRequest request, Principal principal) {
+        earningService.skipPayment(request, principal);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/bonus")

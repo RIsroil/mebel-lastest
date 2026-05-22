@@ -255,6 +255,35 @@
 .payBtn:hover:not(:disabled) { background: var(--green); color: #fff; }
 .payBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Action buttons container */
+.actionCell { white-space: nowrap; }
+.actionBtns {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Skip button */
+.skipBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--danger, #e74c3c);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--danger, #e74c3c);
+  transition: all 0.15s;
+  font-family: var(--font);
+}
+.skipBtn:hover:not(:disabled) { background: var(--danger, #e74c3c); color: #fff; }
+.skipBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .paidDate {
   font-size: 11px;
   color: var(--text3);

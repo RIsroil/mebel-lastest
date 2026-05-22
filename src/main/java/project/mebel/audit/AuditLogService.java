@@ -20,6 +20,7 @@ public class AuditLogService {
     public static final String ACTION_HOURS_OVERRIDE = "HOURS_OVERRIDE";
     public static final String ACTION_EARNING_PAID = "EARNING_PAID";
     public static final String ACTION_ORDER_STATUS_CHANGED = "ORDER_STATUS_CHANGED";
+    public static final String ACTION_EARNING_SKIPPED = "EARNING_SKIPPED";
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void log(String action, String entityType, UUID entityId,
@@ -67,5 +68,9 @@ public class AuditLogService {
                                        String oldStatus, String newStatus) {
         log(ACTION_ORDER_STATUS_CHANGED, "ORDER", orderId, actorId, actorName, workshopId,
                 "Order " + orderNumber + " status: " + oldStatus + " → " + newStatus);
+    }
+
+    public void logAction(String action, UUID actorId, String actorName, UUID workshopId, String details) {
+        log(action, "SYSTEM", null, actorId, actorName, workshopId, details);
     }
 }

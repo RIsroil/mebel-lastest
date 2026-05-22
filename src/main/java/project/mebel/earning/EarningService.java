@@ -2,6 +2,8 @@ package project.mebel.earning;
 
 import project.mebel.earning.dto.BonusRequest;
 import project.mebel.earning.dto.EarningResponse;
+import project.mebel.earning.dto.EnhancedPaymentRequest;
+import project.mebel.earning.dto.SkipPaymentRequest;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -23,6 +25,12 @@ public interface EarningService {
 
     /** Partial payment - pay only N days from aggregated earnings */
     List<EarningResponse> payPartial(List<UUID> earningIds, int daysToPay, Principal principal);
+
+    /** Enhanced payment with custom amount and notes */
+    List<EarningResponse> payEnhanced(EnhancedPaymentRequest request, Principal principal);
+
+    /** Skip payment - mark as not payable, soft-delete */
+    void skipPayment(SkipPaymentRequest request, Principal principal);
 
     EarningResponse addBonus(BonusRequest request, Principal principal);
 }

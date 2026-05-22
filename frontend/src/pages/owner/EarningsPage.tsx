@@ -88,9 +88,18 @@ const EarningsPage = () => {
   const [overrideRow, setOverrideRow] = useState<EarningResponse | null>(null)
   const [overrideHours, setOverrideHours] = useState('')
 
-  // Partial payment modal state
-  const [partialPayTarget, setPartialPayTarget] = useState<EarningResponse | null>(null)
+  // Enhanced payment modal state
+  const [paymentTarget, setPaymentTarget] = useState<EarningResponse | null>(null)
   const [daysToPay, setDaysToPay] = useState('')
+  const [customAmount, setCustomAmount] = useState('')
+  const [paymentNotes, setPaymentNotes] = useState('')
+
+  // Skip payment modal state
+  const [skipTarget, setSkipTarget] = useState<EarningResponse | null>(null)
+  const [skipReason, setSkipReason] = useState('')
+
+  // Legacy - keeping for backwards compatibility
+  const [partialPayTarget, setPartialPayTarget] = useState<EarningResponse | null>(null)
 
   const { data: workersResp } = useQuery({
     queryKey: ['workers'],
@@ -127,6 +136,23 @@ const EarningsPage = () => {
     },
   })
 
+  const payEnhancedMut = useMutation({
+    mutationFn: (body: { earningIds: string[]; daysToPay?: number; customAmount?: number; notes?: string }) =>
+      earningApi.payEnhanced(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: earningsKey })
+      closePaymentModal()
+    },
+  })
+
+  const skipPaymentMut = useMutation({
+    mutationFn: (body: { earningIds: string[]; reason: string }) => earningApi.skipPayment(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: earningsKey })
+      closeSkipModal()
+    },
+  })
+
   const bonusMut = useMutation({
     mutationFn: earningApi.addBonus,
     onSuccess:  () => { queryClient.invalidateQueries({ queryKey: earningsKey }); closeBonus() },
@@ -156,6 +182,62 @@ const EarningsPage = () => {
   }, [setTitle, setActions])
 
   const closeBonus = () => { setShowBonus(false); reset({ bonusDate: today }) }
+
+  // Payment modal helpers
+  const openPaymentModal = (e: EarningResponse) => {
+    setPaymentTarget(e)
+    const totalDays = e.earningIds?.length ?? 1
+    setDaysToPay(String(totalDays))
+    setCustomAmount('')
+    setPaymentNotes('')
+  }
+
+  const closePaymentModal = () => {
+    setPaymentTarget(null)
+    setDaysToPay('')
+    setCustomAmount('')
+    setPaymentNotes('')
+  }
+
+  const calculateDefaultAmount = (e: EarningResponse, days: number): number => {
+    const totalDays = e.earningIds?.length ?? 1
+    if (totalDays === 0) return 0
+    const perDay = e.totalAmount / totalDays
+    return Math.round(perDay * days)
+  }
+
+  const submitPayment = () => {
+    if (!paymentTarget) return
+    const ids = paymentTarget.earningIds ?? [paymentTarget.id]
+    const days = parseInt(daysToPay) || ids.length
+    const defaultAmt = calculateDefaultAmount(paymentTarget, days)
+    const customAmt = customAmount ? parseFloat(customAmount) : undefined
+    const hasAdjustment = customAmt !== undefined && customAmt !== defaultAmt
+
+    payEnhancedMut.mutate({
+      earningIds: ids,
+      daysToPay: days,
+      customAmount: hasAdjustment ? customAmt : undefined,
+      notes: hasAdjustment ? paymentNotes : undefined,
+    })
+  }
+
+  // Skip payment modal helpers
+  const openSkipModal = (e: EarningResponse) => {
+    setSkipTarget(e)
+    setSkipReason('')
+  }
+
+  const closeSkipModal = () => {
+    setSkipTarget(null)
+    setSkipReason('')
+  }
+
+  const submitSkip = () => {
+    if (!skipTarget || !skipReason.trim()) return
+    const ids = skipTarget.earningIds ?? [skipTarget.id]
+    skipPaymentMut.mutate({ earningIds: ids, reason: skipReason })
+  }
 
   const openOverride = (row: EarningResponse) => {
     setOverrideRow(row)
@@ -444,25 +526,27 @@ const EarningsPage = () => {
                         ? <span className={styles.paidIcon}>✓</span>
                         : <span className={styles.unpaidIcon}>✗</span>}
                     </td>
-                    <td>
+                    <td className={styles.actionCell}>
                       {!e.paid && (
-                        <button
-                          type="button"
-                          className={styles.payBtn}
-                          disabled={payMut.isPending || payBatchMut.isPending || payPartialMut.isPending}
-                          onClick={() => {
-                            const ids = e.earningIds ?? [e.id]
-                            if (ids.length > 1) {
-                              // Open partial payment modal
-                              setPartialPayTarget(e)
-                              setDaysToPay(String(ids.length))
-                            } else {
-                              payMut.mutate(e.id)
-                            }
-                          }}
-                        >
-                          ✓ To'lash ({e.earningIds?.length ?? 1})
-                        </button>
+                        <div className={styles.actionBtns}>
+                          <button
+                            type="button"
+                            className={styles.payBtn}
+                            disabled={payEnhancedMut.isPending || skipPaymentMut.isPending}
+                            onClick={() => openPaymentModal(e)}
+                          >
+                            ✓ To'lash ({e.earningIds?.length ?? 1})
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.skipBtn}
+                            disabled={payEnhancedMut.isPending || skipPaymentMut.isPending}
+                            onClick={() => openSkipModal(e)}
+                            title="To'lamaslik"
+                          >
+                            ✗
+                          </button>
+                        </div>
                       )}
                       {e.paid && e.paidAt && (
                         <span className={styles.paidDate}>{formatDate(e.paidAt)}</span>
@@ -530,16 +614,27 @@ const EarningsPage = () => {
                     : <span className={styles.unpaidIcon}>✗</span>
                   }
                 </td>
-                <td>
+                <td className={styles.actionCell}>
                   {!e.paid && (
-                    <button
-                      type="button"
-                      className={styles.payBtn}
-                      disabled={payMut.isPending}
-                      onClick={() => payMut.mutate(e.id)}
-                    >
-                      ✓ To'lash
-                    </button>
+                    <div className={styles.actionBtns}>
+                      <button
+                        type="button"
+                        className={styles.payBtn}
+                        disabled={payEnhancedMut.isPending || skipPaymentMut.isPending}
+                        onClick={() => openPaymentModal(e)}
+                      >
+                        ✓ To'lash
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.skipBtn}
+                        disabled={payEnhancedMut.isPending || skipPaymentMut.isPending}
+                        onClick={() => openSkipModal(e)}
+                        title="To'lamaslik"
+                      >
+                        ✗
+                      </button>
+                    </div>
                   )}
                   {e.paid && e.paidAt && (
                     <span className={styles.paidDate}>{formatDate(e.paidAt)}</span>
@@ -726,6 +821,136 @@ const EarningsPage = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Enhanced Payment Modal */}
+      {paymentTarget && (
+        <Modal
+          isOpen={!!paymentTarget}
+          onClose={closePaymentModal}
+          title="Maosh to'lash"
+        >
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>{paymentTarget.workerName}</label>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 12 }}>
+              Jami: <strong>{paymentTarget.earningIds?.length ?? 1}</strong> kun,{' '}
+              <strong>{formatNumber(paymentTarget.totalAmount)}</strong> so'm
+            </div>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Necha kun to'lanadi?</label>
+            <input
+              className={styles.formInput}
+              type="number"
+              min="1"
+              max={paymentTarget.earningIds?.length ?? 1}
+              value={daysToPay}
+              onChange={(e) => setDaysToPay(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>
+              To'lanadigan summa: {' '}
+              <strong>
+                {formatNumber(calculateDefaultAmount(paymentTarget, parseInt(daysToPay) || 0))} so'm
+              </strong>
+            </label>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Summani o'zgartirish (ixtiyoriy)</label>
+            <input
+              className={styles.formInput}
+              type="number"
+              placeholder={String(calculateDefaultAmount(paymentTarget, parseInt(daysToPay) || 0))}
+              value={customAmount}
+              onChange={(e) => setCustomAmount(e.target.value)}
+            />
+          </div>
+
+          {customAmount && parseFloat(customAmount) !== calculateDefaultAmount(paymentTarget, parseInt(daysToPay) || 0) && (
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Izoh (majburiy) *</label>
+              <input
+                className={styles.formInput}
+                placeholder="Sabab..."
+                value={paymentNotes}
+                onChange={(e) => setPaymentNotes(e.target.value)}
+              />
+            </div>
+          )}
+
+          <div className={styles.formActions}>
+            <Button type="button" variant="ghost" size="sm" onClick={closePaymentModal}>
+              Bekor qilish
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              loading={payEnhancedMut.isPending}
+              disabled={
+                !daysToPay ||
+                parseInt(daysToPay) < 1 ||
+                parseInt(daysToPay) > (paymentTarget.earningIds?.length ?? 1) ||
+                !!(customAmount && parseFloat(customAmount) !== calculateDefaultAmount(paymentTarget, parseInt(daysToPay) || 0) && !paymentNotes.trim())
+              }
+              onClick={submitPayment}
+            >
+              ✓ To'lash →
+            </Button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Skip Payment Modal */}
+      {skipTarget && (
+        <Modal
+          isOpen={!!skipTarget}
+          onClose={closeSkipModal}
+          title="Maoshni bekor qilish"
+        >
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>{skipTarget.workerName}</label>
+            <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 12 }}>
+              Bekor qilinadigan summa: <strong style={{ color: 'var(--danger, #e74c3c)' }}>
+                {formatNumber(skipTarget.totalAmount)} so'm
+              </strong>
+              {' '}({skipTarget.earningIds?.length ?? 1} kun)
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--danger, #e74c3c)', marginBottom: 12 }}>
+              Diqqat: Bu amal qaytarib bo'lmaydi. Maosh o'chiriladi va ishchiga xabar yuboriladi.
+            </div>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Sabab (majburiy) *</label>
+            <input
+              className={styles.formInput}
+              placeholder="Nima sababdan to'lanmayapti..."
+              value={skipReason}
+              onChange={(e) => setSkipReason(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          <div className={styles.formActions}>
+            <Button type="button" variant="ghost" size="sm" onClick={closeSkipModal}>
+              Bekor qilish
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="danger"
+              loading={skipPaymentMut.isPending}
+              disabled={!skipReason.trim()}
+              onClick={submitSkip}
+            >
+              ✗ To'lamaslik
+            </Button>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

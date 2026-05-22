@@ -9,6 +9,8 @@ import project.mebel.common.enums.UserRole;
 import project.mebel.audit.AuditLogService;
 import project.mebel.earning.dto.BonusRequest;
 import project.mebel.earning.dto.EarningResponse;
+import project.mebel.earning.dto.EnhancedPaymentRequest;
+import project.mebel.earning.dto.SkipPaymentRequest;
 import project.mebel.exception.ApiException;
 import project.mebel.attendance.DailyAttendanceRepository;
 import project.mebel.financiallog.FinancialLogService;
@@ -355,6 +357,141 @@ public class EarningServiceImpl implements EarningService {
         }
 
         return results;
+    }
+
+    @Override
+    @Transactional
+    public List<EarningResponse> payEnhanced(EnhancedPaymentRequest request, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        List<EarningResponse> results = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        List<EarningEntity> earnings = earningRepo.findAllById(request.getEarningIds()).stream()
+                .filter(e -> e.getWorkshopId().equals(owner.getWorkshopId()))
+                .filter(e -> !e.isPaid())
+                .sorted(Comparator.comparing(EarningEntity::getEarnDate))
+                .collect(Collectors.toList());
+
+        if (earnings.isEmpty()) {
+            throw ApiException.badRequest("earning.not.found");
+        }
+
+        int daysToPay = request.getDaysToPay() != null ? request.getDaysToPay() : earnings.size();
+        BigDecimal customAmount = request.getCustomAmount();
+        String notes = request.getNotes();
+
+        // Calculate default amount (sum of selected days)
+        BigDecimal defaultAmount = earnings.stream()
+                .limit(daysToPay)
+                .map(EarningEntity::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Use custom amount if provided, otherwise use calculated
+        BigDecimal finalAmount = customAmount != null ? customAmount : defaultAmount;
+        boolean hasAdjustment = customAmount != null && customAmount.compareTo(defaultAmount) != 0;
+
+        // If adjustment made, notes are required
+        if (hasAdjustment && (notes == null || notes.isBlank())) {
+            throw ApiException.badRequest("earning.adjustment.notes.required");
+        }
+
+        // Pay the selected days
+        int paidCount = 0;
+        String workerName = null;
+        UUID workerId = null;
+
+        for (EarningEntity earning : earnings) {
+            if (paidCount >= daysToPay) break;
+
+            earning.setPaid(true);
+            earning.setPaidAt(now);
+            earning.setPaidBy(owner.getId());
+            earning.setUpdatedBy(owner.getId());
+
+            if (workerName == null) {
+                workerName = userRepo.findByIdIncludeDeleted(earning.getWorkerId())
+                        .map(this::displayName)
+                        .orElse("—");
+                workerId = earning.getWorkerId();
+            }
+
+            EarningEntity saved = earningRepo.save(earning);
+            results.add(toResponse(saved, workerName));
+            paidCount++;
+        }
+
+        // Financial log
+        if (!results.isEmpty() && workerName != null) {
+            String desc = "Maosh to'landi: " + workerName + " | " + paidCount + " kun";
+            if (hasAdjustment) {
+                desc += " | O'zgartirilgan: " + finalAmount + " (asl: " + defaultAmount + ")";
+                if (notes != null) desc += " | Izoh: " + notes;
+            }
+
+            financialLogService.record(owner.getWorkshopId(), FinancialLogType.WAGE_PAID,
+                    finalAmount.negate(), desc, workerId, workerName, LocalDate.now(), owner.getId());
+
+            String ownerName = owner.getFullName() != null ? owner.getFullName() : owner.getUsername();
+            auditLogService.logEarningPaid(
+                    results.get(0).getId(), workerId, workerName,
+                    owner.getId(), ownerName, owner.getWorkshopId(),
+                    finalAmount.toPlainString() + " (" + paidCount + " kun)" + (hasAdjustment ? " [o'zgartirilgan]" : ""));
+        }
+
+        return results;
+    }
+
+    @Override
+    @Transactional
+    public void skipPayment(SkipPaymentRequest request, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+        LocalDateTime now = LocalDateTime.now();
+
+        List<EarningEntity> earnings = earningRepo.findAllById(request.getEarningIds()).stream()
+                .filter(e -> e.getWorkshopId().equals(owner.getWorkshopId()))
+                .filter(e -> !e.isPaid())
+                .collect(Collectors.toList());
+
+        if (earnings.isEmpty()) {
+            throw ApiException.badRequest("earning.not.found");
+        }
+
+        BigDecimal totalSkipped = BigDecimal.ZERO;
+        String workerName = null;
+        UUID workerId = null;
+        int skippedCount = 0;
+
+        for (EarningEntity earning : earnings) {
+            // Soft-delete the earning
+            earning.setDeletedAt(now);
+            earning.setDeletedBy(owner.getId());
+            earningRepo.save(earning);
+
+            totalSkipped = totalSkipped.add(earning.getTotalAmount());
+            skippedCount++;
+
+            if (workerName == null) {
+                workerName = userRepo.findByIdIncludeDeleted(earning.getWorkerId())
+                        .map(this::displayName)
+                        .orElse("—");
+                workerId = earning.getWorkerId();
+            }
+        }
+
+        // Financial log - record as cancelled/skipped (not as expense)
+        String reason = request.getReason() != null ? request.getReason() : "Sabab ko'rsatilmagan";
+        String desc = "Maosh bekor qilindi: " + workerName + " | " + skippedCount + " kun, "
+                + totalSkipped + " so'm | Sabab: " + reason;
+
+        financialLogService.record(owner.getWorkshopId(), FinancialLogType.WAGE_CANCELLED,
+                BigDecimal.ZERO, desc, workerId, workerName, LocalDate.now(), owner.getId());
+
+        // Audit log
+        String ownerName = owner.getFullName() != null ? owner.getFullName() : owner.getUsername();
+        auditLogService.logAction("EARNING_SKIPPED", owner.getId(), ownerName, owner.getWorkshopId(),
+                "Maosh bekor qilindi: " + workerName + ", " + totalSkipped + " so'm, sabab: " + reason);
+
+        // TODO: Send notification to worker
     }
 
     @Override
