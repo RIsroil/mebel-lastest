@@ -7,8 +7,11 @@ import project.mebel.attendance.DailyAttendanceEntity;
 import project.mebel.attendance.DailyAttendanceRepository;
 import project.mebel.common.enums.EarnType;
 import project.mebel.common.enums.FinancialLogType;
+import project.mebel.common.enums.FurnitureStatus;
 import project.mebel.furniture.FurnitureAssignmentEntity;
 import project.mebel.furniture.FurnitureAssignmentRepository;
+import project.mebel.furniture.FurnitureOrderEntity;
+import project.mebel.furniture.FurnitureOrderRepository;
 import project.mebel.financiallog.FinancialLogService;
 import project.mebel.user.UserEntity;
 import project.mebel.user.UserRepository;
@@ -27,6 +30,7 @@ public class WageCalculationService {
 
     private final EarningRepository earningRepo;
     private final FurnitureAssignmentRepository assignmentRepo;
+    private final FurnitureOrderRepository orderRepo;
     private final UserRepository userRepo;
     private final DailyAttendanceRepository attendanceRepo;
     private final FinancialLogService financialLogService;
@@ -143,8 +147,17 @@ public class WageCalculationService {
         UserEntity worker = userRepo.findById(workerId)
                 .orElseThrow(() -> new IllegalArgumentException("Worker not found"));
 
-        List<FurnitureAssignmentEntity> activeAssignments = assignmentRepo
+        List<FurnitureAssignmentEntity> allActiveAssignments = assignmentRepo
                 .findByWorkerIdAndActiveTrueOrderByAssignedAtAsc(workerId);
+
+        // FAQAT IN_PROGRESS buyurtmalar uchun maosh hisoblaymiz
+        // DRAFT yoki boshqa statusdagi buyurtmalar hisobga olinmaydi
+        List<FurnitureAssignmentEntity> activeAssignments = allActiveAssignments.stream()
+                .filter(a -> {
+                    FurnitureOrderEntity order = orderRepo.findById(a.getFurnitureOrderId()).orElse(null);
+                    return order != null && order.getStatus() == FurnitureStatus.IN_PROGRESS;
+                })
+                .toList();
 
         if (activeAssignments.isEmpty()) return;
 

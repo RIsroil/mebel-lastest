@@ -162,7 +162,27 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
 
         LocalDateTime now = LocalDateTime.now();
         switch (request.getStatus()) {
-            case IN_PROGRESS -> order.setStartedAt(now);
+            case IN_PROGRESS -> {
+                order.setStartedAt(now);
+                // Ish boshlanganda biriktirilgan ishchilar uchun maosh hisoblaymiz
+                List<FurnitureAssignmentEntity> activeAssignments =
+                        assignmentRepo.findAllByFurnitureOrderIdAndActiveTrue(id);
+                LocalDate today = LocalDate.now();
+                for (FurnitureAssignmentEntity assignment : activeAssignments) {
+                    wageCalculationService.createWageLogOnAssignment(
+                            id,
+                            assignment.getWorkerId(),
+                            owner.getWorkshopId(),
+                            owner.getId()
+                    );
+                    wageCalculationService.updateDailyWagesForWorker(
+                            assignment.getWorkerId(),
+                            owner.getWorkshopId(),
+                            today,
+                            owner.getId()
+                    );
+                }
+            }
             case COMPLETED -> order.setCompletedAt(now);
             case SOLD -> {
                 order.setSoldAt(now);
@@ -223,18 +243,19 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
         assignment.setCreatedBy(owner.getId());
         assignmentRepo.save(assignment);
 
-        // Worker uchun wage log yaratish (oylik oyning boshidan)
-        wageCalculationService.createWageLogOnAssignment(
-                orderId,
-                worker.getId(),
-                owner.getWorkshopId(),
-                owner.getId()
-        );
+        // Worker uchun wage log FAQAT ish boshlanganda (IN_PROGRESS) yaratiladi
+        // DRAFT holatida ishchi biriktirilsa, hech qanday maosh hisoblanmaydi
+        if (order.getStatus() == FurnitureStatus.IN_PROGRESS) {
+            wageCalculationService.createWageLogOnAssignment(
+                    orderId,
+                    worker.getId(),
+                    owner.getWorkshopId(),
+                    owner.getId()
+            );
 
-        // Ishchi yangi biriktirilsa, barcha active assignmentlari uchun maosh qayta hisoblanadi
-        // Proportional rate to'g'ri hisoblanadi (masalan, 2 ta buyurtma → 3 ta buyurtmaga o'tganida)
-        LocalDate today = LocalDate.now();
-        wageCalculationService.updateDailyWagesForWorker(worker.getId(), owner.getWorkshopId(), today, owner.getId());
+            LocalDate today = LocalDate.now();
+            wageCalculationService.updateDailyWagesForWorker(worker.getId(), owner.getWorkshopId(), today, owner.getId());
+        }
 
         return toResponse(order);
     }

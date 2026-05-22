@@ -45,5 +45,6 @@
     <include file="changes/038-add-payment-day-to-users.xml" relativeToChangelogFile="true"/>
     <include file="changes/039-cleanup-duplicate-earnings.xml" relativeToChangelogFile="true"/>
     <include file="changes/040-add-unique-constraint-earnings.xml" relativeToChangelogFile="true"/>
+    <include file="changes/041-cleanup-draft-order-earnings.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
