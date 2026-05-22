@@ -104,6 +104,8 @@ const EarningsPage = () => {
       workerId
         ? earningApi.getWorkerEarnings(workerId, { from, to })
         : earningApi.getWorkshopEarnings({ from, to }),
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   const payMut = useMutation({
