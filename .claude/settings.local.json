@@ -54,7 +54,8 @@
       "Bash(curl -s http://localhost:5173)",
       "Bash(./mvnw spring-boot:run)",
       "Bash(curl -s http://localhost:9060/api/auth/me -H \"Authorization: Bearer invalid\")",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(docker exec *)"
     ]
   }
 }

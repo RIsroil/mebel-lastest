@@ -64,9 +64,9 @@ public class EarningServiceImpl implements EarningService {
         List<EarningEntity> allEarnings = earningRepo.findAllByWorkshopIdAndEarnDateBetween(owner.getWorkshopId(), from, to);
         List<EarningResponse> result = new ArrayList<>();
 
-        // Group by worker and earn type, excluding DAILY_WAGE as it's aggregated
+        // Group by worker and earn type, excluding DAILY_WAGE and MONTHLY_WAGE as they're aggregated
         Map<String, List<EarningEntity>> grouped = allEarnings.stream()
-                .filter(e -> e.getEarnType() != EarnType.DAILY_WAGE)
+                .filter(e -> e.getEarnType() != EarnType.DAILY_WAGE && e.getEarnType() != EarnType.MONTHLY_WAGE)
                 .collect(Collectors.groupingBy(e -> e.getWorkerId().toString() + "-" + e.getEarnType()));
 
         for (List<EarningEntity> group : grouped.values()) {
@@ -78,9 +78,9 @@ public class EarningServiceImpl implements EarningService {
             }
         }
 
-        // Add aggregated daily wages by period
+        // Add aggregated daily/monthly wages by period
         Map<String, List<EarningEntity>> dailyByWorker = allEarnings.stream()
-                .filter(e -> e.getEarnType() == EarnType.DAILY_WAGE)
+                .filter(e -> e.getEarnType() == EarnType.DAILY_WAGE || e.getEarnType() == EarnType.MONTHLY_WAGE)
                 .collect(Collectors.groupingBy(e -> e.getWorkerId().toString()));
 
         for (Map.Entry<String, List<EarningEntity>> entry : dailyByWorker.entrySet()) {
@@ -98,15 +98,15 @@ public class EarningServiceImpl implements EarningService {
         List<EarningEntity> allEarnings = earningRepo.findAllByWorkerIdAndEarnDateBetween(workerId, from, to);
         List<EarningResponse> result = new ArrayList<>();
 
-        // Add non-daily earnings (bonus, commission, etc.)
+        // Add non-wage earnings (bonus, commission, etc.) - exclude DAILY_WAGE and MONTHLY_WAGE as they're aggregated
         allEarnings.stream()
-                .filter(e -> e.getEarnType() != EarnType.DAILY_WAGE)
+                .filter(e -> e.getEarnType() != EarnType.DAILY_WAGE && e.getEarnType() != EarnType.MONTHLY_WAGE)
                 .forEach(e -> result.add(toResponse(e, workerName)));
 
-        // Aggregate and add daily wages by period
+        // Aggregate and add daily/monthly wages by period
         addAggregatedDailyWages(
                 allEarnings.stream()
-                        .filter(e -> e.getEarnType() == EarnType.DAILY_WAGE)
+                        .filter(e -> e.getEarnType() == EarnType.DAILY_WAGE || e.getEarnType() == EarnType.MONTHLY_WAGE)
                         .collect(Collectors.toList()),
                 workerName,
                 result
@@ -128,31 +128,6 @@ public class EarningServiceImpl implements EarningService {
             List<EarningEntity> monthWages = entry.getValue();
             if (monthWages.isEmpty()) continue;
 
-            // Count paid and unpaid days
-            int totalDays = monthWages.size();
-            int paidDays = (int) monthWages.stream().filter(EarningEntity::isPaid).count();
-            int unpaidDays = totalDays - paidDays;
-
-            // Calculate total hours worked across all days
-            BigDecimal totalHoursWorked = monthWages.stream()
-                    .map(EarningEntity::getHoursWorked)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            // If no hours in earnings, try to get from attendance
-            if (totalHoursWorked.compareTo(BigDecimal.ZERO) == 0) {
-                UUID workerId = monthWages.get(0).getWorkerId();
-                LocalDate periodStart = entry.getKey();
-                LocalDate periodEnd = periodStart.plusMonths(1).minusDays(1);
-                // Sum hours from attendance records for this period
-                List<project.mebel.attendance.DailyAttendanceEntity> attendances =
-                    attendanceRepo.findAllByUserIdAndWorkDateBetween(workerId, periodStart, periodEnd);
-                totalHoursWorked = attendances.stream()
-                        .map(project.mebel.attendance.DailyAttendanceEntity::getHoursWorked)
-                        .filter(Objects::nonNull)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-            }
-
             EarningEntity sample = monthWages.get(0);
             BigDecimal monthlySalary = sample.getMonthlySalary();
             Integer daysInMonth = sample.getDaysInMonth();
@@ -163,56 +138,120 @@ public class EarningServiceImpl implements EarningService {
                     .map(u -> u.getPayType() != null ? u.getPayType().name() : "DAILY")
                     .orElse("DAILY");
 
-            // Calculate correct amounts based on pay type
-            BigDecimal calculatedAmount;
+            // Split into paid and unpaid
+            List<EarningEntity> paidWages = monthWages.stream().filter(EarningEntity::isPaid).toList();
+            List<EarningEntity> unpaidWages = monthWages.stream().filter(e -> !e.isPaid()).toList();
+
+            int totalDays = monthWages.size();
+            int paidDays = paidWages.size();
+            int unpaidDays = unpaidWages.size();
+
+            // Calculate daily rate for monthly workers
             if ("MONTHLY".equals(workerPayType) && monthlySalary != null && daysInMonth != null && daysInMonth > 0) {
-                // For MONTHLY workers: monthlySalary / daysInMonth * unpaidDays
-                calculatedAmount = monthlySalary
-                        .divide(BigDecimal.valueOf(daysInMonth), 4, RoundingMode.HALF_UP)
-                        .multiply(BigDecimal.valueOf(unpaidDays))
-                        .setScale(2, RoundingMode.HALF_UP);
                 dailyRate = monthlySalary.divide(BigDecimal.valueOf(daysInMonth), 2, RoundingMode.HALF_UP);
-            } else {
-                // For DAILY workers: sum of unpaid amounts
-                calculatedAmount = monthWages.stream()
-                        .filter(e -> !e.isPaid())
-                        .map(EarningEntity::getTotalAmount)
+            }
+
+            // Calculate total hours worked across all days
+            BigDecimal totalHoursWorked = monthWages.stream()
+                    .map(EarningEntity::getHoursWorked)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            // If no hours in earnings, try to get from attendance
+            if (totalHoursWorked.compareTo(BigDecimal.ZERO) == 0) {
+                UUID workerId = sample.getWorkerId();
+                LocalDate periodStart = entry.getKey();
+                LocalDate periodEnd = periodStart.plusMonths(1).minusDays(1);
+                List<project.mebel.attendance.DailyAttendanceEntity> attendances =
+                    attendanceRepo.findAllByUserIdAndWorkDateBetween(workerId, periodStart, periodEnd);
+                totalHoursWorked = attendances.stream()
+                        .map(project.mebel.attendance.DailyAttendanceEntity::getHoursWorked)
+                        .filter(Objects::nonNull)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
             }
 
-            // Collect only unpaid earning IDs for batch payment
-            List<UUID> unpaidEarningIds = monthWages.stream()
-                    .filter(e -> !e.isPaid())
-                    .map(EarningEntity::getId)
-                    .collect(Collectors.toList());
+            // Add PAID aggregate if any paid days exist
+            if (!paidWages.isEmpty()) {
+                BigDecimal paidAmount;
+                if ("MONTHLY".equals(workerPayType) && monthlySalary != null && daysInMonth != null && daysInMonth > 0) {
+                    paidAmount = dailyRate.multiply(BigDecimal.valueOf(paidDays)).setScale(2, RoundingMode.HALF_UP);
+                } else {
+                    paidAmount = paidWages.stream()
+                            .map(EarningEntity::getTotalAmount)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                }
 
-            // Skip if all are paid
-            if (unpaidEarningIds.isEmpty()) continue;
+                // Find latest paid date
+                LocalDateTime latestPaidAt = paidWages.stream()
+                        .map(EarningEntity::getPaidAt)
+                        .filter(Objects::nonNull)
+                        .max(LocalDateTime::compareTo)
+                        .orElse(null);
 
-            // Create aggregated response with unpaid earnings
-            EarningResponse agg = EarningResponse.builder()
-                    .id(unpaidEarningIds.get(0)) // Use first unpaid ID as primary
-                    .workerId(sample.getWorkerId())
-                    .workerName(workerName)
-                    .earnDate(entry.getKey())
-                    .earnType(EarnType.MONTHLY_WAGE) // Keep for compatibility
-                    .baseAmount(calculatedAmount)
-                    .totalAmount(calculatedAmount)
-                    .daysWorked(BigDecimal.valueOf(unpaidDays))
-                    .dailyRate(dailyRate)
-                    .monthlySalary(monthlySalary)
-                    .periodStart(entry.getKey())
-                    .daysInMonth(daysInMonth)
-                    .paid(false) // Only showing unpaid
-                    .paidAt(null)
-                    .earningIds(unpaidEarningIds) // Only unpaid IDs
-                    .totalDays(totalDays)
-                    .paidDays(paidDays)
-                    .unpaidDays(unpaidDays)
-                    .workerPayType(workerPayType)
-                    .totalHoursWorked(totalHoursWorked.compareTo(BigDecimal.ZERO) > 0 ? totalHoursWorked : null)
-                    .build();
-            result.add(agg);
+                EarningResponse paidAgg = EarningResponse.builder()
+                        .id(paidWages.get(0).getId())
+                        .workerId(sample.getWorkerId())
+                        .workerName(workerName)
+                        .earnDate(entry.getKey())
+                        .earnType(EarnType.MONTHLY_WAGE)
+                        .baseAmount(paidAmount)
+                        .totalAmount(paidAmount)
+                        .daysWorked(BigDecimal.valueOf(paidDays))
+                        .dailyRate(dailyRate)
+                        .monthlySalary(monthlySalary)
+                        .periodStart(entry.getKey())
+                        .daysInMonth(daysInMonth)
+                        .paid(true)
+                        .paidAt(latestPaidAt)
+                        .earningIds(List.of()) // Empty - already paid
+                        .totalDays(totalDays)
+                        .paidDays(paidDays)
+                        .unpaidDays(unpaidDays)
+                        .workerPayType(workerPayType)
+                        .totalHoursWorked(totalHoursWorked.compareTo(BigDecimal.ZERO) > 0 ? totalHoursWorked : null)
+                        .build();
+                result.add(paidAgg);
+            }
+
+            // Add UNPAID aggregate if any unpaid days exist
+            if (!unpaidWages.isEmpty()) {
+                BigDecimal unpaidAmount;
+                if ("MONTHLY".equals(workerPayType) && monthlySalary != null && daysInMonth != null && daysInMonth > 0) {
+                    unpaidAmount = dailyRate.multiply(BigDecimal.valueOf(unpaidDays)).setScale(2, RoundingMode.HALF_UP);
+                } else {
+                    unpaidAmount = unpaidWages.stream()
+                            .map(EarningEntity::getTotalAmount)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                }
+
+                List<UUID> unpaidEarningIds = unpaidWages.stream()
+                        .map(EarningEntity::getId)
+                        .collect(Collectors.toList());
+
+                EarningResponse unpaidAgg = EarningResponse.builder()
+                        .id(unpaidEarningIds.get(0))
+                        .workerId(sample.getWorkerId())
+                        .workerName(workerName)
+                        .earnDate(entry.getKey())
+                        .earnType(EarnType.MONTHLY_WAGE)
+                        .baseAmount(unpaidAmount)
+                        .totalAmount(unpaidAmount)
+                        .daysWorked(BigDecimal.valueOf(unpaidDays))
+                        .dailyRate(dailyRate)
+                        .monthlySalary(monthlySalary)
+                        .periodStart(entry.getKey())
+                        .daysInMonth(daysInMonth)
+                        .paid(false)
+                        .paidAt(null)
+                        .earningIds(unpaidEarningIds)
+                        .totalDays(totalDays)
+                        .paidDays(paidDays)
+                        .unpaidDays(unpaidDays)
+                        .workerPayType(workerPayType)
+                        .totalHoursWorked(totalHoursWorked.compareTo(BigDecimal.ZERO) > 0 ? totalHoursWorked : null)
+                        .build();
+                result.add(unpaidAgg);
+            }
         }
     }
 
