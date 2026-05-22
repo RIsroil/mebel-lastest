@@ -191,7 +191,7 @@
 .earnHourly  { background: var(--purple-bg); color: var(--purple); }
 .earnMonthly { background: #e8f4ff; color: #1a6bbf; }
 .earnComm    { background: var(--accent-bg); color: var(--accent); }
-.earnBonus   { background: var(--green-bg);  color: var(--green); }
+.earnExtra   { background: var(--green-bg);  color: var(--green); }
 
 .monthlyDays {
   font-size: 12px;

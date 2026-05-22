@@ -13,7 +13,7 @@ const TYPE_LABEL: Record<FinancialLogType, string> = {
   MATERIAL_USED:      'Xomashyo sarflandi',
   WAGE_PAID:          'Maosh',
   COMMISSION_PAID:    'Komissiya',
-  BONUS_PAID:         'Bonus',
+  EXTRA_PAID:         "Qo'shimcha",
   FURNITURE_SOLD:     'Mebel sotildi',
 }
 const TYPE_CLASS: Record<FinancialLogType, string> = {
@@ -21,7 +21,7 @@ const TYPE_CLASS: Record<FinancialLogType, string> = {
   MATERIAL_USED:      'expense',
   WAGE_PAID:          'expense',
   COMMISSION_PAID:    'expense',
-  BONUS_PAID:         'expense',
+  EXTRA_PAID:         'expense',
   FURNITURE_SOLD:     'income',
 }
 

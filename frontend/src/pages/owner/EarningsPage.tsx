@@ -21,14 +21,14 @@ const EARN_LABELS: Record<EarnType, string> = {
   HOURLY_WAGE:  'Soatlik',
   MONTHLY_WAGE: 'Oylik',
   COMMISSION:   'Komissiya',
-  BONUS:        'Bonus',
+  EXTRA:        "Qo'shimcha",
 }
 const EARN_CLASS: Record<EarnType, string> = {
   DAILY_WAGE:   'earnDaily',
   HOURLY_WAGE:  'earnHourly',
   MONTHLY_WAGE: 'earnMonthly',
   COMMISSION:   'earnComm',
-  BONUS:        'earnBonus',
+  EXTRA:        'earnExtra',
 }
 
 function monthlyMeta(e: {
@@ -176,7 +176,7 @@ const EarningsPage = () => {
   useEffect(() => {
     setTitle('Maosh boshqaruvi')
     setActions(
-      <Button size="sm" onClick={() => setShowBonus(true)}>+ Bonus berish</Button>
+      <Button size="sm" onClick={() => setShowBonus(true)}>+ Qo'shimcha berish</Button>
     )
     return () => { setTitle(''); setActions(null) }
   }, [setTitle, setActions])
@@ -764,8 +764,8 @@ const EarningsPage = () => {
         </Modal>
       )}
 
-      {/* Bonus modal */}
-      <Modal isOpen={showBonus} onClose={closeBonus} title="Bonus berish">
+      {/* Extra payment modal */}
+      <Modal isOpen={showBonus} onClose={closeBonus} title="Qo'shimcha berish">
         <form onSubmit={handleSubmit(onBonusSubmit)} noValidate>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Ishchi *</label>
@@ -805,7 +805,7 @@ const EarningsPage = () => {
             <label className={styles.formLabel}>Sabab *</label>
             <input
               className={styles.formInput}
-              placeholder="Yaxshi ish uchun mukofot"
+              placeholder="Yetkazib berish, o'rnatish..."
               {...register('reason')}
             />
             {errors.reason && <span className={styles.errText}>{errors.reason.message}</span>}
@@ -816,7 +816,7 @@ const EarningsPage = () => {
               Bekor qilish
             </Button>
             <Button type="submit" size="sm" loading={bonusMut.isPending}>
-              Bonus berish →
+              Qo'shimcha berish →
             </Button>
           </div>
         </form>

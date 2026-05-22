@@ -430,7 +430,7 @@ public class DataInitializer implements CommandLineRunner {
 				.workerId(worker1.getId())
 				.workshopId(workshop.getId())
 				.earnDate(bonusDate)
-				.earnType(EarnType.BONUS)
+				.earnType(EarnType.EXTRA)
 				.baseAmount(BigDecimal.valueOf(500_000))
 				.totalAmount(BigDecimal.valueOf(500_000))
 				.description("Bonus — Excellent craftsmanship")
@@ -442,7 +442,7 @@ public class DataInitializer implements CommandLineRunner {
 				.workerId(worker2.getId())
 				.workshopId(workshop.getId())
 				.earnDate(bonusDate)
-				.earnType(EarnType.BONUS)
+				.earnType(EarnType.EXTRA)
 				.baseAmount(BigDecimal.valueOf(400_000))
 				.totalAmount(BigDecimal.valueOf(400_000))
 				.description("Bonus — Efficient upholstery work")
@@ -454,7 +454,7 @@ public class DataInitializer implements CommandLineRunner {
 				.workerId(worker3.getId())
 				.workshopId(workshop.getId())
 				.earnDate(bonusDate.minusDays(3))
-				.earnType(EarnType.BONUS)
+				.earnType(EarnType.EXTRA)
 				.baseAmount(BigDecimal.valueOf(800_000))
 				.totalAmount(BigDecimal.valueOf(800_000))
 				.description("Bonus — Project management excellence")
@@ -700,15 +700,15 @@ public class DataInitializer implements CommandLineRunner {
 		// ────────────────────────────────────────────────────────────────
 		// BONUSES
 		// ────────────────────────────────────────────────────────────────
-		financialLogRepo.save(flog(workshopId, FinancialLogType.BONUS_PAID,
+		financialLogRepo.save(flog(workshopId, FinancialLogType.EXTRA_PAID,
 				-500_000, "Bonus: Rustam Abdullayev — Excellent craftsmanship",
 				today.minusDays(5), ownerId));
 
-		financialLogRepo.save(flog(workshopId, FinancialLogType.BONUS_PAID,
+		financialLogRepo.save(flog(workshopId, FinancialLogType.EXTRA_PAID,
 				-400_000, "Bonus: Dilnoza Khamidova — Efficient upholstery work",
 				today.minusDays(5), ownerId));
 
-		financialLogRepo.save(flog(workshopId, FinancialLogType.BONUS_PAID,
+		financialLogRepo.save(flog(workshopId, FinancialLogType.EXTRA_PAID,
 				-800_000, "Bonus: Sherali Mirzayev — Perfect project management",
 				today.minusDays(8), ownerId));
 

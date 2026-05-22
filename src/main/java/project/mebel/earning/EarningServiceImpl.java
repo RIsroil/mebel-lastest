@@ -278,12 +278,12 @@ public class EarningServiceImpl implements EarningService {
 
         FinancialLogType logType = switch (saved.getEarnType()) {
             case COMMISSION -> FinancialLogType.COMMISSION_PAID;
-            case BONUS      -> FinancialLogType.BONUS_PAID;
+            case EXTRA      -> FinancialLogType.EXTRA_PAID;
             default         -> FinancialLogType.WAGE_PAID;
         };
         String desc = switch (saved.getEarnType()) {
             case COMMISSION -> "Komissiya to'landi: " + workerName;
-            case BONUS      -> "Bonus to'landi: " + workerName;
+            case EXTRA      -> "Qo'shimcha to'landi: " + workerName;
             default         -> "Maosh to'landi: " + workerName;
         };
         financialLogService.record(owner.getWorkshopId(), logType,
@@ -558,7 +558,7 @@ public class EarningServiceImpl implements EarningService {
                 .workerId(worker.getId())
                 .workshopId(owner.getWorkshopId())
                 .earnDate(bonusDate)
-                .earnType(EarnType.BONUS)
+                .earnType(EarnType.EXTRA)
                 .baseAmount(request.getAmount())
                 .totalAmount(request.getAmount())
                 .description(request.getReason())

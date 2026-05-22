@@ -14,14 +14,14 @@ const EARN_LABELS: Record<EarnType, string> = {
   HOURLY_WAGE:  'Soatlik',
   MONTHLY_WAGE: 'Oylik',
   COMMISSION:   'Komissiya',
-  BONUS:        'Bonus',
+  EXTRA:        "Qo'shimcha",
 }
 const EARN_CLASS: Record<EarnType, string> = {
   DAILY_WAGE:   'earnDaily',
   HOURLY_WAGE:  'earnHourly',
   MONTHLY_WAGE: 'earnMonthly',
   COMMISSION:   'earnComm',
-  BONUS:        'earnBonus',
+  EXTRA:        'earnExtra',
 }
 
 const DAYS = ['Yak', 'Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh']
@@ -142,7 +142,7 @@ const MyEarningsPage = () => {
                     `${e.hoursWorked} soat × ${formatNumber(e.hourlyRate ?? 0)}`}
                   {e.earnType === 'COMMISSION' && e.commissionPct != null &&
                     `${e.commissionPct}% komissiya`}
-                  {e.earnType === 'BONUS' && (e.description ?? 'Bonus')}
+                  {e.earnType === 'EXTRA' && (e.description ?? "Qo'shimcha")}
                 </td>
                 <td className={styles.amountCell}>{formatNumber(e.totalAmount)}</td>
                 <td>

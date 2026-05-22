@@ -1,4 +1,4 @@
-export type EarnType = 'DAILY_WAGE' | 'HOURLY_WAGE' | 'MONTHLY_WAGE' | 'COMMISSION' | 'BONUS'
+export type EarnType = 'DAILY_WAGE' | 'HOURLY_WAGE' | 'MONTHLY_WAGE' | 'COMMISSION' | 'EXTRA'
 
 export interface EarningResponse {
   id: string

@@ -3,7 +3,7 @@ export type FinancialLogType =
   | 'MATERIAL_USED'
   | 'WAGE_PAID'
   | 'COMMISSION_PAID'
-  | 'BONUS_PAID'
+  | 'EXTRA_PAID'
   | 'FURNITURE_SOLD'
 
 export interface FinancialLogResponse {

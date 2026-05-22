@@ -7,6 +7,6 @@ public enum FinancialLogType {
     WAGE_PAID,           // Ishchi maoshi to'landi (chiqim)
     WAGE_CANCELLED,      // Ishchi maoshi bekor qilindi (to'lanmadi)
     COMMISSION_PAID,     // Komissiya to'landi (chiqim)
-    BONUS_PAID,          // Bonus to'landi (chiqim)
+    EXTRA_PAID,          // Qo'shimcha to'landi (chiqim)
     FURNITURE_SOLD       // Mebel sotildi (kirim)
 }
