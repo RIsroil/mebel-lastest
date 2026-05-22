@@ -76,17 +76,23 @@ const LogsPage = () => {
       page,
       size: PAGE_SIZE,
     }),
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   const lastMonthQuery = useQuery({
     queryKey: ['logs-summary-last-month'],
     queryFn: () => logApi.getLastMonthSummary(),
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   const periodSummaryQuery = useQuery({
     queryKey: ['logs-summary-period', from, to],
     queryFn: () => logApi.getPeriodSummary(from, to),
     enabled: !!from && !!to,
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   const logs     = logsQuery.data?.data?.data?.content ?? []
