@@ -105,6 +105,11 @@ public class WageCalculationService {
         BigDecimal proportionalRate = dailyRate
                 .divide(BigDecimal.valueOf(totalAssignments), 2, RoundingMode.HALF_UP);
 
+        // Check if earning already exists for today
+        if (earningRepo.findByWorkerIdAndFurnitureOrderIdAndEarnDate(workerId, orderId, today).isPresent()) {
+            return; // Already exists, skip
+        }
+
         EarningEntity earning = EarningEntity.builder()
                 .workerId(workerId)
                 .workshopId(workshopId)
@@ -121,19 +126,7 @@ public class WageCalculationService {
         earning.setCreatedBy(createdBy);
         earningRepo.save(earning);
 
-        String workerName = worker.getFullName() != null ? worker.getFullName() : worker.getUsername();
-        String logDesc = "Kunlik maosh hisoblandi: " + workerName + " | " + proportionalRate + " so'm (1/" + totalAssignments + ")";
-
-        financialLogService.record(
-                workshopId,
-                FinancialLogType.WAGE_CALCULATED,
-                proportionalRate.negate(),
-                logDesc,
-                workerId,
-                workerName,
-                today,
-                createdBy
-        );
+        // Financial log updateDailyWagesForWorker da consolidated qilinadi
     }
 
     /**
@@ -240,6 +233,10 @@ public class WageCalculationService {
         BigDecimal proportionalRate = adjustedDailyRate
                 .divide(BigDecimal.valueOf(totalAssignments), 2, RoundingMode.HALF_UP);
 
+        // Track total wage for consolidated log
+        BigDecimal totalWageForDay = BigDecimal.ZERO;
+        int newEarningsCount = 0;
+
         // Create earning for each active assignment
         for (FurnitureAssignmentEntity assignment : activeAssignments) {
             UUID orderId = assignment.getFurnitureOrderId();
@@ -268,14 +265,23 @@ public class WageCalculationService {
             earning.setCreatedBy(updatedBy);
             earningRepo.save(earning);
 
+            totalWageForDay = totalWageForDay.add(proportionalRate);
+            newEarningsCount++;
+        }
+
+        // Create ONE consolidated financial log for the day
+        if (newEarningsCount > 0) {
             String hoursInfo = hoursWorked != null
                     ? " (" + hoursWorked + "h/" + hoursTarget + "h)"
+                    : "";
+            String orderInfo = totalAssignments > 1
+                    ? " | " + totalAssignments + " ta buyurtma"
                     : "";
             financialLogService.record(
                     workshopId,
                     FinancialLogType.WAGE_CALCULATED,
-                    proportionalRate.negate(),
-                    "Kunlik maosh hisoblandi: " + workerName + hoursInfo + " (1/" + totalAssignments + ")",
+                    totalWageForDay.negate(),
+                    "Kunlik maosh: " + workerName + hoursInfo + orderInfo,
                     workerId,
                     workerName,
                     today,

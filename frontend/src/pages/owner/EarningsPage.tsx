@@ -81,6 +81,7 @@ const EarningsPage = () => {
   const [from, setFrom]           = useState(firstOfMonth())
   const [to, setTo]               = useState(today)
   const [workerId, setWorkerId]   = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'unpaid'>('all')
   const [showBonus, setShowBonus] = useState(false)
 
   // Override hours modal state
@@ -166,8 +167,15 @@ const EarningsPage = () => {
     overrideMut.mutate({ attendanceId: overrideRow.attendanceId, hours: h })
   }
 
-  const earnings = earningsResp?.data?.data ?? []
+  const rawEarnings = earningsResp?.data?.data ?? []
   const workers  = workersResp?.data?.data?.content ?? []
+
+  // Apply status filter
+  const earnings = useMemo(() => {
+    if (statusFilter === 'all') return rawEarnings
+    if (statusFilter === 'paid') return rawEarnings.filter((e) => e.paid)
+    return rawEarnings.filter((e) => !e.paid)
+  }, [rawEarnings, statusFilter])
 
   const stats = useMemo(() => {
     const total    = earnings.reduce((s, e) => s + e.totalAmount, 0)
@@ -228,6 +236,18 @@ const EarningsPage = () => {
             value={to}
             onChange={(e) => setTo(e.target.value)}
           />
+        </div>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Holat</label>
+          <select
+            className={styles.filterSelect}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as 'all' | 'paid' | 'unpaid')}
+          >
+            <option value="all">Barchasi</option>
+            <option value="paid">To'langan</option>
+            <option value="unpaid">To'lanmagan</option>
+          </select>
         </div>
         <span className={styles.countHint}>
           {earnings.length} ta yozuv
