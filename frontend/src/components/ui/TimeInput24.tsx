@@ -40,9 +40,18 @@ const TimeInput24 = ({ value, onChange, className }: TimeInput24Props) => {
       const btn = ref.current.querySelector('button')
       if (btn) {
         const rect = btn.getBoundingClientRect()
+        const dropdownWidth = 110 // 2 columns * 52px + gap
+        // Ensure dropdown doesn't go off-screen
+        let left = rect.left
+        if (left + dropdownWidth > window.innerWidth) {
+          left = window.innerWidth - dropdownWidth - 8
+        }
+        if (left < 8) {
+          left = 8
+        }
         setDropdownPos({
           top: rect.bottom + 4,
-          left: rect.left,
+          left,
         })
       }
     }
