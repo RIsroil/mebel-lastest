@@ -14,7 +14,7 @@
         <!-- DRAFT buyurtmalar uchun yaratilgan financial_logs ni o'chirish -->
         <sql>
             DELETE FROM financial_logs
-            WHERE related_entity_id IN (
+            WHERE reference_id IN (
                 SELECT id FROM furniture_orders WHERE status = 'DRAFT'
             )
             AND log_type = 'WAGE_CALCULATED';
