@@ -113,6 +113,7 @@ public class DataInitializer implements CommandLineRunner {
 				.dailySalary(BigDecimal.valueOf(300_000))
 				.dailyHoursTarget(BigDecimal.valueOf(8))
 				.commissionPct(BigDecimal.valueOf(5))
+				.paymentDayOfMonth(10)
 				.build();
 		worker1.setCreatedAt(LocalDateTime.now().minusDays(45));
 		worker1 = userRepo.save(worker1);
@@ -129,6 +130,7 @@ public class DataInitializer implements CommandLineRunner {
 				.dailySalary(BigDecimal.valueOf(250_000))
 				.dailyHoursTarget(BigDecimal.valueOf(8))
 				.commissionPct(BigDecimal.valueOf(4))
+				.paymentDayOfMonth(10)
 				.build();
 		worker2.setCreatedAt(LocalDateTime.now().minusDays(45));
 		worker2 = userRepo.save(worker2);
@@ -145,6 +147,7 @@ public class DataInitializer implements CommandLineRunner {
 				.monthlySalary(BigDecimal.valueOf(5_000_000))
 				.dailyHoursTarget(BigDecimal.valueOf(8))
 				.commissionPct(BigDecimal.valueOf(3))
+				.paymentDayOfMonth(28)
 				.build();
 		worker3.setCreatedAt(LocalDateTime.now().minusDays(45));
 		worker3 = userRepo.save(worker3);
@@ -610,6 +613,7 @@ public class DataInitializer implements CommandLineRunner {
 					.daysWorked(BigDecimal.ONE)
 					.dailyRate(worker.getDailySalary())
 					.hoursWorked(hours)
+					.hoursTarget(worker.getDailyHoursTarget())
 					.baseAmount(worker.getDailySalary())
 					.totalAmount(worker.getDailySalary())
 					.description(workDate + " — Daily wage")
