@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="043-add-pending-material-fields" author="dev">
+        <comment>Add fields to track pending/missing materials from saves</comment>
+
+        <!-- Make warehouse_item_id nullable for pending materials -->
+        <dropNotNullConstraint tableName="material_usages" columnName="warehouse_item_id"/>
+
+        <!-- Add material_name for pending materials -->
+        <addColumn tableName="material_usages">
+            <column name="material_name" type="VARCHAR(200)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <!-- Add dimensions for pending materials (from save cuts) -->
+        <addColumn tableName="material_usages">
+            <column name="length_mm" type="INTEGER">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        <addColumn tableName="material_usages">
+            <column name="width_mm" type="INTEGER">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        <addColumn tableName="material_usages">
+            <column name="height_mm" type="INTEGER">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <!-- Add save_id to track which save this came from -->
+        <addColumn tableName="material_usages">
+            <column name="from_save_id" type="UUID">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

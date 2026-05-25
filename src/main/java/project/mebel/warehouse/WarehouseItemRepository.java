@@ -16,4 +16,6 @@ public interface WarehouseItemRepository extends JpaRepository<WarehouseItemEnti
 
     @Query(value = "SELECT * FROM warehouse_items WHERE id = :id AND workshop_id = :workshopId", nativeQuery = true)
     Optional<WarehouseItemEntity> findByIdAndWorkshopIdIncludeDeleted(@Param("id") UUID id, @Param("workshopId") UUID workshopId);
+
+    Optional<WarehouseItemEntity> findByWorkshopIdAndNameIgnoreCase(UUID workshopId, String name);
 }

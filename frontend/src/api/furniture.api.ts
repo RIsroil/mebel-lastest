@@ -9,6 +9,7 @@ import type {
   FurnitureTemplateResponse,
   CreateTemplateRequest,
   AddTemplateMaterialRequest,
+  CreateOrderFromSaveRequest,
 } from '@/types/furniture.types'
 
 export const furnitureApi = {
@@ -24,6 +25,9 @@ export const furnitureApi = {
 
     create: (body: CreateOrderRequest) =>
       api.post<ApiResponse<FurnitureOrderResponse>>('/api/furniture/orders', body),
+
+    createFromSave: (saveId: string, body: CreateOrderFromSaveRequest) =>
+      api.post<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/from-save/${saveId}`, body),
 
     update: (id: string, body: CreateOrderRequest) =>
       api.put<ApiResponse<FurnitureOrderResponse>>(`/api/furniture/orders/${id}`, body),

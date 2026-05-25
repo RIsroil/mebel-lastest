@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -40,7 +40,7 @@ services:
     container_name: mebel_backend
     restart: always
     ports:
-      - "127.0.0.1:9060:9060"
+      - "9060:9060"
     depends_on:
       postgres:
         condition: service_healthy

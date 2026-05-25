@@ -30,6 +30,16 @@ public class FurnitureOrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(request, principal));
     }
 
+    @PostMapping("/from-save/{saveId}")
+    @Operation(summary = "Saqlangan shablondan buyurtma yaratish")
+    public ResponseEntity<FurnitureOrderResponse> createFromSave(
+            @PathVariable UUID saveId,
+            @RequestBody CreateOrderFromSaveRequest request,
+            Principal principal) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(orderService.createOrderFromSave(saveId, request, principal));
+    }
+
     @GetMapping
     @Operation(summary = "Barcha buyurtmalar ro'yxati")
     public ResponseEntity<List<FurnitureOrderResponse>> getAll(Principal principal) {

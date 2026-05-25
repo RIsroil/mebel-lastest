@@ -22,6 +22,10 @@ import project.mebel.furniture.dto.*;
 import project.mebel.user.UserEntity;
 import project.mebel.user.UserRepository;
 import project.mebel.utils.Utils;
+import project.mebel.saves.FurnitureSaveEntity;
+import project.mebel.saves.FurnitureSaveRepository;
+import project.mebel.saves.SaveCutEntity;
+import project.mebel.saves.SaveCutRepository;
 import project.mebel.warehouse.WarehouseItemEntity;
 import project.mebel.warehouse.WarehouseItemRepository;
 import project.mebel.warehouse.WarehouseTransactionEntity;
@@ -54,6 +58,8 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
     private final MaterialUsageRepository usageRepo;
     private final FurnitureImageRepository imageRepo;
     private final WarehouseItemRepository warehouseItemRepo;
+    private final FurnitureSaveRepository saveRepo;
+    private final SaveCutRepository saveCutRepo;
     private final WarehouseTransactionRepository warehouseTxRepo;
     private final EarningRepository earningRepo;
     private final UserRepository userRepo;
@@ -87,6 +93,96 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                 .build();
         order.setCreatedBy(owner.getId());
         return toResponse(orderRepo.save(order));
+    }
+
+    @Override
+    @Transactional
+    public FurnitureOrderResponse createOrderFromSave(UUID saveId, CreateOrderFromSaveRequest request, Principal principal) {
+        UserEntity owner = requireOwner(principal);
+
+        // Find the save
+        FurnitureSaveEntity save = saveRepo.findByIdAndWorkshopId(saveId, owner.getWorkshopId())
+                .orElseThrow(() -> ApiException.notFound("furniture.save.not.found"));
+
+        // Get cuts from save
+        List<SaveCutEntity> cuts = saveCutRepo.findAllBySaveIdOrderByCreatedAtAsc(saveId);
+
+        // Check which materials exist in warehouse
+        List<String> missingMaterials = new ArrayList<>();
+        for (SaveCutEntity cut : cuts) {
+            Optional<WarehouseItemEntity> item = warehouseItemRepo.findByWorkshopIdAndNameIgnoreCase(
+                    owner.getWorkshopId(), cut.getMaterialName());
+            if (item.isEmpty()) {
+                missingMaterials.add(cut.getMaterialName());
+            }
+        }
+
+        // If missing materials and not confirmed, throw error with list
+        if (!missingMaterials.isEmpty() && !request.isConfirmMissingMaterials()) {
+            throw ApiException.badRequest("materials.missing.confirm.required");
+        }
+
+        // Create draft order
+        String orderNumber = generateOrderNumber(owner.getWorkshopId());
+        FurnitureOrderEntity order = FurnitureOrderEntity.builder()
+                .workshopId(owner.getWorkshopId())
+                .orderNumber(orderNumber)
+                .title(save.getName())
+                .description(save.getDescription())
+                .salePrice(request.getSalePrice())
+                .clientName(request.getClientName())
+                .clientPhone(request.getClientPhone())
+                .notes(request.getNotes())
+                .build();
+        order.setCreatedBy(owner.getId());
+        FurnitureOrderEntity savedOrder = orderRepo.save(order);
+
+        // Create material usages from cuts
+        for (SaveCutEntity cut : cuts) {
+            Optional<WarehouseItemEntity> itemOpt = warehouseItemRepo.findByWorkshopIdAndNameIgnoreCase(
+                    owner.getWorkshopId(), cut.getMaterialName());
+
+            MaterialUsageEntity usage = MaterialUsageEntity.builder()
+                    .furnitureOrderId(savedOrder.getId())
+                    .materialName(cut.getMaterialName())
+                    .lengthMm(cut.getLengthMm())
+                    .widthMm(cut.getWidthMm())
+                    .heightMm(cut.getHeightMm())
+                    .quantityUsed(BigDecimal.valueOf(cut.getQuantity()))
+                    .fromSaveId(saveId)
+                    .notes(cut.getNotes())
+                    .build();
+
+            if (itemOpt.isPresent()) {
+                // Material exists in warehouse
+                WarehouseItemEntity item = itemOpt.get();
+                usage.setWarehouseItemId(item.getId());
+                usage.setUnitPriceAtTime(item.getAvgUnitPrice() != null ? item.getAvgUnitPrice() : BigDecimal.ZERO);
+                usage.setTotalCost(usage.getUnitPriceAtTime().multiply(usage.getQuantityUsed()));
+            } else {
+                // Pending material
+                usage.setUnitPriceAtTime(BigDecimal.ZERO);
+                usage.setTotalCost(BigDecimal.ZERO);
+            }
+
+            usage.setCreatedBy(owner.getId());
+            usageRepo.save(usage);
+        }
+
+        // Recalculate material cost (only for existing materials)
+        recalculateMaterialCost(savedOrder);
+
+        return toResponse(savedOrder);
+    }
+
+    private void recalculateMaterialCost(FurnitureOrderEntity order) {
+        List<MaterialUsageEntity> usages = usageRepo.findAllByFurnitureOrderId(order.getId());
+        BigDecimal total = usages.stream()
+                .filter(u -> u.getWarehouseItemId() != null) // Only resolved materials
+                .map(MaterialUsageEntity::getTotalCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        order.setActualMaterialCost(total);
+        orderRepo.save(order);
     }
 
     @Override
@@ -873,17 +969,23 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
 
         List<FurnitureOrderResponse.MaterialUsageResponse> materialUsages = usages.stream()
                 .map(m -> {
-                    WarehouseItemEntity item = itemsMap.get(m.getWarehouseItemId());
+                    boolean isPending = m.getWarehouseItemId() == null;
+                    WarehouseItemEntity item = isPending ? null : itemsMap.get(m.getWarehouseItemId());
                     return FurnitureOrderResponse.MaterialUsageResponse.builder()
                             .id(m.getId())
                             .warehouseItemId(m.getWarehouseItemId())
-                            .itemName(item != null ? item.getName() : null)
+                            .itemName(isPending ? m.getMaterialName() : (item != null ? item.getName() : null))
                             .unitType(item != null ? item.getUnitType().name() : null)
                             .quantityUsed(m.getQuantityUsed())
                             .unitPriceAtTime(m.getUnitPriceAtTime())
                             .totalCost(m.getTotalCost())
                             .notes(m.getNotes())
                             .givenAt(m.getGivenAt())
+                            .pending(isPending)
+                            .materialName(m.getMaterialName())
+                            .lengthMm(m.getLengthMm())
+                            .widthMm(m.getWidthMm())
+                            .heightMm(m.getHeightMm())
                             .build();
                 }).toList();
 

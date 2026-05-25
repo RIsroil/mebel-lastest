@@ -21,8 +21,24 @@ public class MaterialUsageEntity extends SoftDeleteEntity {
     @Column(name = "furniture_order_id", nullable = false)
     private UUID furnitureOrderId;
 
-    @Column(name = "warehouse_item_id", nullable = false)
+    @Column(name = "warehouse_item_id")
     private UUID warehouseItemId;
+
+    // For pending materials (from saves) - when warehouseItemId is null
+    @Column(name = "material_name", length = 200)
+    private String materialName;
+
+    @Column(name = "length_mm")
+    private Integer lengthMm;
+
+    @Column(name = "width_mm")
+    private Integer widthMm;
+
+    @Column(name = "height_mm")
+    private Integer heightMm;
+
+    @Column(name = "from_save_id")
+    private UUID fromSaveId;
 
     @Column(name = "quantity_used", nullable = false, precision = 12, scale = 3)
     private BigDecimal quantityUsed;

@@ -67,6 +67,10 @@ const OrderDetailPage = () => {
   const [confirmDelete,    setConfirmDelete]    = useState<{ usageId: string; itemName: string } | null>(null)
   const [selectedWorker,   setSelectedWorker]   = useState<AssignedWorker | null>(null)
 
+  // SOLD statusga o'tishda narx tasdiqlash
+  const [showSoldConfirm, setShowSoldConfirm] = useState(false)
+  const [soldPrice, setSoldPrice] = useState('')
+
   // Yangi material (warehouse item) yaratish uchun
   const [newItemForRowIdx, setNewItemForRowIdx] = useState<number | null>(null)
   const [newItemName,      setNewItemName]      = useState('')
@@ -239,7 +243,12 @@ const OrderDetailPage = () => {
                     type="button"
                     className={styles.statusOption}
                     onClick={() => {
-                      changeStatusMutate(s)
+                      if (s === 'SOLD') {
+                        setSoldPrice(String(order.salePrice ?? 0))
+                        setShowSoldConfirm(true)
+                      } else {
+                        changeStatusMutate(s)
+                      }
                       setShowStatusMenu(false)
                     }}
                   >
@@ -311,11 +320,25 @@ const OrderDetailPage = () => {
               </thead>
               <tbody>
                 {order.materialUsages.map((m) => (
-                  <tr key={m.id}>
-                    <td>{m.itemName}</td>
+                  <tr key={m.id} style={m.pending ? { background: 'var(--red-bg)' } : undefined}>
+                    <td style={m.pending ? { color: 'var(--red)', fontWeight: 600 } : undefined}>
+                      {m.itemName}
+                      {m.pending && (
+                        <span style={{ marginLeft: 8, fontSize: 10, color: 'var(--red)', fontWeight: 700 }}>
+                          (omborxonada yo'q)
+                        </span>
+                      )}
+                      {m.lengthMm && m.widthMm && (
+                        <span style={{ display: 'block', fontSize: 11, color: 'var(--text3)', fontWeight: 400 }}>
+                          {m.lengthMm}×{m.widthMm}{m.heightMm ? `×${m.heightMm}` : ''} mm
+                        </span>
+                      )}
+                    </td>
                     <td>{m.quantityUsed}{m.unitType ? ` ${m.unitType}` : ''}</td>
-                    <td>{formatNumber(m.unitPriceAtTime)}</td>
-                    <td style={{ fontWeight: 700 }}>{formatNumber(m.totalCost)}</td>
+                    <td>{m.pending ? '—' : formatNumber(m.unitPriceAtTime)}</td>
+                    <td style={{ fontWeight: 700, color: m.pending ? 'var(--text3)' : undefined }}>
+                      {m.pending ? '—' : formatNumber(m.totalCost)}
+                    </td>
                     <td style={{ fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
                       {m.givenAt ? formatDateTime(m.givenAt) : '—'}
                     </td>
@@ -515,22 +538,25 @@ const OrderDetailPage = () => {
                       <div className={styles.workerDate}>
                         {w.assignedAt ? formatDate(w.assignedAt) + ' dan' : ''}
                         {w.commissionPct != null && w.commissionPct > 0 && (
-                          <span style={{ marginLeft: 8, color: 'var(--accent)', fontSize: 11 }}>
+                          <span style={{ marginLeft: 8, color: order.status === 'DRAFT' ? 'var(--text3)' : 'var(--accent)', fontSize: 11 }}>
                             {w.commissionPct}% komissiya
+                            {order.status === 'DRAFT' && ' (kutilmoqda)'}
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                        {w.daysWorked > 0 && (
-                          <span>{w.daysWorked} kun</span>
-                        )}
-                        {w.wageCost > 0 && (
-                          <span style={{ color: 'var(--red)' }}>maosh: -{formatNumber(w.wageCost)}</span>
-                        )}
-                        {w.commissionCost > 0 && (
-                          <span style={{ color: 'var(--red)' }}>komissiya: -{formatNumber(w.commissionCost)}</span>
-                        )}
-                      </div>
+                      {order.status !== 'DRAFT' && (
+                        <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                          {w.daysWorked > 0 && (
+                            <span>{w.daysWorked} kun</span>
+                          )}
+                          {w.wageCost > 0 && (
+                            <span style={{ color: 'var(--red)' }}>maosh: -{formatNumber(w.wageCost)}</span>
+                          )}
+                          {w.commissionCost > 0 && (
+                            <span style={{ color: 'var(--red)' }}>komissiya: -{formatNumber(w.commissionCost)}</span>
+                          )}
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
@@ -596,7 +622,7 @@ const OrderDetailPage = () => {
                 -{formatNumber(order.actualMaterialCost)}
               </span>
             </div>
-            {order.workerWageCost > 0 && (
+            {order.status !== 'DRAFT' && order.workerWageCost > 0 && (
               <div className={styles.infoRow}>
                 <span className={styles.infoKey}>Ishchi maoshi</span>
                 <span style={{ color: 'var(--red)', fontWeight: 600 }}>
@@ -604,7 +630,7 @@ const OrderDetailPage = () => {
                 </span>
               </div>
             )}
-            {order.workerCommissionCost > 0 && (
+            {order.status !== 'DRAFT' && order.workerCommissionCost > 0 && (
               <div className={styles.infoRow}>
                 <span className={styles.infoKey}>Komissiyalar</span>
                 <span style={{ color: 'var(--red)', fontWeight: 600 }}>
@@ -612,29 +638,43 @@ const OrderDetailPage = () => {
                 </span>
               </div>
             )}
+            {order.status === 'DRAFT' && order.assignedWorkers.length > 0 && (
+              <div style={{ fontSize: 11, color: 'var(--text3)', fontStyle: 'italic', marginTop: 4 }}>
+                * Maosh va komissiya ish boshlanganidan keyin hisoblanadi
+              </div>
+            )}
             <div className={styles.divider} />
             <div className={styles.infoRow}>
-              <span className={styles.infoKey}>Sof foyda</span>
+              <span className={styles.infoKey}>{order.status === 'DRAFT' ? 'Taxminiy foyda' : 'Sof foyda'}</span>
               <span
                 className={styles.infoVal}
                 style={{
-                  color: order.netProfit >= 0 ? 'var(--green)' : 'var(--red)',
+                  color: order.status === 'DRAFT'
+                    ? 'var(--text2)'
+                    : (order.netProfit >= 0 ? 'var(--green)' : 'var(--red)'),
                   fontWeight: 700,
                   fontSize: 15,
                 }}
               >
-                {formatNumber(order.netProfit)}
+                {order.status === 'DRAFT'
+                  ? `~${formatNumber(order.salePrice - order.actualMaterialCost)}`
+                  : formatNumber(order.netProfit)
+                }
               </span>
             </div>
-            <div className={styles.progressTrack}>
-              <div
-                className={styles.progressFill}
-                style={{ width: `${Math.max(0, Math.min(100 - costPct, 100))}%` }}
-              />
-            </div>
-            <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 4 }}>
-              Xarajatlar jami: {costPct}% · Foyda: {Math.max(0, 100 - costPct)}%
-            </div>
+            {order.status !== 'DRAFT' && (
+              <>
+                <div className={styles.progressTrack}>
+                  <div
+                    className={styles.progressFill}
+                    style={{ width: `${Math.max(0, Math.min(100 - costPct, 100))}%` }}
+                  />
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 4 }}>
+                  Xarajatlar jami: {costPct}% · Foyda: {Math.max(0, 100 - costPct)}%
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -1083,6 +1123,62 @@ const OrderDetailPage = () => {
               }}
             >
               Yaratish va tanlash →
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* SOLD statusga o'tishda narx tasdiqlash */}
+      <Modal
+        isOpen={showSoldConfirm}
+        onClose={() => setShowSoldConfirm(false)}
+        title="Sotish narxini tasdiqlang"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <p style={{ fontSize: 13, color: 'var(--text2)', margin: 0 }}>
+            Buyurtma sotildi deb belgilanishidan oldin sotish narxini tasdiqlang yoki yangilang.
+          </p>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Sotish narxi (UZS) *</label>
+            <input
+              className={styles.formInput}
+              type="number"
+              placeholder="Masalan: 5000000"
+              value={soldPrice}
+              onChange={(e) => setSoldPrice(e.target.value)}
+            />
+          </div>
+          {order && (
+            <div style={{ fontSize: 12, color: 'var(--text3)', background: 'var(--surface2)', padding: '10px 12px', borderRadius: 6 }}>
+              <div>Material xarajati: <strong style={{ color: 'var(--red)' }}>-{formatNumber(order.actualMaterialCost)}</strong></div>
+              <div>Taxminiy foyda: <strong style={{ color: parseFloat(soldPrice) - order.actualMaterialCost >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                {formatNumber((parseFloat(soldPrice) || 0) - order.actualMaterialCost)}
+              </strong></div>
+            </div>
+          )}
+          <div className={styles.formActions}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSoldConfirm(false)}
+            >
+              Bekor qilish
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={!soldPrice || parseFloat(soldPrice) <= 0 || changeStatusMutation.isPending}
+              loading={changeStatusMutation.isPending}
+              onClick={async () => {
+                // First update the sale price
+                await furnitureApi.orders.update(id!, { salePrice: parseFloat(soldPrice) } as any)
+                // Then change status to SOLD
+                changeStatusMutate('SOLD')
+                setShowSoldConfirm(false)
+              }}
+            >
+              Sotildi deb belgilash →
             </Button>
           </div>
         </div>

@@ -76,6 +76,12 @@ public class FurnitureOrderResponse {
         private BigDecimal totalCost;
         private String notes;
         private LocalDateTime givenAt;
+        // For pending materials (from saves)
+        private boolean pending;
+        private String materialName; // original material name from save
+        private Integer lengthMm;
+        private Integer widthMm;
+        private Integer heightMm;
     }
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor

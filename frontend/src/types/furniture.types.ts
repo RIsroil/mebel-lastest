@@ -29,7 +29,7 @@ export interface AssignedWorker {
 
 export interface MaterialUsage {
   id: string
-  warehouseItemId: string
+  warehouseItemId: string | null
   itemName: string
   unitType: string | null
   quantityUsed: number
@@ -37,6 +37,12 @@ export interface MaterialUsage {
   totalCost: number
   notes: string | null
   givenAt: string | null
+  // For pending materials (from saves)
+  pending?: boolean
+  materialName?: string
+  lengthMm?: number
+  widthMm?: number
+  heightMm?: number
 }
 
 export interface OrderImage {
@@ -127,4 +133,12 @@ export interface AddTemplateMaterialRequest {
   warehouseItemId: string
   quantityNeeded: number
   notes?: string
+}
+
+export interface CreateOrderFromSaveRequest {
+  clientName?: string
+  clientPhone?: string
+  salePrice?: number
+  notes?: string
+  confirmMissingMaterials: boolean
 }

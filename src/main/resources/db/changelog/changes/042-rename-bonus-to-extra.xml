@@ -6,18 +6,12 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="042-rename-bonus-to-extra" author="dev">
-        <comment>Rename BONUS to EXTRA in earn_type enum and BONUS_PAID to EXTRA_PAID in financial_log_type enum</comment>
+        <comment>Rename BONUS to EXTRA in earnings and BONUS_PAID to EXTRA_PAID in financial_logs</comment>
 
-        <!-- Add EXTRA to earn_type enum -->
-        <sql>ALTER TYPE earn_type ADD VALUE IF NOT EXISTS 'EXTRA';</sql>
-
-        <!-- Update existing earnings from BONUS to EXTRA -->
+        <!-- Update existing earnings from BONUS to EXTRA (VARCHAR column) -->
         <sql>UPDATE earnings SET earn_type = 'EXTRA' WHERE earn_type = 'BONUS';</sql>
 
-        <!-- Add EXTRA_PAID to financial_log_type enum -->
-        <sql>ALTER TYPE financial_log_type ADD VALUE IF NOT EXISTS 'EXTRA_PAID';</sql>
-
-        <!-- Update existing financial logs from BONUS_PAID to EXTRA_PAID -->
+        <!-- Update existing financial logs from BONUS_PAID to EXTRA_PAID (VARCHAR column) -->
         <sql>UPDATE financial_logs SET log_type = 'EXTRA_PAID' WHERE log_type = 'BONUS_PAID';</sql>
     </changeSet>
 

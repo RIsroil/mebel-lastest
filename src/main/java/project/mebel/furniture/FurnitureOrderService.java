@@ -11,6 +11,8 @@ public interface FurnitureOrderService {
 
     FurnitureOrderResponse createOrder(FurnitureOrderRequest request, Principal principal);
 
+    FurnitureOrderResponse createOrderFromSave(UUID saveId, CreateOrderFromSaveRequest request, Principal principal);
+
     List<FurnitureOrderResponse> getAllOrders(Principal principal);
 
     List<FurnitureOrderResponse> getWorkerOrders(Principal principal);

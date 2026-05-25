@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Edit2, Trash2, Image as ImageIcon, X as XIcon } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Edit2, Trash2, Image as ImageIcon, X as XIcon, ShoppingCart } from 'lucide-react'
 import { useTopbar } from '@/context/TopbarContext'
 import { savesApi } from '@/api/saves.api'
+import { furnitureApi } from '@/api/furniture.api'
 import type { FurnitureSave, SaveCutRequest } from '@/types/saves.types'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
@@ -38,6 +40,7 @@ const emptyCutRow = (): CutRow => ({
 const SavesPage = () => {
   const { setTitle, setActions } = useTopbar()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const imageInputRef = useRef<HTMLInputElement>(null)
 
   const [createOpen, setCreateOpen] = useState(false)
@@ -50,6 +53,14 @@ const SavesPage = () => {
 
   // Material dialog
   const [materialDialogOpen, setMaterialDialogOpen] = useState(false)
+
+  // Create order from save
+  const [createOrderOpen, setCreateOrderOpen] = useState(false)
+  const [orderClientName, setOrderClientName] = useState('')
+  const [orderClientPhone, setOrderClientPhone] = useState('')
+  const [orderSalePrice, setOrderSalePrice] = useState('')
+  const [orderNotes, setOrderNotes] = useState('')
+  const [missingMaterialsWarning, setMissingMaterialsWarning] = useState(false)
 
   // Single-cut edit modal
   const [editingCut, setEditingCut] = useState<FurnitureSave['cuts'][0] | null>(null)
@@ -135,6 +146,39 @@ const SavesPage = () => {
       setSelectedSave(res.data.data)
     },
   })
+
+  const createOrderMut = useMutation({
+    mutationFn: ({ saveId, body }: { saveId: string; body: { clientName?: string; clientPhone?: string; salePrice?: number; notes?: string; confirmMissingMaterials: boolean } }) =>
+      furnitureApi.orders.createFromSave(saveId, body),
+    onSuccess: (res) => {
+      setCreateOrderOpen(false)
+      setOrderClientName('')
+      setOrderClientPhone('')
+      setOrderSalePrice('')
+      setOrderNotes('')
+      setMissingMaterialsWarning(false)
+      navigate(`/orders/${res.data.data.id}`)
+    },
+    onError: (err: any) => {
+      if (err?.response?.data?.message?.includes('missing') || err?.response?.data?.message?.includes('confirm')) {
+        setMissingMaterialsWarning(true)
+      }
+    },
+  })
+
+  const handleCreateOrder = (confirmMissing = false) => {
+    if (!selectedSave) return
+    createOrderMut.mutate({
+      saveId: selectedSave.id,
+      body: {
+        clientName: orderClientName.trim() || undefined,
+        clientPhone: orderClientPhone.trim() || undefined,
+        salePrice: orderSalePrice ? parseFloat(orderSalePrice) : undefined,
+        notes: orderNotes.trim() || undefined,
+        confirmMissingMaterials: confirmMissing,
+      },
+    })
+  }
 
   useEffect(() => {
     setTitle('Saqlangan shablonlar')
@@ -243,6 +287,14 @@ const SavesPage = () => {
                 )}
               </div>
               <div className={styles.detailActions}>
+                <Button
+                  size="sm"
+                  onClick={() => setCreateOrderOpen(true)}
+                  title="Buyurtma yaratish"
+                >
+                  <ShoppingCart size={16} style={{ marginRight: 6 }} />
+                  Buyurtma yaratish
+                </Button>
                 <button
                   type="button"
                   className={styles.iconBtn}
@@ -545,6 +597,85 @@ const SavesPage = () => {
               onClick={handleEditCutSave}
             >
               {updateCutMut.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Create order from save modal */}
+      <Modal
+        isOpen={createOrderOpen}
+        onClose={() => {
+          setCreateOrderOpen(false)
+          setMissingMaterialsWarning(false)
+          setOrderClientName('')
+          setOrderClientPhone('')
+          setOrderSalePrice('')
+          setOrderNotes('')
+        }}
+        title={`"${selectedSave?.name}" dan buyurtma yaratish`}
+      >
+        <div className={styles.form}>
+          {missingMaterialsWarning && (
+            <div style={{
+              background: 'var(--red-bg)',
+              color: 'var(--red)',
+              padding: '12px 16px',
+              borderRadius: 8,
+              marginBottom: 16,
+              fontSize: 13,
+            }}>
+              <strong>Ogohlantirish:</strong> Ba'zi materiallar omborxonada mavjud emas.
+              Buyurtma yaratilsa, bu materiallar qizil rangda ko'rsatiladi.
+              Davom etishni xohlaysizmi?
+            </div>
+          )}
+          <label className={styles.label}>Mijoz ismi (ixtiyoriy)</label>
+          <input
+            className={styles.input}
+            placeholder="Masalan: Ali Valiyev"
+            value={orderClientName}
+            onChange={(e) => setOrderClientName(e.target.value)}
+          />
+          <label className={styles.label}>Telefon raqami (ixtiyoriy)</label>
+          <input
+            className={styles.input}
+            placeholder="+998 90 123 45 67"
+            value={orderClientPhone}
+            onChange={(e) => setOrderClientPhone(e.target.value)}
+          />
+          <label className={styles.label}>Sotish narxi (ixtiyoriy)</label>
+          <input
+            className={styles.input}
+            type="number"
+            placeholder="Masalan: 5000000"
+            value={orderSalePrice}
+            onChange={(e) => setOrderSalePrice(e.target.value)}
+          />
+          <label className={styles.label}>Izoh (ixtiyoriy)</label>
+          <textarea
+            className={styles.textarea}
+            placeholder="Qo'shimcha ma'lumot..."
+            value={orderNotes}
+            onChange={(e) => setOrderNotes(e.target.value)}
+            rows={2}
+          />
+          <div className={styles.formActions}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setCreateOrderOpen(false)
+                setMissingMaterialsWarning(false)
+              }}
+            >
+              Bekor qilish
+            </Button>
+            <Button
+              variant="primary"
+              disabled={createOrderMut.isPending}
+              onClick={() => handleCreateOrder(missingMaterialsWarning)}
+            >
+              {createOrderMut.isPending ? 'Yaratilmoqda...' : (missingMaterialsWarning ? 'Ha, davom etish' : 'Buyurtma yaratish')}
             </Button>
           </div>
         </div>
