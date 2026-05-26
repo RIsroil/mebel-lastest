@@ -887,7 +887,7 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
     private void validateStatusTransition(FurnitureStatus current, FurnitureStatus next) {
         boolean valid = switch (current) {
             case DRAFT -> next == FurnitureStatus.IN_PROGRESS || next == FurnitureStatus.CANCELLED;
-            case IN_PROGRESS -> next == FurnitureStatus.COMPLETED || next == FurnitureStatus.CANCELLED;
+            case IN_PROGRESS -> next == FurnitureStatus.COMPLETED || next == FurnitureStatus.CANCELLED || next == FurnitureStatus.SOLD;
             case COMPLETED -> next == FurnitureStatus.SOLD;
             case SOLD, CANCELLED -> false;
         };
