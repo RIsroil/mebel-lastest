@@ -78,6 +78,9 @@ const OrderDetailPage = () => {
   const [newItemQty,       setNewItemQty]       = useState('')
   const [newItemPrice,     setNewItemPrice]     = useState('')
 
+  // Pending material qo'shish uchun
+  const [showAddPendingMaterial, setShowAddPendingMaterial] = useState<{ usageId: string; materialName: string } | null>(null)
+
   const statusMenuRef  = useRef<HTMLDivElement>(null)
   const imageInputRef  = useRef<HTMLInputElement>(null)
 
@@ -347,35 +350,45 @@ const OrderDetailPage = () => {
                     </td>
                     {order.status === 'IN_PROGRESS' && (
                       <td>
-                        <div className={styles.matActions}>
-                          <button
-                            type="button"
-                            className={`${styles.matActionBtn} ${styles.matActionBtnAdd}`}
-                            title="+1 qo'shish"
-                            disabled={adjustMaterialMutation.isPending}
-                            onClick={() => adjustMaterialMutation.mutate({ usageId: m.id, delta: 1 })}
+                        {m.pending ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowAddPendingMaterial({ usageId: m.id, materialName: m.materialName ?? m.itemName ?? '—' })}
                           >
-                            +
-                          </button>
-                          <button
-                            type="button"
-                            className={`${styles.matActionBtn} ${styles.matActionBtnRemove}`}
-                            title="-1 kamaytirish"
-                            disabled={adjustMaterialMutation.isPending || m.quantityUsed <= 1}
-                            onClick={() => adjustMaterialMutation.mutate({ usageId: m.id, delta: -1 })}
-                          >
-                            −
-                          </button>
-                          <button
-                            type="button"
-                            className={`${styles.matActionBtn} ${styles.matActionBtnDelete}`}
-                            title="Butunlay olib tashlash"
-                            disabled={removeMaterialMutation.isPending}
-                            onClick={() => setConfirmDelete({ usageId: m.id, itemName: m.itemName ?? '—' })}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
+                            + Qo'shish
+                          </Button>
+                        ) : (
+                          <div className={styles.matActions}>
+                            <button
+                              type="button"
+                              className={`${styles.matActionBtn} ${styles.matActionBtnAdd}`}
+                              title="+1 qo'shish"
+                              disabled={adjustMaterialMutation.isPending}
+                              onClick={() => adjustMaterialMutation.mutate({ usageId: m.id, delta: 1 })}
+                            >
+                              +
+                            </button>
+                            <button
+                              type="button"
+                              className={`${styles.matActionBtn} ${styles.matActionBtnRemove}`}
+                              title="-1 kamaytirish"
+                              disabled={adjustMaterialMutation.isPending || m.quantityUsed <= 1}
+                              onClick={() => adjustMaterialMutation.mutate({ usageId: m.id, delta: -1 })}
+                            >
+                              −
+                            </button>
+                            <button
+                              type="button"
+                              className={`${styles.matActionBtn} ${styles.matActionBtnDelete}`}
+                              title="Butunlay olib tashlash"
+                              disabled={removeMaterialMutation.isPending}
+                              onClick={() => setConfirmDelete({ usageId: m.id, itemName: m.itemName ?? '—' })}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     )}
                   </tr>
@@ -1182,6 +1195,95 @@ const OrderDetailPage = () => {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Pending material qo'shish modal */}
+      <Modal
+        isOpen={showAddPendingMaterial !== null}
+        onClose={() => setShowAddPendingMaterial(null)}
+        title="Materialni ombordan qo'shish"
+      >
+        {showAddPendingMaterial && (() => {
+          const warehouseItem = items.find(
+            (i) => i.name.toLowerCase() === showAddPendingMaterial.materialName.toLowerCase()
+          )
+          const material = order?.materialUsages.find((m) => m.id === showAddPendingMaterial.usageId)
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+                  {showAddPendingMaterial.materialName}
+                </div>
+                {warehouseItem ? (
+                  <>
+                    <div style={{ fontSize: 12, color: 'var(--text2)' }}>
+                      Omborxonada mavjud: <strong style={{ color: 'var(--green)' }}>
+                        {warehouseItem.quantity} {warehouseItem.unitType}
+                      </strong>
+                    </div>
+                    {material && (
+                      <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 4 }}>
+                        Buyurtma uchun kerak: <strong>{material.quantityUsed} {material.unitType}</strong>
+                      </div>
+                    )}
+                    {material && warehouseItem.quantity < material.quantityUsed && (
+                      <div style={{
+                        fontSize: 11,
+                        color: 'var(--red)',
+                        marginTop: 8,
+                        background: 'var(--red-bg)',
+                        padding: '8px 10px',
+                        borderRadius: 6,
+                      }}>
+                        ⚠ Omborxonada yetarli emas. {warehouseItem.quantity} ta qo'shiladi, {(material.quantityUsed - warehouseItem.quantity).toFixed(3)} ta pending bo'lib qoladi.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{ fontSize: 12, color: 'var(--red)' }}>
+                    ❌ Omborxonada hali bu material yo'q
+                  </div>
+                )}
+              </div>
+              <div className={styles.formActions}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAddPendingMaterial(null)}
+                >
+                  Bekor qilish
+                </Button>
+                {warehouseItem && warehouseItem.quantity > 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    loading={addMaterialMutation.isPending}
+                    onClick={() => {
+                      if (material) {
+                        addMaterialMutation.mutate(
+                          {
+                            warehouseItemId: warehouseItem.id,
+                            quantityUsed: Math.min(warehouseItem.quantity, material.quantityUsed),
+                            notes: material.notes || undefined,
+                          },
+                          {
+                            onSuccess: () => {
+                              setShowAddPendingMaterial(null)
+                            },
+                          }
+                        )
+                      }
+                    }}
+                  >
+                    Ombordan qo'shish →
+                  </Button>
+                )}
+              </div>
+            </div>
+          )
+        })()}
       </Modal>
 
       <WorkerEarningsDetailModal

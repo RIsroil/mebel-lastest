@@ -154,11 +154,51 @@ public class FurnitureOrderServiceImpl implements FurnitureOrderService {
                     .build();
 
             if (itemOpt.isPresent()) {
-                // Material exists in warehouse
+                // Material exists in warehouse — deduct it
                 WarehouseItemEntity item = itemOpt.get();
+                BigDecimal qty = usage.getQuantityUsed();
+                BigDecimal unitPrice = item.getAvgUnitPrice() != null ? item.getAvgUnitPrice() : BigDecimal.ZERO;
+                BigDecimal totalCost = qty.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
+
                 usage.setWarehouseItemId(item.getId());
-                usage.setUnitPriceAtTime(item.getAvgUnitPrice() != null ? item.getAvgUnitPrice() : BigDecimal.ZERO);
-                usage.setTotalCost(usage.getUnitPriceAtTime().multiply(usage.getQuantityUsed()));
+                usage.setUnitPriceAtTime(unitPrice);
+                usage.setTotalCost(totalCost);
+                usage.setGivenAt(LocalDateTime.now());
+                usage.setGivenBy(owner.getId());
+
+                // Deduct from warehouse
+                BigDecimal qtyBefore = item.getQuantity();
+                BigDecimal qtyAfter = qtyBefore.subtract(qty);
+                item.setQuantity(qtyAfter);
+                item.setTotalValue(qtyAfter.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP));
+                item.setUpdatedBy(owner.getId());
+                warehouseItemRepo.save(item);
+
+                // Create warehouse transaction
+                WarehouseTransactionEntity tx = WarehouseTransactionEntity.builder()
+                        .itemId(item.getId())
+                        .workshopId(owner.getWorkshopId())
+                        .transactionType(TransactionType.OUT)
+                        .quantity(qty)
+                        .unitPrice(unitPrice)
+                        .totalCost(totalCost)
+                        .qtyBefore(qtyBefore)
+                        .qtyAfter(qtyAfter)
+                        .priceBefore(unitPrice)
+                        .priceAfter(unitPrice)
+                        .furnitureOrderId(savedOrder.getId())
+                        .notes(cut.getNotes())
+                        .build();
+                tx.setCreatedBy(owner.getId());
+                warehouseTxRepo.save(tx);
+
+                // Record financial log
+                String materialDesc = "Xomashyo sarflandi: " + item.getName()
+                        + " — " + qty.stripTrailingZeros().toPlainString() + " " + item.getUnitType()
+                        + " | Buyurtma: " + savedOrder.getTitle() + " (#" + savedOrder.getOrderNumber() + ")";
+                String orderRef = savedOrder.getTitle() + " (#" + savedOrder.getOrderNumber() + ")";
+                financialLogService.record(owner.getWorkshopId(), FinancialLogType.MATERIAL_USED,
+                        totalCost.negate(), materialDesc, savedOrder.getId(), orderRef, LocalDate.now(), owner.getId());
             } else {
                 // Pending material
                 usage.setUnitPriceAtTime(BigDecimal.ZERO);
