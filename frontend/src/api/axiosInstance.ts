@@ -23,7 +23,7 @@ api.interceptors.request.use((config) => {
   // Auth endpoints'ga token qo'shmaymiz (login, register, refresh)
   if (token && !isAuthOnlyPath(config.url)) {
     config.headers.Authorization = `Bearer ${token}`
-  }
+   }
 
   // Add language as query parameter for locale resolution
   if (!config.params) config.params = {}
