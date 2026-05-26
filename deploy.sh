@@ -14,7 +14,7 @@ NC='\033[0m'
 echo -e "${BLUE}[MEBEL MS]${NC} Deploying..."
 
 echo "==> Git pull..."
-git pull
+git pull --rebase
 
 echo "==> Frontend build..."
 cd frontend
