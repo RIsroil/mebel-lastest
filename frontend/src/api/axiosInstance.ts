@@ -20,7 +20,10 @@ api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken
   const language = useLanguageStore.getState().language
 
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  // Auth endpoints'ga token qo'shmaymiz (login, register, refresh)
+  if (token && !isAuthOnlyPath(config.url)) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
 
   // Add language as query parameter for locale resolution
   if (!config.params) config.params = {}

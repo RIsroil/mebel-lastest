@@ -103,26 +103,31 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
     log_warn ".env already exists, skipping..."
 else
     cat > "$SCRIPT_DIR/.env" << 'EOF'
-# Database
+# Database (o'zgartiring production'da!)
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
 
-# JWT (change in production!)
+# JWT (o'zgartiring production'da!)
 JWT_SECRET=2lVo5TcjgTco3dUIwmYEIWcLfeiBR7QgjS9fFyn1Jdg
 ACCESS_TOKEN_EXP=3600000
 REFRESH_TOKEN_EXP=604800000
 
-# MinIO
+# MinIO (o'zgartiring production'da!)
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin123
 
-# App
+# Application
 APP_BASE_URL=https://m-house.uz
 EOF
     log_success ".env created"
     echo ""
     echo -e "${YELLOW}MUHIM: .env faylidagi parollarni o'zgartiring!${NC}"
     echo "  nano $SCRIPT_DIR/.env"
+    echo ""
+    echo "Kerakli o'zgartirishlar:"
+    echo "  - DB_PASSWORD → kuchli parol"
+    echo "  - JWT_SECRET → 32+ belgili tasodifiy string"
+    echo "  - MINIO_ACCESS_KEY/SECRET_KEY → kuchli parollar"
     echo ""
     read -p "O'zgartirib bo'ldingizmi? (y/N): " envconfirm
 fi
