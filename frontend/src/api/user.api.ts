@@ -4,13 +4,13 @@ import type { UserProfile, UpdateProfileRequest } from '@/types/auth.types'
 
 export const userApi = {
   getMe: () =>
-    api.get<ApiResponse<UserProfile>>('/users/me'),
+    api.get<ApiResponse<UserProfile>>('/api/users/me'),
 
   updateMe: (body: UpdateProfileRequest) =>
-    api.patch<ApiResponse<UserProfile>>('/users/update', body),
+    api.patch<ApiResponse<UserProfile>>('/api/users/update', body),
 
   resetWorkerPassword: (workerId: string, newPassword: string) =>
-    api.put<ApiResponse<null>>(`/users/${workerId}/reset-password`, {
+    api.put<ApiResponse<null>>(`/api/users/${workerId}/reset-password`, {
       newPassword,
     }),
 }
